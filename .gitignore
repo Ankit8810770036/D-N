@@ -1,0 +1,41 @@
+# Common OS / IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
+
+# Backend (Laravel)
+backend/.env
+backend/.env.backup
+backend/.env.production
+backend/vendor/
+backend/node_modules/
+backend/public/storage
+backend/public/build
+backend/public/hot
+backend/storage/*.key
+backend/storage/pail
+backend/storage/framework/cache/data/*
+backend/storage/framework/sessions/*
+backend/storage/framework/testing/*
+backend/storage/framework/views/*
+backend/storage/logs/*
+backend/.phpunit.result.cache
+backend/Homestead.json
+backend/Homestead.yaml
+
+# Frontend (React/Vite)
+frontend/.env
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+
+# Socket Server (Node.js)
+socket-server/.env
+socket-server/node_modules/
+socket-server/*.log
