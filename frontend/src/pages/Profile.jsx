@@ -99,15 +99,15 @@ export default function Profile() {
             <div className="page-header flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="flex items-center gap-6">
                     <div className="relative group">
-                        <div className="w-24 h-24 rounded-3xl overflow-hidden shadow-lg border-2 border-white ring-4 ring-indigo-50 bg-gray-100 flex items-center justify-center">
+                        <div className="w-24 h-24 rounded-3xl overflow-hidden shadow-lg border-2 border-white dark:border-white/10 ring-4 ring-green-50 dark:ring-green-900/20 bg-gray-100 dark:bg-white/5 flex items-center justify-center">
                             {authUser?.profile_photo_url ? (
                                 <img src={authUser.profile_photo_url} alt="Profile" className="w-full h-full object-cover" />
                             ) : (
-                                <UserIcon className="w-10 h-10 text-gray-300" />
+                                <UserIcon className="w-10 h-10 text-gray-300 dark:text-white/20" />
                             )}
-                            {loading && <div className="absolute inset-0 bg-white/60 flex items-center justify-center"><div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" /></div>}
+                            {loading && <div className="absolute inset-0 bg-white/60 dark:bg-black/60 flex items-center justify-center"><div className="w-6 h-6 border-2 border-[#2d6a4f] border-t-transparent rounded-full animate-spin" /></div>}
                         </div>
-                        <label className="absolute -bottom-2 -right-2 p-2 bg-indigo-600 text-white rounded-xl shadow-lg border-2 border-white cursor-pointer hover:bg-indigo-700 hover:scale-110 transition-all">
+                        <label className="absolute -bottom-2 -right-2 p-2 bg-gradient-to-br from-[#2d6a4f] to-[#1b4332] text-white rounded-xl shadow-lg border-2 border-white dark:border-[#081c15] cursor-pointer hover:scale-110 transition-all">
                             <Camera className="w-4 h-4" />
                             <input type="file" className="hidden" accept="image/*" onChange={handlePhotoUpload} disabled={loading} />
                         </label>
@@ -209,8 +209,10 @@ export default function Profile() {
                                 <div className="flex gap-2 mt-1">
                                     {[['lose', '⬇️ Lose Weight'], ['maintain', '✅ Maintain'], ['gain', '⬆️ Gain Muscle']].map(([v, l]) => (
                                         <button type="button" key={v} onClick={() => set('goal', v)}
-                                            className={`flex-1 py-2 text-xs font-medium rounded-xl border-2 transition-all
-                        ${form.goal === v ? 'border-[#2d6a4f] bg-green-50 text-[#2d6a4f]' : 'border-gray-200 text-gray-600'}`}>
+                                            className={`flex-1 py-2.5 text-xs font-bold rounded-xl border-2 transition-all
+                        ${form.goal === v
+                            ? 'border-[#2d6a4f] bg-[#2d6a4f] text-white shadow-md shadow-green-900/20'
+                            : 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/50 hover:border-[#40916c]/40 dark:hover:border-white/20'}`}>
                                             {l}
                                         </button>
                                     ))}
@@ -218,15 +220,17 @@ export default function Profile() {
                             </div>
                             <div>
                                 <label className="input-label">Food Preference</label>
-                                <div className="flex gap-2 mt-1">
+                                <div className="flex flex-wrap gap-2 mt-1">
                                     {['veg', 'non-veg', 'vegan', 'jain', 'keto', 'paleo'].map(v => (
                                         <button
                                             type="button"
                                             key={v}
                                             onClick={() => set('food_preference', v)}
-                                            className={`flex-1 py-2 text-[10px] font-bold rounded-xl border-2 capitalize transition-all relative overflow-hidden
-                                                ${form.food_preference === v ? 'border-[#2d6a4f] bg-green-50 text-[#2d6a4f]' : 'border-gray-200 text-gray-600'}
-                                                ${['keto', 'paleo'].includes(v) && profileData?.user?.plan_type !== 'premium' ? 'opacity-70 bg-gray-50' : ''}`}
+                                            className={`px-3 py-2 text-[10px] font-bold rounded-xl border-2 capitalize transition-all relative overflow-hidden
+                                                ${form.food_preference === v
+                                                    ? 'border-[#2d6a4f] bg-[#2d6a4f] text-white shadow-md shadow-green-900/20'
+                                                    : 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/50 hover:border-[#40916c]/40 dark:hover:border-white/20'}
+                                                ${['keto', 'paleo'].includes(v) && profileData?.user?.plan_type !== 'premium' ? 'opacity-70' : ''}`}
                                         >
                                             {v}
                                             {['keto', 'paleo'].includes(v) && profileData?.user?.plan_type !== 'premium' && (
@@ -246,9 +250,11 @@ export default function Profile() {
                                 {activityLevels.map(al => (
                                     <button type="button" key={al.value} onClick={() => set('activity_level', al.value)}
                                         className={`p-3 rounded-xl border-2 text-center transition-all
-                      ${form.activity_level === al.value ? 'border-[#2d6a4f] bg-green-50' : 'border-gray-200'}`}>
-                                        <p className="text-sm font-medium text-gray-800">{al.label}</p>
-                                        <p className="text-xs text-gray-400 mt-0.5">{al.desc}</p>
+                      ${form.activity_level === al.value
+                          ? 'border-[#2d6a4f] bg-[#2d6a4f] shadow-md shadow-green-900/20'
+                          : 'border-gray-200 dark:border-white/10 hover:border-[#40916c]/40 dark:hover:border-white/20'}`}>
+                                        <p className={`text-sm font-bold ${form.activity_level === al.value ? 'text-white' : 'text-gray-800 dark:text-white/80'}`}>{al.label}</p>
+                                        <p className={`text-xs mt-0.5 ${form.activity_level === al.value ? 'text-white/80' : 'text-gray-400 dark:text-white/40'}`}>{al.desc}</p>
                                     </button>
                                 ))}
                             </div>
@@ -261,8 +267,10 @@ export default function Profile() {
                         <div className="flex flex-wrap gap-2">
                             {diseases.map(d => (
                                 <button type="button" key={d} onClick={() => toggle('diseases', d)}
-                                    className={`px-3 py-1.5 rounded-full text-xs font-medium border capitalize transition-all
-                    ${form.diseases.includes(d) ? 'bg-red-100 border-red-300 text-red-700' : 'border-gray-200 text-gray-600'}`}>
+                                    className={`px-4 py-2 rounded-2xl text-xs font-bold border-2 capitalize transition-all
+                    ${form.diseases.includes(d)
+                        ? 'bg-rose-500 border-rose-500 text-white shadow-md shadow-rose-500/20'
+                        : 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/50 hover:border-rose-300 dark:hover:border-rose-800 hover:text-rose-600 dark:hover:text-rose-400'}`}>
                                     {d.replace('_', ' ')}
                                 </button>
                             ))}
@@ -275,8 +283,10 @@ export default function Profile() {
                         <div className="flex flex-wrap gap-2">
                             {allergyOpts.map(a => (
                                 <button type="button" key={a} onClick={() => toggle('allergies', a)}
-                                    className={`px-3 py-1.5 rounded-full text-xs font-medium border capitalize transition-all
-                    ${form.allergies.includes(a) ? 'bg-orange-100 border-orange-300 text-orange-700' : 'border-gray-200 text-gray-600'}`}>
+                                    className={`px-4 py-2 rounded-2xl text-xs font-bold border-2 capitalize transition-all
+                    ${form.allergies.includes(a)
+                        ? 'bg-amber-500 border-amber-500 text-white shadow-md shadow-amber-500/20'
+                        : 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/50 hover:border-amber-300 dark:hover:border-amber-800 hover:text-amber-600 dark:hover:text-amber-400'}`}>
                                     {a}
                                 </button>
                             ))}

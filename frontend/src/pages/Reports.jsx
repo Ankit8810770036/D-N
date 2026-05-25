@@ -1,24 +1,54 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import toast from 'react-hot-toast'
+import { FileText, Download, User, Activity, Flame, Scale, Dumbbell, CalendarCheck, TrendingUp, Trophy } from 'lucide-react'
+
+// Helper: BMI category + colour
+function bmiMeta(bmi) {
+    if (!bmi) return { label: '—', color: 'text-gray-400' }
+    if (bmi < 18.5) return { label: 'Underweight', color: 'text-blue-500' }
+    if (bmi < 25)   return { label: 'Normal',       color: 'text-emerald-600' }
+    if (bmi < 30)   return { label: 'Overweight',   color: 'text-amber-500' }
+    return              { label: 'Obese',            color: 'text-red-500' }
+}
+
+function StatCard({ icon: Icon, iconBg, val, lbl, sub, subColor }) {
+    return (
+        <div className="metric-card flex flex-col gap-2 py-4 px-4">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${iconBg}`}>
+                <Icon className="w-4 h-4 text-white" />
+            </div>
+            <div>
+                <div className={`metric-val text-2xl ${subColor || ''}`}>{val}</div>
+                <div className="metric-lbl">{lbl}</div>
+                {sub && <div className={`text-[10px] font-semibold mt-0.5 ${subColor || 'text-gray-400'}`}>{sub}</div>}
+            </div>
+        </div>
+    )
+}
 
 export default function Reports() {
-    const [summary, setSummary] = useState(null)
-    const [loading, setLoading] = useState(true)
+    const navigate = useNavigate()
+    const [summary, setSummary]     = useState(null)
+    const [loading, setLoading]     = useState(true)
     const [downloading, setDownloading] = useState(false)
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+    const [date, setDate]           = useState(new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0])
 
     useEffect(() => {
-        api.get('/report/summary').then(({ data }) => setSummary(data)).finally(() => setLoading(false))
+        api.get('/report/summary')
+            .then(({ data }) => setSummary(data))
+            .catch(() => toast.error('Failed to load report summary.'))
+            .finally(() => setLoading(false))
     }, [])
 
     async function downloadPDF() {
         setDownloading(true)
         try {
             const response = await api.get(`/report/pdf?date=${date}`, { responseType: 'blob' })
-            const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }))
+            const url  = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }))
             const link = document.createElement('a')
-            link.href = url
+            link.href  = url
             link.setAttribute('download', `diet_report_${date}.pdf`)
             document.body.appendChild(link)
             link.click()
@@ -32,75 +62,208 @@ export default function Reports() {
         }
     }
 
+    const profile = summary?.profile
+    const stats   = summary?.stats
+    const bmi     = profile?.bmi ? parseFloat(profile.bmi) : null
+    const meta    = bmiMeta(bmi)
+
     return (
         <div className="space-y-6 max-w-3xl">
             <div className="page-header">
-                <h1 className="page-title">Reports</h1>
-                <p className="page-subtitle">Download your personalized diet report as PDF</p>
+                <h1 className="page-title flex items-center gap-2"><FileText className="w-7 h-7 text-[#2d6a4f]" /> Reports</h1>
+                <p className="page-subtitle">Your complete health &amp; diet overview</p>
             </div>
 
-            {/* Stats Summary */}
+            {/* ── Loading ── */}
             {loading ? (
-                <div className="flex items-center justify-center py-10">
-                    <div className="animate-spin w-8 h-8 border-4 border-[#2d6a4f] border-t-transparent rounded-full" />
+                <div className="flex items-center justify-center py-16">
+                    <div className="animate-spin w-10 h-10 border-4 border-[#2d6a4f] border-t-transparent rounded-full" />
                 </div>
-            ) : summary && (
+            ) : summary ? (
                 <>
-                    <div className="card bg-gradient-to-r from-[#2d6a4f] to-[#40916c] text-white">
+                    {/* ── User Card ── */}
+                    <div className="card bg-gradient-to-br from-[#2d6a4f] to-[#40916c] text-white">
                         <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 rounded-2xl bg-white/15 flex items-center justify-center text-3xl">
+                            <div className="w-14 h-14 rounded-2xl bg-white/15 flex items-center justify-center text-3xl shrink-0">
                                 👤
                             </div>
-                            <div>
-                                <h2 className="text-xl font-bold">{summary.user?.name}</h2>
-                                <p className="text-white/70 text-sm">{summary.user?.email}</p>
+                            <div className="flex-1 min-w-0">
+                                <h2 className="text-xl font-bold truncate">{summary.user?.name}</h2>
+                                <p className="text-white/70 text-sm truncate">{summary.user?.email}</p>
                             </div>
+                            {stats?.streak > 0 && (
+                                <div className="shrink-0 text-right">
+                                    <p className="text-2xl font-black">🔥 {stats.streak}</p>
+                                    <p className="text-white/60 text-xs">Day Streak</p>
+                                </div>
+                            )}
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        {[
-                            { val: Math.round(summary.profile?.bmi ?? 0) || '—', lbl: 'BMI' },
-                            { val: Math.round(summary.profile?.calories_target ?? 0) || '—', lbl: 'Calorie Target' },
-                            { val: summary.stats?.total_plans_generated, lbl: 'Meal Plans' },
-                            { val: summary.stats?.workout_days, lbl: 'Workout Days' },
-                        ].map(m => (
-                            <div key={m.lbl} className="metric-card">
-                                <div className="metric-val">{m.val}</div>
-                                <div className="metric-lbl">{m.lbl}</div>
+                    {/* ── No profile warning ── */}
+                    {!summary.has_profile && (
+                        <div className="flex items-start gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 rounded-2xl px-4 py-3 text-sm">
+                            <span className="text-amber-500 text-lg">⚠️</span>
+                            <div>
+                                <p className="font-semibold text-amber-800 dark:text-amber-300">Health profile not set up</p>
+                                <p className="text-amber-700 dark:text-amber-400 text-xs mt-0.5">
+                                    BMI and calorie target will show once you fill in your health profile.{' '}
+                                    <button onClick={() => navigate('/profile')} className="underline font-bold hover:text-amber-900">Set up profile →</button>
+                                </p>
                             </div>
-                        ))}
+                        </div>
+                    )}
+
+                    {/* ── Stats Grid ── */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+
+                        {/* BMI */}
+                        <StatCard
+                            icon={Scale}
+                            iconBg="bg-emerald-500"
+                            val={bmi ? bmi.toFixed(1) : '—'}
+                            lbl="BMI"
+                            sub={meta.label}
+                            subColor={bmi ? meta.color : 'text-gray-400'}
+                        />
+
+                        {/* Calorie Target */}
+                        <StatCard
+                            icon={Flame}
+                            iconBg="bg-orange-500"
+                            val={profile?.calories_target ? `${Math.round(profile.calories_target).toLocaleString()}` : '—'}
+                            lbl="Calorie Target"
+                            sub="kcal / day"
+                        />
+
+                        {/* Avg Calories Consumed */}
+                        <StatCard
+                            icon={Activity}
+                            iconBg="bg-blue-500"
+                            val={stats?.avg_calories ? stats.avg_calories.toLocaleString() : '—'}
+                            lbl="Avg Consumed"
+                            sub={stats?.avg_calories ? 'kcal / day' : 'Log progress to see'}
+                        />
+
+                        {/* Avg Logged Weight */}
+                        <StatCard
+                            icon={TrendingUp}
+                            iconBg="bg-purple-500"
+                            val={stats?.avg_weight ?? (profile?.weight_kg ? `${parseFloat(profile.weight_kg)}` : '—')}
+                            lbl="Avg Weight (kg)"
+                            sub={stats?.avg_weight ? 'from your logs' : (profile?.weight_kg ? 'from profile' : 'No data yet')}
+                        />
+
+                        {/* Meal Plans */}
+                        <StatCard
+                            icon={CalendarCheck}
+                            iconBg="bg-teal-500"
+                            val={stats?.total_plans_generated ?? 0}
+                            lbl="Meal Plans"
+                            sub="generated"
+                        />
+
+                        {/* Workout Days */}
+                        <StatCard
+                            icon={Dumbbell}
+                            iconBg={stats?.workout_days > 0 ? 'bg-emerald-600' : 'bg-gray-300'}
+                            val={stats?.workout_days ?? 0}
+                            lbl="Workout Days"
+                            sub={stats?.workout_days > 0 ? 'all-time ✅' : 'None logged yet'}
+                        />
+
+                        {/* Progress Logs */}
+                        <StatCard
+                            icon={FileText}
+                            iconBg="bg-indigo-500"
+                            val={stats?.total_logs ?? 0}
+                            lbl="Progress Logs"
+                            sub="entries"
+                        />
+
+                        {/* Streak */}
+                        <StatCard
+                            icon={Trophy}
+                            iconBg={stats?.streak > 0 ? 'bg-amber-500' : 'bg-gray-300'}
+                            val={stats?.streak > 0 ? `🔥 ${stats.streak}` : '0'}
+                            lbl="Current Streak"
+                            sub={stats?.streak > 0 ? 'days in a row' : 'Start logging daily!'}
+                        />
                     </div>
+
+                    {/* ── Latest log date callout ── */}
+                    {stats?.latest_log_date && (
+                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 px-1">
+                            <Activity className="w-3.5 h-3.5" />
+                            Last progress entry:{' '}
+                            <span className="font-semibold text-gray-700 dark:text-gray-300">
+                                {new Date(stats.latest_log_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </span>
+                        </div>
+                    )}
                 </>
+            ) : (
+                <div className="card flex flex-col items-center py-12 gap-3 text-center">
+                    <span className="text-5xl">📊</span>
+                    <p className="font-semibold text-gray-700 dark:text-white/80">Could not load report data</p>
+                    <p className="text-sm text-gray-400">Please try refreshing the page.</p>
+                </div>
             )}
 
-            {/* PDF Download Card */}
+            {/* ── PDF Download Card ── */}
             <div className="card">
-                <h2 className="font-semibold text-gray-800 dark:text-white/90 mb-4">📄 Download Diet Report (PDF)</h2>
+                <h2 className="font-semibold text-gray-800 dark:text-white/90 mb-1 flex items-center gap-2">
+                    <Download className="w-5 h-5 text-[#2d6a4f]" /> Download Diet Report (PDF)
+                </h2>
                 <p className="text-sm text-gray-500 mb-4">
                     Generates a complete PDF including your health metrics, meal plan for the selected date, and recent 7-day progress.
                 </p>
                 <div className="flex items-end gap-4 flex-wrap">
                     <div>
                         <label className="input-label">Report Date</label>
-                        <input type="date" value={date} onChange={e => setDate(e.target.value)}
-                            className="input-field" style={{ maxWidth: 200 }} />
+                        <input
+                            type="date"
+                            value={date}
+                            onChange={e => setDate(e.target.value)}
+                            className="input-field"
+                            style={{ maxWidth: 200 }}
+                        />
                     </div>
-                    <button onClick={downloadPDF} disabled={downloading} className="btn-gold">
-                        {downloading ? '⏳ Generating PDF...' : '⬇️ Download PDF Report'}
+                    <button onClick={downloadPDF} disabled={downloading} className="btn-gold flex items-center gap-2">
+                        {downloading ? (
+                            <><span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" /> Generating…</>
+                        ) : (
+                            <><Download className="w-4 h-4" /> Download PDF Report</>
+                        )}
                     </button>
                 </div>
             </div>
 
-            {/* Tips */}
+            {/* ── Badges ── */}
+            {summary?.badges?.length > 0 && (
+                <div className="card">
+                    <h3 className="font-semibold text-gray-800 dark:text-white/90 mb-3 flex items-center gap-2">
+                        <Trophy className="w-4 h-4 text-amber-500" /> Your Badges
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                        {summary.badges.map(b => (
+                            <span key={b.id} className="inline-flex items-center gap-1.5 text-xs bg-amber-50 border border-amber-200 text-amber-800 px-3 py-1.5 rounded-full font-semibold">
+                                🏅 {b.badge_name}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* ── Tips ── */}
             <div className="card bg-green-50/60 border border-green-100">
                 <h3 className="font-semibold text-[#2d6a4f] mb-3">💡 Health Tips</h3>
                 <ul className="space-y-2 text-sm text-gray-600">
                     {[
-                        'Drink at least 2-3 liters of water per day.',
+                        'Drink at least 2–3 liters of water per day.',
                         'Eat protein-rich foods at every meal to preserve muscle mass.',
                         'A 500 kcal daily deficit leads to approximately 0.5 kg of fat loss per week.',
-                        'Getting 7-9 hours of quality sleep improves metabolism and reduces cravings.',
+                        'Getting 7–9 hours of quality sleep improves metabolism and reduces cravings.',
                         'Replace refined carbs (white bread, chips) with whole grains and makhana.',
                         'Track your progress consistently — small wins compound over time.',
                     ].map((tip, i) => (

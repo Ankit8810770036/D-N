@@ -36,10 +36,19 @@ class ReportController extends Controller
         $user    = $request->user()->load('profile');
         $profile = $user->profile;
 
-        $totalPlans    = MealPlan::where('user_id', $user->id)->count();
-        $totalLogs     = ProgressLog::where('user_id', $user->id)->count();
-        $workoutDays   = ProgressLog::where('user_id', $user->id)->where('workout_done', true)->count();
-        $latestLog     = ProgressLog::where('user_id', $user->id)->latest('date')->first();
+        $totalPlans  = MealPlan::where('user_id', $user->id)->count();
+        $totalLogs   = ProgressLog::where('user_id', $user->id)->count();
+        $workoutDays = ProgressLog::where('user_id', $user->id)->where('workout_done', true)->count();
+        $latestLog   = ProgressLog::where('user_id', $user->id)->latest('date')->first();
+
+        // Averages from progress logs
+        $avgCalories = ProgressLog::where('user_id', $user->id)
+            ->whereNotNull('calories_consumed')
+            ->avg('calories_consumed');
+
+        $avgWeight = ProgressLog::where('user_id', $user->id)
+            ->whereNotNull('weight')
+            ->avg('weight');
 
         $streak = $achievementService->calculateStreak($user);
         $badges = \App\Models\UserBadge::where('user_id', $user->id)
@@ -47,17 +56,20 @@ class ReportController extends Controller
             ->get();
 
         return response()->json([
-            'user'           => $user->only('name', 'email'),
-            'profile'        => $profile,
-            'stats'          => [
+            'user'    => $user->only('name', 'email'),
+            'profile' => $profile,
+            'stats'   => [
                 'total_plans_generated' => $totalPlans,
                 'total_logs'            => $totalLogs,
-                'workout_days'          => $workoutDays,
+                'workout_days'          => $workoutDays,           // all-time
                 'latest_weight'         => $latestLog?->weight,
                 'latest_log_date'       => $latestLog?->date,
                 'streak'                => $streak,
+                'avg_calories'          => $avgCalories ? round($avgCalories, 0) : null,
+                'avg_weight'            => $avgWeight   ? round($avgWeight,   1) : null,
             ],
-            'badges'         => $badges,
+            'has_profile' => (bool) $profile,
+            'badges'      => $badges,
         ]);
     }
 }

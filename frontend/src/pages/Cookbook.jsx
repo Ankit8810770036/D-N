@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../services/api';
-import { Book, Search, Filter, ChevronRight, Lock, Clock, Flame } from 'lucide-react';
+import { BookOpen, Search, ChevronRight, Lock, Clock, Flame, Crown } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Cookbook = () => {
     const [searchTerm, setSearchTerm] = useState('');
-    const [category, setCategory] = useState('All');
 
     const { data: recipes, isLoading } = useQuery({
         queryKey: ['recipes'],
@@ -24,107 +23,170 @@ const Cookbook = () => {
         }
     });
 
-    const filteredRecipes = recipes?.filter(recipe => {
-        const matchesSearch = recipe.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            recipe.description?.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchesSearch;
-    });
+    const filteredRecipes = recipes?.filter(recipe =>
+        recipe.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        recipe.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500"></div>
+            <div className="space-y-6 animate-pulse">
+                <div className="page-header">
+                    <div className="h-9 bg-gray-200 dark:bg-white/10 rounded w-56"></div>
+                    <div className="h-4 bg-gray-100 dark:bg-white/5 rounded w-80 mt-3"></div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[1, 2, 3, 4, 5, 6].map(i => (
+                        <div key={i} className="card p-0 overflow-hidden">
+                            <div className="h-48 bg-gray-200 dark:bg-white/10 rounded-t-[2rem]"></div>
+                            <div className="p-5 space-y-3">
+                                <div className="h-4 bg-gray-200 dark:bg-white/10 rounded w-3/4"></div>
+                                <div className="h-3 bg-gray-100 dark:bg-white/5 rounded w-full"></div>
+                                <div className="h-10 bg-gray-100 dark:bg-white/5 rounded-2xl mt-4"></div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="p-6 max-w-7xl mx-auto">
-            <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-                        <Book className="w-8 h-8 text-emerald-600" />
-                        Healthy Cookbook
-                    </h1>
-                    <p className="text-gray-600 mt-1">Discover nutritious recipes for your meal plan</p>
+        <div className="space-y-6 pb-20 animate-fade-in">
+
+            {/* Page Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="page-header mb-0">
+                    <div className="flex items-center gap-3 mb-1">
+                        <BookOpen className="w-7 h-7 text-[#2d6a4f]" />
+                        <h1 className="page-title">Healthy Cookbook</h1>
+                    </div>
+                    <p className="page-subtitle">Discover nutritious recipes curated for your meal plan</p>
                 </div>
 
-                <div className="flex gap-3">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                        <input
-                            type="text"
-                            placeholder="Search recipes..."
-                            className="pl-10 pr-4 py-2 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none w-64"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
+                {/* Search */}
+                <div className="relative shrink-0">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/30 w-4 h-4" />
+                    <input
+                        type="text"
+                        placeholder="Search recipes..."
+                        className="input-field pl-11 py-3 w-full md:w-64"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {filteredRecipes?.map((recipe) => (
-                    <div key={recipe.id} className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group border border-gray-100">
-                        <div className="relative h-48 overflow-hidden">
-                            <img
-                                src={recipe.image_url || 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&q=80&w=400'}
-                                alt={recipe.name}
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                            {recipe.is_premium && (
-                                <div className="absolute top-4 right-4 bg-amber-400 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-                                    <Lock className="w-3 h-3" />
-                                    PREMIUM
+            {/* Stats bar */}
+            <div className="flex items-center gap-4 text-sm text-gray-400 dark:text-white/40">
+                <span className="font-bold">
+                    {filteredRecipes?.length ?? 0}
+                    <span className="font-normal ml-1">recipe{filteredRecipes?.length !== 1 ? 's' : ''}</span>
+                </span>
+                {user?.plan_type === 'premium' && (
+                    <span className="badge badge-gold inline-flex items-center gap-1.5">
+                        <Crown className="w-3 h-3" /> Premium Access
+                    </span>
+                )}
+            </div>
+
+            {/* Recipe Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredRecipes?.map((recipe) => {
+                    const isLocked = recipe.is_premium && user?.plan_type !== 'premium' && user?.role !== 'admin';
+
+                    return (
+                        <div key={recipe.id} className="card card-hover p-0 overflow-hidden group">
+                            {/* Recipe Image */}
+                            <div className="relative h-48 overflow-hidden rounded-t-[2rem]">
+                                <img
+                                    src={recipe.image_url || 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&q=80&w=400'}
+                                    alt={recipe.name}
+                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                />
+                                {/* Gradient overlay */}
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+
+                                {/* Premium badge */}
+                                {recipe.is_premium && (
+                                    <div className="absolute top-3 right-3 bg-amber-500 text-white px-2.5 py-1 rounded-xl text-[10px] font-black flex items-center gap-1 shadow-lg shadow-amber-500/30 uppercase tracking-wider">
+                                        <Crown className="w-3 h-3" />
+                                        Premium
+                                    </div>
+                                )}
+
+                                {/* Title overlay on image */}
+                                <div className="absolute bottom-4 left-4 right-4">
+                                    <span className="text-[10px] font-black bg-[#2d6a4f]/80 text-white px-2.5 py-1 rounded-lg uppercase tracking-widest backdrop-blur-sm">
+                                        Healthy
+                                    </span>
+                                    <h3 className="text-lg font-black text-white mt-1.5 tracking-tight line-clamp-1 drop-shadow">
+                                        {recipe.name}
+                                    </h3>
                                 </div>
-                            )}
-                            <div className="absolute bottom-4 left-4 text-white">
-                                <span className="text-xs font-medium bg-emerald-500/80 px-2 py-1 rounded">Healthy</span>
-                                <h3 className="text-xl font-bold mt-1 uppercase tracking-tight">{recipe.name}</h3>
+                            </div>
+
+                            {/* Card Body */}
+                            <div className="p-5">
+                                <p className="text-gray-500 dark:text-white/50 text-sm line-clamp-2 mb-4 leading-relaxed">
+                                    {recipe.description}
+                                </p>
+
+                                {/* Meta row */}
+                                <div className="flex items-center justify-between text-xs font-bold text-gray-400 dark:text-white/40 mb-5">
+                                    <div className="flex items-center gap-1.5 text-orange-500">
+                                        <Flame className="w-3.5 h-3.5" />
+                                        <span>{Math.round(recipe.calories || 0)} kcal</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-[#40916c]">
+                                        <Clock className="w-3.5 h-3.5" />
+                                        <span>15–20 min</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-gray-400 dark:text-white/30">
+                                        <BookOpen className="w-3.5 h-3.5" />
+                                        <span>{recipe.ingredients?.length || 0} ingredients</span>
+                                    </div>
+                                </div>
+
+                                {/* CTA Button */}
+                                {isLocked ? (
+                                    <Link
+                                        to="/subscription"
+                                        className="w-full flex items-center justify-center gap-2 py-3 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-2xl font-bold text-sm border-2 border-amber-200 dark:border-amber-800/50 hover:bg-amber-500 hover:text-white hover:border-amber-500 dark:hover:bg-amber-500 dark:hover:text-white transition-all"
+                                    >
+                                        <Lock className="w-4 h-4" />
+                                        Upgrade to Unlock
+                                    </Link>
+                                ) : (
+                                    <Link
+                                        to={`/cookbook/${recipe.id}`}
+                                        className="btn-primary w-full text-sm py-3"
+                                    >
+                                        View Full Recipe
+                                        <ChevronRight className="w-4 h-4" />
+                                    </Link>
+                                )}
                             </div>
                         </div>
+                    );
+                })}
 
-                        <div className="p-5">
-                            <p className="text-gray-600 text-sm line-clamp-2 mb-4">
-                                {recipe.description}
-                            </p>
-
-                            <div className="flex items-center justify-between text-sm text-gray-500 mb-6">
-                                <div className="flex items-center gap-1.5">
-                                    <Flame className="w-4 h-4 text-orange-500" />
-                                    <span>{Math.round(recipe.calories)} kcal</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                    <Clock className="w-4 h-4 text-emerald-500" />
-                                    <span>15-20 min</span>
-                                </div>
-                            </div>
-
-                            {recipe.is_premium && user?.plan_type !== 'premium' && user?.role !== 'admin' ? (
-                                <Link
-                                    to="/subscription"
-                                    className="w-full flex items-center justify-center gap-2 py-3 bg-gray-100 text-gray-600 rounded-xl font-semibold hover:bg-amber-50 hover:text-amber-600 transition-colors"
-                                >
-                                    <Lock className="w-4 h-4" />
-                                    Upgrade to View
-                                </Link>
-                            ) : (
-                                <Link
-                                    to={`/cookbook/${recipe.id}`}
-                                    className="w-full flex items-center justify-center gap-2 py-3 bg-emerald-50 text-emerald-600 rounded-xl font-semibold hover:bg-emerald-600 hover:text-white transition-all"
-                                >
-                                    View Full Recipe
-                                    <ChevronRight className="w-4 h-4" />
-                                </Link>
-                            )}
-                        </div>
-                    </div>
-                ))}
-
+                {/* Empty State */}
                 {filteredRecipes?.length === 0 && (
-                    <div className="col-span-full py-20 text-center text-gray-500">
-                        <p className="text-xl">No recipes found matching your search.</p>
+                    <div className="col-span-full">
+                        <div className="card flex flex-col items-center py-16 gap-4 text-gray-400 dark:text-white/30">
+                            <BookOpen className="w-14 h-14 opacity-30" />
+                            <p className="font-bold text-lg">No recipes found</p>
+                            <p className="text-sm">Try a different search term</p>
+                            {searchTerm && (
+                                <button
+                                    onClick={() => setSearchTerm('')}
+                                    className="btn-secondary mt-2 text-sm py-2 px-6"
+                                >
+                                    Clear Search
+                                </button>
+                            )}
+                        </div>
                     </div>
                 )}
             </div>

@@ -29,9 +29,11 @@ class HealthProfileController extends Controller
                 : null;
         }
 
+        $date = $request->input('date', now()->toDateString());
         $todayLog = \App\Models\ProgressLog::where('user_id', $user->id)
-            ->where('date', now()->toDateString())
+            ->where('date', $date)
             ->first();
+            
         $extra['calories_consumed'] = $todayLog ? $todayLog->calories_consumed : 0;
         $extra['streak'] = $user->getCurrentStreak();
 

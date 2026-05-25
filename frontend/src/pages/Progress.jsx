@@ -16,7 +16,7 @@ export default function Progress() {
     const [fetching, setFetching] = useState(true)
     const [loading, setLoading] = useState(false)
     const [form, setForm] = useState({
-        date: new Date().toISOString().split('T')[0],
+        date: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
         weight: '', calories_consumed: '',
         protein: '', carbs: '', fat: '',
         water_intake_liters: '',
@@ -78,19 +78,65 @@ export default function Progress() {
                 <>
                     {/* Summary Stats */}
                     {summary && (
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            {[
-                                { val: summary.weight_start ?? '—', lbl: 'Start Weight (kg)' },
-                                { val: summary.weight_latest ?? '—', lbl: 'Current Weight (kg)' },
-                                { val: summary.weight_change !== null ? `${summary.weight_change > 0 ? '+' : ''}${summary.weight_change} kg` : '—', lbl: '30-Day Change' },
-                                { val: summary.workout_days, lbl: 'Workout Days' },
-                            ].map(m => (
-                                <div key={m.lbl} className="metric-card py-3">
-                                    <div className="metric-val text-xl">{m.val}</div>
-                                    <div className="metric-lbl">{m.lbl}</div>
+                        <>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                {/* Start Weight — falls back to profile weight if no logs yet */}
+                                <div className="metric-card py-3">
+                                    <div className="metric-val text-xl">
+                                        {summary.weight_start ?? '—'}
+                                        {!summary.has_weight_logs && summary.weight_start && (
+                                            <span className="block text-[9px] font-semibold text-blue-500 uppercase tracking-wide mt-0.5">From Profile</span>
+                                        )}
+                                    </div>
+                                    <div className="metric-lbl">Start Weight (kg)</div>
                                 </div>
-                            ))}
-                        </div>
+
+                                {/* Current Weight — same fallback */}
+                                <div className="metric-card py-3">
+                                    <div className="metric-val text-xl">
+                                        {summary.weight_latest ?? '—'}
+                                        {!summary.has_weight_logs && summary.weight_latest && (
+                                            <span className="block text-[9px] font-semibold text-blue-500 uppercase tracking-wide mt-0.5">From Profile</span>
+                                        )}
+                                    </div>
+                                    <div className="metric-lbl">Current Weight (kg)</div>
+                                </div>
+
+                                {/* 30-Day Change */}
+                                <div className="metric-card py-3">
+                                    <div className={`metric-val text-xl ${
+                                        summary.weight_change > 0 ? 'text-red-500' :
+                                        summary.weight_change < 0 ? 'text-emerald-600' : ''
+                                    }`}>
+                                        {summary.weight_change !== null
+                                            ? `${summary.weight_change > 0 ? '+' : ''}${summary.weight_change} kg`
+                                            : '—'}
+                                    </div>
+                                    <div className="metric-lbl">30-Day Change</div>
+                                </div>
+
+                                {/* Workout Days — all-time total */}
+                                <div className="metric-card py-3">
+                                    <div className="metric-val text-xl">{summary.total_workout_days ?? 0}</div>
+                                    <div className="metric-lbl">Total Workout Days</div>
+                                </div>
+                            </div>
+
+                            {/* Nudge when no weight has been logged yet */}
+                            {!summary.has_weight_logs && (
+                                <div className="flex items-start gap-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-2xl px-4 py-3 text-sm">
+                                    <span className="text-blue-500 text-lg mt-0.5">💡</span>
+                                    <div>
+                                        <p className="font-semibold text-blue-800 dark:text-blue-300">Log your weight to track progress</p>
+                                        <p className="text-blue-600 dark:text-blue-400 text-xs mt-0.5">
+                                            {summary.profile_weight
+                                                ? `Your profile weight (${summary.profile_weight} kg) is shown as a baseline. Log your daily weight below to see real trends and changes.`
+                                                : 'Use the form below to log your weight and other health metrics. Your trends will appear here automatically.'}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+                        </>
                     )}
 
                     {/* Charts */}

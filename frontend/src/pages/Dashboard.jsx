@@ -6,6 +6,7 @@ import { RadialBarChart, RadialBar, PieChart, Pie, Cell, Tooltip, ResponsiveCont
 import OnboardingWizard from '../components/OnboardingWizard'
 import BadgeSection from '../components/BadgeSection'
 import CelebrationOverlay from '../components/CelebrationOverlay'
+import { DailyChallengesCard } from '../components/TokenWallet'
 
 const COLORS = ['#2d6a4f', '#40916c', '#f4a261']
 
@@ -13,17 +14,21 @@ export default function Dashboard() {
     const { user } = useAuth()
     const [isWizardOpen, setIsWizardOpen] = useState(false)
 
+    // Calculate local today's date correctly (avoiding UTC timezone offset issues)
+    const d = new Date();
+    const localToday = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+
     const { data: profileData, isLoading: loadingProfile } = useQuery({
-        queryKey: ['profile'],
-        queryFn: () => api.get('/profile').then(res => res.data),
+        queryKey: ['profile', localToday],
+        queryFn: () => api.get(`/profile?date=${localToday}`).then(res => res.data),
     })
 
     const profile = profileData?.profile;
     const metrics = profileData?.metrics;
 
     const { data: plan, isLoading: loadingPlan } = useQuery({
-        queryKey: ['mealPlan', 'today'],
-        queryFn: () => api.get('/meal-plan').then(res => res.data).catch(() => null),
+        queryKey: ['mealPlan', localToday],
+        queryFn: () => api.get(`/meal-plan?date=${localToday}`).then(res => res.data).catch(() => null),
     })
 
     const { data: summary, isLoading: loadingSummary } = useQuery({
@@ -110,7 +115,7 @@ export default function Dashboard() {
             </div>
 
             {/* Metrics Row */}
-            <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div className="metric-card">
                     <div className="metric-val text-orange-500 font-bold">🔥 {metrics?.streak ?? 0}</div>
                     <div className="metric-lbl">Day Streak</div>
@@ -135,18 +140,14 @@ export default function Dashboard() {
                     <div className="metric-lbl">Remaining</div>
                     <span className="text-xs text-gray-400">kcal left</span>
                 </div>
-                <div className="metric-card">
-                    <div className="metric-val">{profile?.tdee ? Math.round(profile.tdee) : '—'}</div>
-                    <div className="metric-lbl">TDEE</div>
-                    <span className="text-xs text-gray-400">kcal/day</span>
-                </div>
+
             </div>
 
             {!profile?.bmi && (
                 <div className="card border-dashed border-2 border-[#40916c]/30 bg-green-50/50 flex flex-col items-center py-8 gap-3">
                     <span className="text-4xl">🧬</span>
                     <p className="font-semibold text-gray-700">Complete Your Health Profile</p>
-                    <p className="text-sm text-gray-500 text-center">Add your metrics to get your BMI, TDEE, and personalized meal plan</p>
+                    <p className="text-sm text-gray-500 text-center">Add your metrics to get your BMI, calorie target, and personalized meal plan</p>
                     <button onClick={() => setIsWizardOpen(true)} className="btn-primary btn-sm">Start Onboarding Wizard →</button>
                 </div>
             )}
@@ -248,6 +249,9 @@ export default function Dashboard() {
 
             {/* Achievements */}
             <BadgeSection badges={badges} />
+
+            {/* Daily Challenges */}
+            <DailyChallengesCard />
 
             <CelebrationOverlay
                 newBadges={celebratingBadges}

@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { TokenWalletSidebar } from './TokenWallet'
 import { X } from 'lucide-react'
 
 const navItems = [
@@ -63,6 +64,11 @@ export default function Sidebar({ isOpen, onClose }) {
                     </NavLink>
                 ))}
             </nav>
+
+            {/* HealthCoin Wallet */}
+            <div className="px-3 pb-2">
+                <TokenWalletSidebar />
+            </div>
 
             {/* User info */}
             <div className="px-4 py-4 border-t border-gray-100 dark:border-white/10">

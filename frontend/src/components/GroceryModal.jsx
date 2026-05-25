@@ -9,7 +9,10 @@ export default function GroceryModal({ isOpen, onClose }) {
 
     const { data, isLoading } = useQuery({
         queryKey: ['groceryList'],
-        queryFn: () => api.get('/grocery-list').then(res => res.data),
+        queryFn: () => {
+            const localToday = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+            return api.get(`/grocery-list?date=${localToday}`).then(res => res.data);
+        },
         enabled: isOpen,
     })
 

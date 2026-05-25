@@ -21,7 +21,7 @@ export default function AppLayout() {
             
             <div className="flex-1 flex flex-col ml-0 lg:ml-64 min-w-0">
                 <Navbar onMenuClick={() => setIsSidebarOpen(true)} />
-                <main className="flex-1 p-4 sm:p-6 pt-28 max-w-7xl mx-auto w-full">
+                <main className="flex-1 px-4 sm:px-6 pt-28 pb-4 sm:pb-6 max-w-7xl mx-auto w-full">
                     <Outlet />
                 </main>
             </div>

@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
-import { Menu } from 'lucide-react'
+import { Menu, Crown, Zap } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function Navbar({ onMenuClick }) {
@@ -21,40 +21,45 @@ export default function Navbar({ onMenuClick }) {
                 {/* Hamburger Menu Toggle */}
                 <button 
                     onClick={onMenuClick}
-                    className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 lg:hidden transition-colors flex-shrink-0"
+                    className="p-2.5 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 lg:hidden transition-all shadow-sm flex-shrink-0 hover:scale-105 active:scale-95"
                     title="Open Menu"
                 >
-                    <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
+                    <Menu className="w-5 h-5 sm:w-5 sm:h-5" />
                 </button>
                 
-                <h1 className="text-sm sm:text-lg font-bold text-gray-900 dark:text-white truncate">
+                <h1 className="text-sm sm:text-lg font-bold text-gray-900 dark:text-white truncate pl-1">
                     Good {getGreeting()}, <span className="text-[#2d6a4f] dark:text-green-400">{user?.name?.split(' ')[0]}</span> 👋
                 </h1>
             </div>
-            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
                 <button 
                     onClick={toggleTheme}
-                    className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300 transition-colors text-sm sm:text-base"
+                    className="p-2.5 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300 transition-colors text-sm sm:text-base border border-transparent hover:border-gray-200 dark:hover:border-white/10"
                     title="Toggle Theme"
                 >
                     {isDarkMode ? '☀️' : '🌙'}
                 </button>
+
                 {user?.plan_type === 'premium' ? (
-                    <span className="flex items-center gap-1 px-2.5 py-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[9px] sm:text-[10px] font-bold rounded-full shadow-sm">
-                        👑 <span className="hidden xs:inline">PREMIUM</span>
+                    <span className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-br from-amber-400 to-orange-500 text-white text-[10px] sm:text-xs font-black rounded-xl shadow-lg shadow-amber-500/20 uppercase tracking-widest border border-amber-300/50">
+                        <Crown className="w-3.5 h-3.5" /> 
+                        <span className="hidden xs:inline drop-shadow-md">PREMIUM</span>
                     </span>
                 ) : (
                     <button
                         onClick={() => navigate('/subscription')}
-                        className="text-[9px] sm:text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full border border-amber-200 dark:border-amber-900/30 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
+                        className="group flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-br from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white text-[10px] sm:text-xs font-black rounded-xl shadow-lg shadow-amber-500/20 uppercase tracking-widest border border-amber-300/50 transition-all hover:scale-105 active:scale-95"
                     >
-                        ⚡ <span className="hidden xs:inline">GO </span>PRO
+                        <Zap className="w-3.5 h-3.5 fill-white" /> 
+                        <span className="hidden xs:inline drop-shadow-md">GO PRO</span>
                     </button>
                 )}
-                <span className="badge badge-green text-[9px] sm:text-xs capitalize hidden sm:inline-flex">{user?.role}</span>
+                
+                <span className="badge badge-green text-[10px] sm:text-xs capitalize font-bold hidden sm:inline-flex px-3 py-1.5">{user?.role}</span>
+                
                 <button
                     onClick={handleLogout}
-                    className="btn-secondary btn-sm text-[10px] sm:text-xs py-1 px-2 sm:py-1.5 sm:px-4"
+                    className="btn-secondary text-[11px] sm:text-xs py-1.5 px-3 sm:py-1.5 sm:px-4 ml-1"
                 >
                     Logout
                 </button>

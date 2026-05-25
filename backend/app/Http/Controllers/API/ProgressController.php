@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\ProgressLog;
+use App\Services\TokenService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -26,18 +27,46 @@ class ProgressController extends Controller
         ]);
 
         $date = $validated['date'] ?? Carbon::today()->toDateString();
+        $user = $request->user();
 
         $log = ProgressLog::updateOrCreate(
-            ['user_id' => $request->user()->id, 'date' => $date],
+            ['user_id' => $user->id, 'date' => $date],
             array_merge($validated, ['date' => $date])
         );
 
-        $newBadges = app(\App\Services\AchievementService::class)->checkAchievements($request->user());
+        // ── Award HealthCoins ──────────────────────────────────────────────────
+        $tokens = app(TokenService::class);
+
+        // +10 for logging progress today
+        $tokens->award($user, 'progress_logged', null, ['date' => $date]);
+
+        // +15 if workout done
+        if (!empty($validated['workout_done'])) {
+            $tokens->award($user, 'workout_logged', null, ['date' => $date]);
+        }
+
+        // +10 if calories consumed within 10% of target
+        $caloriesConsumed = $validated['calories_consumed'] ?? null;
+        $caloriesTarget   = $user->profile?->calories_target;
+        if ($caloriesConsumed && $caloriesTarget && $caloriesTarget > 0) {
+            $pct = abs($caloriesConsumed - $caloriesTarget) / $caloriesTarget;
+            if ($pct <= 0.10) {
+                $tokens->award($user, 'calorie_hit', null, [
+                    'date'             => $date,
+                    'consumed'         => $caloriesConsumed,
+                    'target'           => $caloriesTarget,
+                ]);
+            }
+        }
+        // ─────────────────────────────────────────────────────────────────────
+
+        $newBadges = app(\App\Services\AchievementService::class)->checkAchievements($user);
 
         return response()->json([
-            'message'    => 'Progress logged successfully',
-            'log'        => $log,
-            'new_badges' => $newBadges,
+            'message'       => 'Progress logged successfully',
+            'log'           => $log,
+            'new_badges'    => $newBadges,
+            'token_balance' => $tokens->getBalance($user),
         ], 201);
     }
 
@@ -51,7 +80,7 @@ class ProgressController extends Controller
             ->orderBy('date', 'asc');
 
         $columns = ['date', 'weight', 'calories_consumed', 'water_intake_liters', 'steps', 'sleep_hours', 'workout_done'];
-        
+
         if ($user->isPremium()) {
             $columns = array_merge($columns, ['protein', 'carbs', 'fat']);
         }
@@ -59,16 +88,34 @@ class ProgressController extends Controller
         $logs = $logsQuery->get($columns);
 
         // Calculate summary stats
-        $weights    = $logs->whereNotNull('weight')->pluck('weight');
-        $calories   = $logs->whereNotNull('calories_consumed')->pluck('calories_consumed');
+        $weights  = $logs->whereNotNull('weight')->pluck('weight');
+        $calories = $logs->whereNotNull('calories_consumed')->pluck('calories_consumed');
+
+        // Fall back to health profile weight if no weight logs exist yet
+        $profile       = $user->profile;
+        $profileWeight = $profile?->weight_kg ? (float) $profile->weight_kg : null;
+
+        $weightStart  = $weights->first()  ?? $profileWeight;
+        $weightLatest = $weights->last()   ?? $profileWeight;
+        $weightChange = $weights->count() >= 2
+            ? round($weights->last() - $weights->first(), 2)
+            : null;
+
+        // All-time workout day count (more useful than just 30-day window)
+        $totalWorkoutDays = ProgressLog::where('user_id', $user->id)
+            ->where('workout_done', true)
+            ->count();
 
         $summary = [
-            'weight_start'  => $weights->first(),
-            'weight_latest' => $weights->last(),
-            'weight_change' => $weights->count() >= 2 ? round($weights->last() - $weights->first(), 2) : null,
-            'avg_calories'  => $calories->count() > 0 ? round($calories->avg(), 1) : null,
-            'avg_steps'     => round($logs->whereNotNull('steps')->avg('steps') ?? 0),
-            'workout_days'  => $logs->where('workout_done', true)->count(),
+            'weight_start'        => $weightStart,
+            'weight_latest'       => $weightLatest,
+            'weight_change'       => $weightChange,
+            'avg_calories'        => $calories->count() > 0 ? round($calories->avg(), 1) : null,
+            'avg_steps'           => round($logs->whereNotNull('steps')->avg('steps') ?? 0),
+            'workout_days'        => $logs->where('workout_done', true)->count(),   // last N days
+            'total_workout_days'  => $totalWorkoutDays,                             // all-time
+            'has_weight_logs'     => $weights->count() > 0,                        // so frontend knows if it's a profile fallback
+            'profile_weight'      => $profileWeight,
         ];
 
         return response()->json([

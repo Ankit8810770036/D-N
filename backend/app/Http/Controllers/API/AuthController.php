@@ -79,7 +79,15 @@ class AuthController extends Controller
 
     public function me(Request $request)
     {
-        return response()->json($request->user()->load('profile'));
+        $user    = $request->user()->load('profile');
+        $tokens  = app(\App\Services\TokenService::class);
+
+        // Award daily login coins (idempotent — won't double-award on same IST day)
+        $tokens->award($user, 'daily_login');
+
+        return response()->json(array_merge($user->toArray(), [
+            'token_balance' => $tokens->getBalance($user),
+        ]));
     }
 
     public function updatePhoto(Request $request)

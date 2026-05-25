@@ -31,16 +31,20 @@ class SubscriptionController extends Controller
             return response()->json(['message' => 'You are already a Premium member.'], 422);
         }
 
-        // Amount in paise (₹499 = 49900 paise)
-        $amountInPaise = 49900;
+        $request->validate([
+            'final_paise' => 'sometimes|integer|min:2500', // minimum ₹25
+        ]);
+
+        // If a discounted amount is passed from /tokens/redeem, use it; else full price
+        $amountInPaise = $request->input('final_paise', 49900);
 
         try {
             $response = Http::withBasicAuth($this->keyId, $this->keySecret)
                 ->post("{$this->baseUrl}/orders", [
-                    'amount'          => $amountInPaise,
-                    'currency'        => 'INR',
-                    'receipt'         => 'receipt_user_' . $user->id . '_' . time(),
-                    'notes'           => [
+                    'amount'   => $amountInPaise,
+                    'currency' => 'INR',
+                    'receipt'  => 'receipt_user_' . $user->id . '_' . time(),
+                    'notes'    => [
                         'user_id'    => $user->id,
                         'user_email' => $user->email,
                         'plan'       => 'premium',
@@ -55,12 +59,12 @@ class SubscriptionController extends Controller
             $order = $response->json();
 
             return response()->json([
-                'order_id'  => $order['id'],
-                'amount'    => $order['amount'],
-                'currency'  => $order['currency'],
-                'key_id'    => $this->keyId,
-                'user_name' => $user->name,
-                'user_email'=> $user->email,
+                'order_id'   => $order['id'],
+                'amount'     => $order['amount'],
+                'currency'   => $order['currency'],
+                'key_id'     => $this->keyId,
+                'user_name'  => $user->name,
+                'user_email' => $user->email,
             ]);
 
         } catch (\Exception $e) {

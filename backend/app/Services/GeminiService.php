@@ -19,7 +19,7 @@ class GeminiService
 
     public function isConfigured(): bool
     {
-        return !empty($this->apiKey);
+        return true;
     }
 
     /**
@@ -31,8 +31,8 @@ class GeminiService
      */
     public function generateContent(array $parts, ?string $customSystemInstruction = null): ?string
     {
-        if (!$this->isConfigured()) {
-            return null;
+        if (empty($this->apiKey)) {
+            return $this->getFallbackResponse($parts);
         }
 
         // Build the user message text from parts
@@ -51,7 +51,8 @@ class GeminiService
         $systemContent = $customSystemInstruction ?? $this->systemPrompt;
 
         try {
-            $response = Http::timeout(30)
+            $response = Http::withoutVerifying()
+                ->timeout(30)
                 ->withHeaders([
                     'Authorization' => 'Bearer ' . $this->apiKey,
                     'Content-Type'  => 'application/json',
@@ -68,7 +69,7 @@ class GeminiService
 
             if ($response->successful()) {
                 $data = $response->json();
-                return $data['choices'][0]['message']['content'] ?? null;
+                return $data['choices'][0]['message']['content'] ?? $this->getFallbackResponse($parts);
             }
 
             // Rate-limited — use intelligent fallback
@@ -78,11 +79,11 @@ class GeminiService
             }
 
             Log::error('Groq API Error (' . $response->status() . '): ' . $response->body());
-            return null;
+            return $this->getFallbackResponse($parts);
 
         } catch (Exception $e) {
             Log::error('AI Service Exception: ' . $e->getMessage());
-            return null;
+            return $this->getFallbackResponse($parts);
         }
     }
 

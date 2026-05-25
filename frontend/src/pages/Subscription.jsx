@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import {
     Check, X, Crown, Zap, Shield, Star, Sparkles,
     CreditCard, AlertTriangle, ChevronDown, ChevronUp,
-    Infinity, Brain, BarChart3, Flame, Lock
+    Infinity, Brain, BarChart3, Flame, Lock, Coins
 } from 'lucide-react';
 
 // ─── Load Razorpay script dynamically ───────────────────────────────────────
@@ -80,83 +80,168 @@ function CancelModal({ onConfirm, onClose, isLoading }) {
     );
 }
 
-// ─── Payment Confirmation Modal ───────────────────────────────────────────────
-function PaymentModal({ user, onPay, onClose, isLoading }) {
+// ─── Payment / Coin Redemption Modal ─────────────────────────────────────────
+function PaymentModal({ user, tokenBalance, onPay, onRedeemFree, onRedeemDiscount, onClose, isLoading }) {
+    const [tab, setTab]               = useState('pay');   // 'pay' | 'coins'
+    const [discountCoins, setDiscountCoins] = useState(200); // 200 or 400
+    const discountINR  = discountCoins === 200 ? 100 : 250;
+    const finalINR     = 499 - discountINR;
+    const canFree      = tokenBalance >= 500;
+    const canDiscount  = tokenBalance >= discountCoins;
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backdropFilter: 'blur(12px)', backgroundColor: 'rgba(0,0,0,0.7)' }}>
             <div className="bg-white dark:bg-gray-800 border border-transparent dark:border-gray-700 rounded-3xl shadow-2xl max-w-md w-full overflow-y-auto max-h-[90vh] animate-scaleIn">
                 {/* Header */}
-                <div className="bg-gradient-to-br from-amber-500 to-orange-600 p-8 text-white text-center">
-                    <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-4">
-                        <Crown className="w-8 h-8 text-white" />
+                <div className="bg-gradient-to-br from-amber-500 to-orange-600 p-6 text-white text-center">
+                    <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-3">
+                        <Crown className="w-7 h-7 text-white" />
                     </div>
-                    <h3 className="text-2xl font-bold">Upgrade to Premium</h3>
-                    <p className="text-white/80 mt-1">Unlock your full health potential</p>
+                    <h3 className="text-xl font-bold">Upgrade to Premium</h3>
+                    <p className="text-white/80 text-sm mt-1">Unlock your full health potential</p>
+                    {/* Coin balance badge */}
+                    <div className="mt-3 inline-flex items-center gap-1.5 bg-white/15 px-3 py-1.5 rounded-full text-sm font-bold">
+                        🪙 {tokenBalance.toLocaleString()} HealthCoins
+                    </div>
                 </div>
 
-                {/* Body */}
-                <div className="p-8">
-                    {/* Price breakdown */}
-                    <div className="bg-amber-50 dark:bg-amber-500/10 rounded-2xl p-5 mb-6 border border-amber-100 dark:border-amber-500/20">
-                        <div className="flex justify-between items-center mb-3">
-                            <span className="text-gray-600 dark:text-gray-400">Premium Plan (1 month)</span>
-                            <span className="font-bold text-gray-900 dark:text-white">₹499</span>
-                        </div>
-                        <div className="flex justify-between items-center mb-3">
-                            <span className="text-gray-600 dark:text-gray-400">GST (18%)</span>
-                            <span className="font-bold text-gray-900 dark:text-white">₹89.82</span>
-                        </div>
-                        <div className="border-t border-amber-200 dark:border-amber-500/30 pt-3 flex justify-between items-center">
-                            <span className="font-bold text-gray-900 dark:text-white">Total</span>
-                            <span className="text-2xl font-extrabold text-amber-600 dark:text-amber-400">₹499</span>
-                        </div>
-                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">* GST included in the listed price</p>
-                    </div>
+                {/* Tabs */}
+                <div className="flex border-b border-gray-100 dark:border-gray-700">
+                    <button
+                        onClick={() => setTab('pay')}
+                        className={`flex-1 py-3 text-sm font-semibold flex items-center justify-center gap-1.5 transition-colors ${
+                            tab === 'pay'
+                                ? 'border-b-2 border-amber-500 text-amber-600 dark:text-amber-400'
+                                : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+                        }`}
+                    >
+                        <CreditCard className="w-4 h-4" /> Pay with Money
+                    </button>
+                    <button
+                        onClick={() => setTab('coins')}
+                        className={`flex-1 py-3 text-sm font-semibold flex items-center justify-center gap-1.5 transition-colors ${
+                            tab === 'coins'
+                                ? 'border-b-2 border-amber-500 text-amber-600 dark:text-amber-400'
+                                : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+                        }`}
+                    >
+                        🪙 Use HealthCoins
+                    </button>
+                </div>
 
-                    {/* What you get */}
-                    <ul className="space-y-2 mb-6">
-                        {['Unlimited AI Chat Bot', 'Advanced Macro Tracking', 'Keto & Paleo Plans', 'Priority Support', 'Ad-free Experience'].map(f => (
-                            <li key={f} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                                <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
-                                {f}
-                            </li>
-                        ))}
-                    </ul>
+                <div className="p-6">
+                    {/* ── Pay tab ── */}
+                    {tab === 'pay' && (
+                        <>
+                            <div className="bg-amber-50 dark:bg-amber-500/10 rounded-2xl p-4 mb-5 border border-amber-100 dark:border-amber-500/20">
+                                <div className="flex justify-between text-sm mb-2">
+                                    <span className="text-gray-500 dark:text-gray-400">Premium Plan (1 month)</span>
+                                    <span className="font-bold text-gray-900 dark:text-white">₹499</span>
+                                </div>
+                                <div className="border-t border-amber-200 dark:border-amber-500/30 pt-2 flex justify-between">
+                                    <span className="font-bold text-gray-900 dark:text-white">Total</span>
+                                    <span className="text-xl font-extrabold text-amber-600 dark:text-amber-400">₹499</span>
+                                </div>
+                                <p className="text-xs text-gray-400 mt-1">* GST included in listed price</p>
+                            </div>
+                            <ul className="space-y-1.5 mb-5">
+                                {['Unlimited AI Chat Bot', 'Advanced Macro Tracking', 'Keto & Paleo Plans', 'Priority Support', 'Ad-free Experience'].map(f => (
+                                    <li key={f} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                        <Check className="w-4 h-4 text-green-500 flex-shrink-0" /> {f}
+                                    </li>
+                                ))}
+                            </ul>
+                            <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500 mb-5">
+                                <Shield className="w-4 h-4" />
+                                <span>Secured by Razorpay · PCI-DSS Level 1 certified</span>
+                            </div>
+                            <div className="flex gap-3">
+                                <button onClick={onClose} disabled={isLoading}
+                                    className="flex-1 py-3 rounded-2xl border-2 border-gray-200 dark:border-gray-700 font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all disabled:opacity-50">
+                                    Cancel
+                                </button>
+                                <button id="pay-now-btn" onClick={onPay} disabled={isLoading}
+                                    className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/30 disabled:opacity-60 flex items-center justify-center gap-2">
+                                    {isLoading ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Processing…</> : <><CreditCard className="w-4 h-4" />Pay ₹499</>}
+                                </button>
+                            </div>
+                        </>
+                    )}
 
-                    {/* Security note */}
-                    <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500 mb-6">
-                        <Shield className="w-4 h-4" />
-                        <span>Secured by Razorpay · PCI-DSS Level 1 certified</span>
-                    </div>
+                    {/* ── Coins tab ── */}
+                    {tab === 'coins' && (
+                        <>
+                            {/* Option A: Full free month */}
+                            <div className={`rounded-2xl border-2 p-4 mb-4 transition-all ${
+                                canFree ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 dark:border-emerald-600' : 'border-gray-200 dark:border-gray-700 opacity-60'
+                            }`}>
+                                <div className="flex items-center justify-between mb-1">
+                                    <span className="font-bold text-gray-900 dark:text-white">🎁 Free 1-Month Premium</span>
+                                    <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">500 🪙</span>
+                                </div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Spend 500 coins — no payment required!</p>
+                                <button
+                                    id="redeem-free-btn"
+                                    onClick={onRedeemFree}
+                                    disabled={!canFree || isLoading}
+                                    className="w-full py-2.5 rounded-xl font-bold text-sm bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                                >
+                                    {isLoading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : '🎁'}
+                                    {canFree ? 'Redeem for Free' : `Need ${500 - tokenBalance} more coins`}
+                                </button>
+                            </div>
 
-                    {/* Buttons */}
-                    <div className="flex gap-3">
-                        <button
-                            onClick={onClose}
-                            disabled={isLoading}
-                            className="flex-1 py-3 rounded-2xl border-2 border-gray-200 dark:border-gray-700 font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all disabled:opacity-50"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            id="pay-now-btn"
-                            onClick={onPay}
-                            disabled={isLoading}
-                            className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/30 disabled:opacity-60 flex items-center justify-center gap-2"
-                        >
-                            {isLoading ? (
-                                <>
-                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                    Processing…
-                                </>
-                            ) : (
-                                <>
-                                    <CreditCard className="w-4 h-4" />
-                                    Pay ₹499
-                                </>
-                            )}
-                        </button>
-                    </div>
+                            {/* Option B: Discount */}
+                            <div className={`rounded-2xl border-2 p-4 mb-4 transition-all ${
+                                canDiscount ? 'border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-600' : 'border-gray-200 dark:border-gray-700'
+                            }`}>
+                                <div className="flex items-center justify-between mb-1">
+                                    <span className="font-bold text-gray-900 dark:text-white">💰 Apply Coin Discount</span>
+                                </div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Spend coins to get a discount, then pay the rest.</p>
+
+                                {/* Discount tier selector */}
+                                <div className="flex gap-2 mb-3">
+                                    {[{ coins: 200, save: 100 }, { coins: 400, save: 250 }].map(tier => (
+                                        <button
+                                            key={tier.coins}
+                                            onClick={() => setDiscountCoins(tier.coins)}
+                                            disabled={tokenBalance < tier.coins}
+                                            className={`flex-1 py-2 rounded-xl text-xs font-bold border-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                                                discountCoins === tier.coins
+                                                    ? 'border-amber-500 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300'
+                                                    : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-amber-300'
+                                            }`}
+                                        >
+                                            {tier.coins} 🪙<br />
+                                            <span className="text-emerald-600 dark:text-emerald-400">Save ₹{tier.save}</span>
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div className="flex justify-between text-sm mb-3">
+                                    <span className="text-gray-500 dark:text-gray-400">Pay after discount</span>
+                                    <span className="text-xl font-extrabold text-amber-600 dark:text-amber-400">₹{finalINR}</span>
+                                </div>
+
+                                <button
+                                    id="redeem-discount-btn"
+                                    onClick={() => onRedeemDiscount(discountCoins, finalINR * 100)}
+                                    disabled={!canDiscount || isLoading}
+                                    className="w-full py-2.5 rounded-xl font-bold text-sm bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:from-amber-600 hover:to-orange-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                                >
+                                    {isLoading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : '🪙'}
+                                    {canDiscount ? `Apply ${discountCoins} Coins & Pay ₹${finalINR}` : `Need ${discountCoins - tokenBalance} more coins`}
+                                </button>
+                            </div>
+
+                            <p className="text-xs text-center text-gray-400">Coins are deducted immediately. Discount is applied to your next payment.</p>
+
+                            <button onClick={onClose} className="w-full mt-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
+                                Cancel
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
         </div>
@@ -192,9 +277,17 @@ const Subscription = () => {
     const queryClient = useQueryClient();
     const isPremium = user?.plan_type === 'premium';
 
-    const [showPayModal, setShowPayModal]     = useState(false);
+    const [showPayModal, setShowPayModal]       = useState(false);
     const [showCancelModal, setShowCancelModal] = useState(false);
-    const [payLoading, setPayLoading]         = useState(false);
+    const [payLoading, setPayLoading]           = useState(false);
+
+    // Fetch token balance
+    const { data: tokenData } = useQuery({
+        queryKey: ['tokens'],
+        queryFn: () => api.get('/tokens').then(r => r.data),
+        enabled: !isPremium,
+    });
+    const tokenBalance = tokenData?.balance ?? 0;
 
     // ── Cancel / Downgrade ──────────────────────────────────────────────────
     const downgradeMutation = useMutation({
@@ -306,13 +399,79 @@ const Subscription = () => {
         { text: 'Ad-free Experience',         icon: <Shield className="w-4 h-4" />,       included: true  },
     ];
 
+    // ── Redeem free month with coins ─────────────────────────────────────────
+    const handleRedeemFree = async () => {
+        setPayLoading(true);
+        try {
+            const { data } = await api.post('/tokens/redeem', { type: 'free' });
+            toast.success(data.message, { duration: 5000 });
+            queryClient.invalidateQueries(['auth_user']);
+            queryClient.invalidateQueries(['tokens']);
+            setShowPayModal(false);
+            window.location.reload();
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Redemption failed.');
+        } finally {
+            setPayLoading(false);
+        }
+    };
+
+    // ── Redeem discount then open Razorpay with discounted amount ────────────
+    const handleRedeemDiscount = async (coins, finalPaise) => {
+        setPayLoading(true);
+        try {
+            // Step 1: Spend the coins (idempotent lock-in)
+            const { data: redeemData } = await api.post('/tokens/redeem', { type: 'discount', coins });
+            toast.success(`🪙 ${coins} coins applied! Opening payment…`);
+            queryClient.invalidateQueries(['tokens']);
+
+            // Step 2: Load Razorpay SDK
+            const sdkLoaded = await loadRazorpayScript();
+            if (!sdkLoaded) { toast.error('Could not load payment gateway.'); setPayLoading(false); return; }
+
+            // Step 3: Create discounted order
+            const { data: orderData } = await api.post('/payment/create-order', { final_paise: finalPaise });
+
+            // Step 4: Open Razorpay
+            const options = {
+                key:         orderData.key_id,
+                amount:      orderData.amount,
+                currency:    orderData.currency,
+                name:        'Diet & Nutrition Planner',
+                description: `Premium Plan — HealthCoin Discount (${coins} coins)`,
+                order_id:    orderData.order_id,
+                prefill:     { name: orderData.user_name, email: orderData.user_email },
+                theme:       { color: '#f59e0b' },
+                modal:       { ondismiss: () => setPayLoading(false) },
+                handler: async (response) => {
+                    await verifyMutation.mutateAsync({
+                        razorpay_order_id:   response.razorpay_order_id,
+                        razorpay_payment_id: response.razorpay_payment_id,
+                        razorpay_signature:  response.razorpay_signature,
+                    });
+                    setPayLoading(false);
+                },
+            };
+            const rzp = new window.Razorpay(options);
+            rzp.on('payment.failed', (resp) => { toast.error(`Payment failed: ${resp.error.description}`); setPayLoading(false); });
+            rzp.open();
+            setShowPayModal(false);
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Could not apply discount.');
+            setPayLoading(false);
+        }
+    };
+
     return (
         <>
             {/* ── Modals ── */}
             {showPayModal && (
                 <PaymentModal
                     user={user}
+                    tokenBalance={tokenBalance}
                     onPay={handlePay}
+                    onRedeemFree={handleRedeemFree}
+                    onRedeemDiscount={handleRedeemDiscount}
                     onClose={() => setShowPayModal(false)}
                     isLoading={payLoading || verifyMutation.isPending}
                 />

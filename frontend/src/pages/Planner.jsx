@@ -1,17 +1,22 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import toast from 'react-hot-toast'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import BarcodeScanner from '../components/BarcodeScanner'
-import { Scan } from 'lucide-react'
+import { Scan, Lock } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 
 const mealIcons = { breakfast: '🌅', lunch: '☀️', snack: '🫐', dinner: '🌙' }
 const mealLabels = { breakfast: 'Breakfast', lunch: 'Lunch', snack: 'Snack', dinner: 'Dinner' }
 
 export default function Planner() {
     const queryClient = useQueryClient()
+    const navigate = useNavigate()
+    const { user, isAdmin } = useAuth()
+    const isPremium = user?.plan_type === 'premium' || isAdmin
     const [loading, setLoading] = useState(false)
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+    const [date, setDate] = useState(new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0])
     const [isScannerOpen, setIsScannerOpen] = useState(false)
     const [showCustomFoodModal, setShowCustomFoodModal] = useState(false)
     const [customFoodForm, setCustomFoodForm] = useState({
@@ -56,7 +61,7 @@ export default function Planner() {
             queryClient.invalidateQueries({ queryKey: ['mealPlan'] });
             queryClient.invalidateQueries({ queryKey: ['summary'] });
             queryClient.invalidateQueries({ queryKey: ['profile'] });
-            const label = res.data.date === new Date().toISOString().split('T')[0] ? 'today' : res.data.date;
+            const label = res.data.date === new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0] ? 'today' : res.data.date;
             toast.success(`${res.data.message} — ${res.data.calories_consumed} kcal consumed on ${label}`, { duration: 2500 });
         } catch (err) {
             toast.error(err.response?.data?.message || 'Failed to update.');
@@ -65,6 +70,13 @@ export default function Planner() {
 
     async function handleAddCustomFood(e) {
         e.preventDefault()
+        // Guard on the frontend too — saves a round-trip for free users
+        if (!isPremium) {
+            toast.error('Upgrade to Premium to add custom foods! ⭐', { duration: 4000 })
+            setShowCustomFoodModal(false)
+            navigate('/subscription')
+            return
+        }
         setLoading(true)
         try {
             await api.post('/foods', customFoodForm)
@@ -74,9 +86,14 @@ export default function Planner() {
                 name: '', calories: '', protein: '', carbs: '', fat: '',
                 is_veg: true, is_vegan: false, is_jain: false
             })
-            // Optionally refetch something? Global foods list might be cached somewhere
         } catch (err) {
-            toast.error(err.response?.data?.message || 'Failed to add food.')
+            if (err.response?.status === 403 && err.response?.data?.premium_required) {
+                toast.error('This feature requires a Premium subscription. Upgrade now! ⭐', { duration: 4000 })
+                setShowCustomFoodModal(false)
+                navigate('/subscription')
+            } else {
+                toast.error(err.response?.data?.message || err.response?.data?.error || 'Failed to add food.')
+            }
         } finally {
             setLoading(false)
         }
@@ -107,6 +124,7 @@ export default function Planner() {
                 <div className="flex flex-wrap items-center gap-2">
                     <button onClick={() => setShowCustomFoodModal(true)} className="px-4 py-2 bg-orange-50 border border-orange-200 text-orange-600 rounded-xl font-bold text-sm hover:bg-orange-100 transition-all flex items-center gap-2">
                         🍎 Add Custom Food
+                        {!isPremium && <Lock className="w-3.5 h-3.5 text-orange-400" title="Premium feature" />}
                     </button>
                     <button onClick={() => setIsScannerOpen(true)} className="px-4 py-2 bg-emerald-50 border border-emerald-200 text-emerald-600 rounded-xl font-bold text-sm hover:bg-emerald-100 transition-all flex items-center gap-2">
                         <Scan className="w-4 h-4" /> Scan Barcode
@@ -248,6 +266,15 @@ export default function Planner() {
                             <button onClick={() => setShowCustomFoodModal(false)} className="text-gray-400 hover:text-gray-700 font-bold p-2 text-xl">&times;</button>
                         </div>
                         <form onSubmit={handleAddCustomFood}>
+                            {!isPremium && (
+                                <div className="mx-6 mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2 text-sm">
+                                    <span className="text-amber-500 mt-0.5">⭐</span>
+                                    <div>
+                                        <p className="font-semibold text-amber-800">Premium Feature</p>
+                                        <p className="text-amber-700 text-xs mt-0.5">Adding custom foods requires a Premium plan. <button type="button" onClick={() => { setShowCustomFoodModal(false); navigate('/subscription') }} className="underline font-bold hover:text-amber-900">Upgrade now →</button></p>
+                                    </div>
+                                </div>
+                            )}
                             <div className="p-6 space-y-4">
                                 <div>
                                     <label className="input-label">Food Name</label>

@@ -8,6 +8,7 @@ use App\Models\MealItem;
 use App\Models\MealPlan;
 use App\Models\ProgressLog;
 use App\Services\HealthCalculatorService;
+use App\Services\TokenService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -218,60 +219,78 @@ class DietPlannerController extends Controller
 
     public function getGroceryList(Request $request)
     {
-        $user = $request->user();
+        $user  = $request->user();
+        $todayStr = $request->input('date', Carbon::today()->toDateString());
         
+        $today = Carbon::parse($todayStr)->toDateString();
+        $end   = Carbon::parse($todayStr)->addDays(7)->toDateString();
+
+        // Only upcoming plans (today onward), strictly for this user
         $plans = MealPlan::where('user_id', $user->id)
-            ->whereBetween('date', [now()->toDateString(), now()->addDays(7)->toDateString()])
+            ->whereBetween('date', [$today, $end])
+            ->orderBy('date')
             ->with(['mealItems.food', 'mealItems.recipe.ingredients.food'])
             ->get();
 
-        $groceries = [];
+        $groceries   = [];
+        $planDates   = $plans->pluck('date')->map(fn($d) => Carbon::parse($d)->format('M j'))->values()->toArray();
 
         foreach ($plans as $plan) {
             foreach ($plan->mealItems as $item) {
                 if ($item->recipe) {
+                    // Recipe-based items: expand to individual ingredients
                     foreach ($item->recipe->ingredients as $ri) {
                         $foodId = $ri->food_id;
                         if (!isset($groceries[$foodId])) {
                             $groceries[$foodId] = [
-                                'name' => $ri->food->name ?? 'Unknown',
-                                'unit' => $ri->unit,
+                                'name'           => $ri->food->name ?? 'Unknown',
+                                'category'       => $ri->food->category ?? 'other',
+                                'unit'           => $ri->unit,
                                 'total_quantity' => 0,
-                                'is_bought'      => true, 
+                                'is_bought'      => true,
                                 'item_ids'       => [],
                             ];
                         }
                         $groceries[$foodId]['total_quantity'] += (float) $ri->quantity;
-                        $groceries[$foodId]['is_bought'] = $groceries[$foodId]['is_bought'] && $item->is_bought;
-                        $groceries[$foodId]['item_ids'][] = $item->id;
+                        $groceries[$foodId]['is_bought']       = $groceries[$foodId]['is_bought'] && (bool) $item->is_bought;
+                        $groceries[$foodId]['item_ids'][]      = $item->id;
                     }
                 } elseif ($item->food_id) {
-                    if (!isset($groceries[$item->food_id])) {
-                        $groceries[$item->food_id] = [
-                            'name' => $item->food->name ?? 'Unknown',
-                            'unit' => $item->unit,
+                    // Direct food items
+                    $foodId = $item->food_id;
+                    if (!isset($groceries[$foodId])) {
+                        $groceries[$foodId] = [
+                            'name'           => $item->food->name ?? 'Unknown',
+                            'category'       => $item->food->category ?? 'other',
+                            'unit'           => $item->unit,
                             'total_quantity' => 0,
-                            'is_bought'      => true, 
+                            'is_bought'      => true,
                             'item_ids'       => [],
                         ];
                     }
-                    $groceries[$item->food_id]['total_quantity'] += (float) $item->quantity;
-                    $groceries[$item->food_id]['is_bought'] = $groceries[$item->food_id]['is_bought'] && $item->is_bought;
-                    $groceries[$item->food_id]['item_ids'][] = $item->id;
+                    $groceries[$foodId]['total_quantity'] += (float) $item->quantity;
+                    $groceries[$foodId]['is_bought']       = $groceries[$foodId]['is_bought'] && (bool) $item->is_bought;
+                    $groceries[$foodId]['item_ids'][]      = $item->id;
                 }
             }
         }
 
+        // Sort alphabetically by name
         $list = array_values($groceries);
-        usort($list, fn($a, $b) => strcmp($a['name'], $b['name'])); 
-        
+        usort($list, fn($a, $b) => strcmp($a['name'], $b['name']));
+
         foreach ($list as &$val) {
             $val['total_quantity'] = round($val['total_quantity'], 1);
         }
+        unset($val);
 
         return response()->json([
-            'days_found' => $plans->count(),
-            'groceries'  => $list,
+            'days_found'  => $plans->count(),
+            'plan_dates'  => $planDates,      // e.g. ["May 23", "May 24", "May 26"]
+            'date_range'  => $plans->count() > 0
+                ? Carbon::parse($plans->first()->date)->format('M j') . ' – ' . Carbon::parse($plans->last()->date)->format('M j, Y')
+                : null,
+            'groceries'   => $list,
         ]);
     }
 
@@ -379,7 +398,14 @@ class DietPlannerController extends Controller
             'carbs'             => round($totals->carbs ?? 0, 2),
             'fat'               => round($totals->fat ?? 0, 2),
         ]);
-  
+
+        // ── Award +10 coins if ALL meal items for this day are now consumed ──
+        $totalItems    = MealItem::whereHas('mealPlan', fn($q) => $q->where('user_id', $user->id)->where('date', $planDate))->count();
+        $consumedItems = MealItem::whereHas('mealPlan', fn($q) => $q->where('user_id', $user->id)->where('date', $planDate))->where('is_consumed', true)->count();
+        if ($totalItems > 0 && $consumedItems === $totalItems) {
+            app(TokenService::class)->award($user, 'meals_consumed', null, ['date' => $planDate]);
+        }
+        // ───────────────────────────────────────────────────────────────
         return response()->json([
             'is_consumed'       => $mealItem->is_consumed,
             'calories_consumed' => round($totals->calories ?? 0, 2),

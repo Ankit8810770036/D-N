@@ -47,6 +47,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/log-progress',   [ProgressController::class, 'logProgress']);
     Route::get ('/analytics',      [ProgressController::class, 'analytics']);
 
+    // HealthCoins
+    Route::get ('/tokens',              [\App\Http\Controllers\API\TokenController::class, 'balance']);
+    Route::post('/tokens/redeem',       [\App\Http\Controllers\API\TokenController::class, 'redeem']);
+    Route::post('/tokens/daily-login',  [\App\Http\Controllers\API\TokenController::class, 'dailyLogin']);
+
     // Chatbot
     Route::post('/chat',           [\App\Http\Controllers\API\ChatbotController::class, 'ask']);
 

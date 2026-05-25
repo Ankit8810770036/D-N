@@ -2,7 +2,7 @@ import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { Users, Shield, Crown, Mail, Calendar, ArrowLeft, MoreVertical, CheckCircle, Trash2 } from 'lucide-react';
+import { Users, Shield, Crown, Mail, ArrowLeft, MoreVertical } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -30,54 +30,63 @@ const AdminUserList = () => {
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+            <div className="space-y-6 animate-pulse pb-20">
+                <div className="page-header">
+                    <div className="h-8 bg-gray-200 dark:bg-white/10 rounded w-48"></div>
+                    <div className="h-4 bg-gray-100 dark:bg-white/5 rounded w-72 mt-3"></div>
+                </div>
+                <div className="card h-64"></div>
             </div>
         );
     }
 
     return (
-        <div className="p-6 max-w-6xl mx-auto space-y-6 pb-20">
+        <div className="space-y-6 pb-20 animate-fade-in">
+
+            {/* Page Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                    <Link to="/admin" className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
-                        <ArrowLeft className="w-5 h-5 text-gray-500" />
+                    <Link to="/admin" className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl transition-colors">
+                        <ArrowLeft className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                     </Link>
-                    <div>
-                        <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Manage Users</h1>
-                        <p className="text-gray-500 text-sm font-medium">Control roles and subscription levels</p>
+                    <div className="page-header mb-0">
+                        <h1 className="page-title text-3xl">Manage Users</h1>
+                        <p className="page-subtitle text-sm mt-0">Control roles and subscription levels</p>
                     </div>
                 </div>
-                <div className="bg-indigo-50 px-4 py-2 rounded-xl border border-indigo-100 flex items-center gap-2">
-                    <Users className="w-4 h-4 text-indigo-600" />
-                    <span className="font-bold text-indigo-700">{users?.length} Registered</span>
+                <div className="badge badge-green flex items-center gap-2 px-4 py-2">
+                    <Users className="w-4 h-4" />
+                    <span>{users?.length} Registered</span>
                 </div>
             </div>
 
-            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+            {/* Users Table */}
+            <div className="card p-0 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
-                            <tr className="bg-gray-50 border-b border-gray-100">
+                            <tr className="border-b border-gray-100 dark:border-white/10">
                                 <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">User</th>
-                                <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">Status</th>
+                                <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">Role</th>
                                 <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">Plan</th>
                                 <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">Profile</th>
                                 <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-50">
+                        <tbody className="divide-y divide-gray-50 dark:divide-white/5">
                             {users?.map((user) => (
-                                <tr key={user.id} className="hover:bg-indigo-50/30 transition-colors">
+                                <tr key={user.id} className="hover:bg-green-50/40 dark:hover:bg-white/5 transition-colors">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
-                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white shadow-sm ${user.role === 'admin' ? 'bg-indigo-600' : 'bg-blue-500'}`}>
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white shadow-sm ${user.role === 'admin' ? 'bg-gradient-to-br from-[#2d6a4f] to-[#1b4332]' : 'bg-gradient-to-br from-[#40916c] to-[#2d6a4f]'}`}>
                                                 {user.name.charAt(0)}
                                             </div>
                                             <div>
-                                                <p className="font-bold text-gray-800 dark:text-white/90">
+                                                <p className="font-bold text-gray-800 dark:text-white/90 text-sm">
                                                     {user.name}
-                                                    {user.id === currentUser?.id && <span className="ml-2 text-[10px] bg-indigo-50 color-indigo-600 px-1.5 py-0.5 rounded-md border border-indigo-100">YOU</span>}
+                                                    {user.id === currentUser?.id && (
+                                                        <span className="ml-2 text-[10px] bg-green-50 dark:bg-green-900/30 text-[#2d6a4f] dark:text-green-400 px-1.5 py-0.5 rounded-md border border-green-100 dark:border-green-800 font-black uppercase">YOU</span>
+                                                    )}
                                                 </p>
                                                 <div className="flex items-center gap-1.5 text-xs text-gray-400">
                                                     <Mail className="w-3 h-3" />
@@ -88,34 +97,30 @@ const AdminUserList = () => {
                                     </td>
                                     <td className="px-6 py-4">
                                         {user.role === 'admin' ? (
-                                            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-black uppercase">
+                                            <span className="badge badge-green inline-flex items-center gap-1.5">
                                                 <Shield className="w-3 h-3" /> Admin
                                             </span>
                                         ) : (
-                                            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-black uppercase">
-                                                User
-                                            </span>
+                                            <span className="badge badge-blue">User</span>
                                         )}
                                     </td>
                                     <td className="px-6 py-4">
                                         {user.plan_type === 'premium' ? (
-                                            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-black uppercase">
+                                            <span className="badge badge-gold inline-flex items-center gap-1.5">
                                                 <Crown className="w-3 h-3" /> Premium
                                             </span>
                                         ) : (
-                                            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-black uppercase">
-                                                Basic
-                                            </span>
+                                            <span className="badge bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400 border border-gray-100 dark:border-white/10">Basic</span>
                                         )}
                                     </td>
                                     <td className="px-6 py-4">
                                         {user.profile ? (
-                                            <div className="text-xs space-y-1">
-                                                <p className="text-gray-600 font-bold">{user.profile.goal?.replace('_', ' ').toUpperCase()}</p>
+                                            <div className="text-xs space-y-0.5">
+                                                <p className="text-gray-700 dark:text-white/80 font-bold">{user.profile.goal?.replace('_', ' ').toUpperCase()}</p>
                                                 <p className="text-gray-400">{user.profile.calories_target} kcal/day</p>
                                             </div>
                                         ) : (
-                                            <span className="text-xs text-gray-300 italic">No Profile</span>
+                                            <span className="text-xs text-gray-300 dark:text-white/20 italic">No Profile</span>
                                         )}
                                     </td>
                                     <td className="px-6 py-4 text-right">
@@ -125,7 +130,7 @@ const AdminUserList = () => {
                                                     {user.plan_type === 'basic' && (
                                                         <button
                                                             onClick={() => updateMutation.mutate({ userId: user.id, data: { plan_type: 'premium' } })}
-                                                            className="p-2 hover:bg-amber-100 text-amber-600 rounded-lg transition-colors"
+                                                            className="p-2 hover:bg-amber-50 dark:hover:bg-amber-900/20 text-amber-500 rounded-xl transition-colors"
                                                             title="Give Premium"
                                                         >
                                                             <Crown className="w-4 h-4" />
@@ -134,7 +139,7 @@ const AdminUserList = () => {
                                                     {user.role === 'user' ? (
                                                         <button
                                                             onClick={() => updateMutation.mutate({ userId: user.id, data: { role: 'admin' } })}
-                                                            className="p-2 hover:bg-indigo-100 text-indigo-600 rounded-lg transition-colors"
+                                                            className="p-2 hover:bg-green-50 dark:hover:bg-green-900/20 text-[#2d6a4f] dark:text-green-400 rounded-xl transition-colors"
                                                             title="Make Admin"
                                                         >
                                                             <Shield className="w-4 h-4" />
@@ -142,11 +147,11 @@ const AdminUserList = () => {
                                                     ) : (
                                                         <button
                                                             onClick={() => {
-                                                                if (window.confirm('Are you sure you want to remove admin privileges from this user?')) {
+                                                                if (window.confirm('Remove admin privileges from this user?')) {
                                                                     updateMutation.mutate({ userId: user.id, data: { role: 'user' } });
                                                                 }
                                                             }}
-                                                            className="p-2 hover:bg-rose-100 text-rose-600 rounded-lg transition-colors"
+                                                            className="p-2 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-rose-500 rounded-xl transition-colors"
                                                             title="Remove Admin"
                                                         >
                                                             <Shield className="w-4 h-4 fill-current" />
@@ -154,7 +159,7 @@ const AdminUserList = () => {
                                                     )}
                                                 </>
                                             )}
-                                            <button className="p-2 hover:bg-gray-100 text-gray-400 rounded-lg transition-colors">
+                                            <button className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-400 rounded-xl transition-colors">
                                                 <MoreVertical className="w-4 h-4" />
                                             </button>
                                         </div>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
-import { Utensils, Search, Plus, Trash2, Edit3, ArrowLeft, Flame, Scale, Activity } from 'lucide-react';
+import { Utensils, Search, Plus, Trash2, Edit3, ArrowLeft, Flame, Scale } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import AdminFoodModal from '../components/AdminFoodModal';
@@ -47,23 +47,11 @@ const AdminFoodList = () => {
         }
     });
 
-    const handleAdd = () => {
-        setEditingFood(null);
-        setIsModalOpen(true);
-    };
-
-    const handleEdit = (food) => {
-        setEditingFood(food);
-        setIsModalOpen(true);
-    };
-
-    const handleCloseModal = () => {
-        setIsModalOpen(false);
-        setEditingFood(null);
-    };
+    const handleAdd = () => { setEditingFood(null); setIsModalOpen(true); };
+    const handleEdit = (food) => { setEditingFood(food); setIsModalOpen(true); };
+    const handleCloseModal = () => { setIsModalOpen(false); setEditingFood(null); };
 
     const foodItems = Array.isArray(foods) ? foods : (foods?.data || []);
-
     const filteredFoods = foodItems?.filter(food =>
         food.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         food.brand?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -71,22 +59,28 @@ const AdminFoodList = () => {
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+            <div className="space-y-6 animate-pulse pb-20">
+                <div className="page-header">
+                    <div className="h-8 bg-gray-200 dark:bg-white/10 rounded w-48"></div>
+                    <div className="h-4 bg-gray-100 dark:bg-white/5 rounded w-72 mt-3"></div>
+                </div>
+                <div className="card h-64"></div>
             </div>
         );
     }
 
     return (
-        <div className="p-6 max-w-6xl mx-auto space-y-6 pb-20">
+        <div className="space-y-6 pb-20 animate-fade-in">
+
+            {/* Page Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                    <Link to="/admin" className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
-                        <ArrowLeft className="w-5 h-5 text-gray-500" />
+                    <Link to="/admin" className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl transition-colors">
+                        <ArrowLeft className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                     </Link>
-                    <div>
-                        <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Food Database</h1>
-                        <p className="text-gray-500 text-sm font-medium">Manage global nutritional entries</p>
+                    <div className="page-header mb-0">
+                        <h1 className="page-title text-3xl">Food Database</h1>
+                        <p className="page-subtitle text-sm mt-0">Manage global nutritional entries</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -97,23 +91,21 @@ const AdminFoodList = () => {
                             placeholder="Search database..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-10 pr-4 py-2 bg-white border border-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none w-full md:w-64"
+                            className="input-field pl-10 py-2.5 text-sm w-full md:w-60"
                         />
                     </div>
-                    <button
-                        onClick={handleAdd}
-                        className="bg-indigo-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 font-bold text-sm shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all"
-                    >
+                    <button onClick={handleAdd} className="btn-primary py-2.5 px-5 text-sm">
                         <Plus className="w-4 h-4" /> Add Food
                     </button>
                 </div>
             </div>
 
-            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+            {/* Food Table */}
+            <div className="card p-0 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
-                            <tr className="bg-gray-50 border-b border-gray-100">
+                            <tr className="border-b border-gray-100 dark:border-white/10">
                                 <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">Name & Brand</th>
                                 <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">Calories</th>
                                 <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">Macros (P/C/F)</th>
@@ -121,21 +113,21 @@ const AdminFoodList = () => {
                                 <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-50">
+                        <tbody className="divide-y divide-gray-50 dark:divide-white/5">
                             {filteredFoods?.map((food) => (
-                                <tr key={food.id} className="hover:bg-emerald-50/30 transition-colors">
+                                <tr key={food.id} className="hover:bg-green-50/40 dark:hover:bg-white/5 transition-colors">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center">
+                                            <div className="w-10 h-10 bg-green-50 dark:bg-green-900/20 text-[#2d6a4f] dark:text-green-400 rounded-xl flex items-center justify-center shrink-0">
                                                 <Utensils className="w-5 h-5" />
                                             </div>
                                             <div>
-                                                <p className="font-bold text-gray-800 dark:text-white/90">{food.name}</p>
+                                                <p className="font-bold text-gray-800 dark:text-white/90 text-sm">{food.name}</p>
                                                 <p className="text-xs text-gray-400 uppercase tracking-wide">{food.brand || 'Generic'}</p>
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 text-sm font-bold text-gray-700">
+                                    <td className="px-6 py-4 text-sm font-bold text-gray-700 dark:text-white/80">
                                         <div className="flex items-center gap-1.5">
                                             <Flame className="w-3.5 h-3.5 text-orange-500" />
                                             {food.calories} <span className="text-gray-400 font-normal">kcal</span>
@@ -144,7 +136,7 @@ const AdminFoodList = () => {
                                     <td className="px-6 py-4">
                                         <div className="flex gap-3 text-xs">
                                             <div className="flex flex-col items-center">
-                                                <span className="text-blue-600 font-black">{food.protein}g</span>
+                                                <span className="text-[#2d6a4f] dark:text-green-400 font-black">{food.protein}g</span>
                                                 <span className="text-gray-300 font-bold uppercase tracking-tighter">Prot</span>
                                             </div>
                                             <div className="flex flex-col items-center">
@@ -152,12 +144,12 @@ const AdminFoodList = () => {
                                                 <span className="text-gray-300 font-bold uppercase tracking-tighter">Carb</span>
                                             </div>
                                             <div className="flex flex-col items-center">
-                                                <span className="text-red-500 font-black">{food.fat}g</span>
+                                                <span className="text-orange-500 font-black">{food.fat}g</span>
                                                 <span className="text-gray-300 font-bold uppercase tracking-tighter">Fat</span>
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 text-sm text-gray-500">
+                                    <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                                         <div className="flex items-center gap-1.5">
                                             <Scale className="w-3.5 h-3.5" />
                                             {food.serving_size}{food.serving_unit}
@@ -167,15 +159,15 @@ const AdminFoodList = () => {
                                         <div className="flex items-center justify-end gap-2">
                                             <button
                                                 onClick={() => handleEdit(food)}
-                                                className="p-2 hover:bg-indigo-100 text-indigo-600 rounded-lg transition-colors"
+                                                className="p-2 hover:bg-green-50 dark:hover:bg-green-900/20 text-[#2d6a4f] dark:text-green-400 rounded-xl transition-colors"
+                                                title="Edit"
                                             >
                                                 <Edit3 className="w-4 h-4" />
                                             </button>
                                             <button
-                                                onClick={() => {
-                                                    if (window.confirm('Delete this food?')) deleteMutation.mutate(food.id);
-                                                }}
-                                                className="p-2 hover:bg-red-100 text-red-600 rounded-lg transition-colors"
+                                                onClick={() => { if (window.confirm('Delete this food?')) deleteMutation.mutate(food.id); }}
+                                                className="p-2 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-rose-500 rounded-xl transition-colors"
+                                                title="Delete"
                                             >
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
@@ -185,6 +177,13 @@ const AdminFoodList = () => {
                             ))}
                         </tbody>
                     </table>
+
+                    {filteredFoods?.length === 0 && (
+                        <div className="flex flex-col items-center py-16 gap-3 text-gray-400">
+                            <Utensils className="w-10 h-10 opacity-30" />
+                            <p className="text-sm font-medium">No foods found matching "{searchTerm}"</p>
+                        </div>
+                    )}
                 </div>
             </div>
 
