@@ -41,11 +41,15 @@ class AuthController extends Controller
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        // Send email verification link
-        $user->sendEmailVerificationNotification();
+        // Send email verification link safely (does not crash if SMTP is unconfigured)
+        try {
+            $user->sendEmailVerificationNotification();
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Verification email could not be sent: ' . $e->getMessage());
+        }
 
         return response()->json([
-            'message'            => 'Registration successful. Please check your email to verify your account.',
+            'message'            => 'Registration successful.',
             'token'              => $token,
             'user'               => $user,
             'email_verified'     => false,
