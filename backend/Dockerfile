@@ -37,10 +37,11 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
-    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache \
+    && chmod +x /var/www/html/docker-entrypoint.sh
 
 # Expose port (Render sets PORT env, default 80)
 EXPOSE 80
 
-# Start script
-CMD php artisan storage:link && php artisan config:cache && php artisan route:cache && php artisan view:cache && apache2-foreground
+# Start script using entrypoint
+ENTRYPOINT ["/var/www/html/docker-entrypoint.sh"]
