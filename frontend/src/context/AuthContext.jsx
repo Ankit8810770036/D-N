@@ -72,10 +72,11 @@ export function AuthProvider({ children }) {
     }
 
     const isAdmin = user?.role === 'admin'
+    const isPremium = user?.plan_type === 'premium' || isAdmin
     const daysUntilExpiry = user?.days_until_expiry
 
     return (
-        <AuthContext.Provider value={{ user, setUser, loading, login, register, logout, isAdmin, daysUntilExpiry }}>
+        <AuthContext.Provider value={{ user, setUser, loading, login, register, logout, isAdmin, isPremium, daysUntilExpiry }}>
             {children}
         </AuthContext.Provider>
     )

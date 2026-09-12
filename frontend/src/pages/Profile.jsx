@@ -236,10 +236,10 @@ export default function Profile() {
                                                 ${form.food_preference === v
                                                     ? 'border-[#2d6a4f] bg-[#2d6a4f] text-white shadow-md shadow-green-900/20'
                                                     : 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/50 hover:border-[#40916c]/40 dark:hover:border-white/20'}
-                                                ${['keto', 'paleo'].includes(v) && profileData?.user?.plan_type !== 'premium' ? 'opacity-70' : ''}`}
+                                                ${['keto', 'paleo'].includes(v) && profileData?.user?.plan_type !== 'premium' && profileData?.user?.role !== 'admin' ? 'opacity-70' : ''}`}
                                         >
                                             {v}
-                                            {['keto', 'paleo'].includes(v) && profileData?.user?.plan_type !== 'premium' && (
+                                            {['keto', 'paleo'].includes(v) && profileData?.user?.plan_type !== 'premium' && profileData?.user?.role !== 'admin' && (
                                                 <div className="absolute top-0 right-0 p-0.5 bg-amber-500 text-white rounded-bl-lg">
                                                     <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
                                                 </div>

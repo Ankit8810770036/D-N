@@ -49,13 +49,15 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Health Profile
-    Route::get ('/profile',         [HealthProfileController::class, 'show']);
-    Route::put ('/profile/update',  [HealthProfileController::class, 'update']);
+    Route::get ('/profile',             [HealthProfileController::class, 'show']);
+    Route::put ('/profile/update',      [HealthProfileController::class, 'update']);
+    Route::post('/profile/recalibrate', [HealthProfileController::class, 'recalibrate']);
 
     // Diet Planner
     Route::post('/generate-plan',  [DietPlannerController::class, 'generatePlan']);
     Route::get ('/meal-plan',      [DietPlannerController::class, 'getMealPlan']);
     Route::get ('/grocery-list',   [DietPlannerController::class, 'getGroceryList']);
+    Route::get ('/grocery-list/pdf', [ReportController::class, 'downloadGroceryPDF']);
     Route::put ('/grocery-toggle', [DietPlannerController::class, 'toggleGroceryItem']);
     Route::put ('/meal-item/{id}/swap',    [DietPlannerController::class, 'swapMealItem']);
     Route::put ('/meal-item/{id}/consume', [DietPlannerController::class, 'toggleConsumed']);

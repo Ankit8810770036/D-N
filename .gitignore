@@ -21,6 +21,8 @@ backend/storage/framework/sessions/*
 backend/storage/framework/testing/*
 backend/storage/framework/views/*
 backend/storage/logs/*
+backend/bootstrap/cache/*.php
+!backend/bootstrap/cache/.gitignore
 backend/.phpunit.result.cache
 backend/Homestead.json
 backend/Homestead.yaml

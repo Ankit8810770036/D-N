@@ -62,11 +62,51 @@ class ProgressController extends Controller
 
         $newBadges = app(\App\Services\AchievementService::class)->checkAchievements($user);
 
+        // ── Dynamic Calorie Recalibration Check (±2 kg difference) ─────────
+        $recalibration = null;
+        $profile = $user->profile;
+        if (!empty($validated['weight']) && $profile && $profile->weight_kg) {
+            $currentProfileWeight = (float) $profile->weight_kg;
+            $newWeight            = (float) $validated['weight'];
+            $diff                 = round($newWeight - $currentProfileWeight, 2);
+
+            if (abs($diff) >= 2.0) {
+                $calculator = app(\App\Services\HealthCalculatorService::class);
+                $newBmr    = $calculator->calculateBMR($newWeight, (float) $profile->height_cm, (int) $profile->age, $profile->gender);
+                $newTdee   = $calculator->calculateTDEE($newBmr, $profile->activity_level);
+                $newTarget = $calculator->calculateCaloriesTarget($newTdee, $profile->goal);
+
+                $direction = $diff < 0 ? 'lost' : 'gained';
+                $absDiff   = abs($diff);
+                $message   = $diff < 0
+                    ? "Great job! You've lost {$absDiff} kg. Would you like to recalibrate your TDEE and calorie targets for optimal progress?"
+                    : "Notice: Your weight has changed by +{$absDiff} kg. Would you like to recalibrate your TDEE and calorie targets?";
+
+                $recalibration = [
+                    'needed'      => true,
+                    'direction'   => $direction,
+                    'diff_kg'     => $diff,
+                    'abs_diff_kg' => $absDiff,
+                    'old_weight'  => $currentProfileWeight,
+                    'new_weight'  => $newWeight,
+                    'old_bmr'     => (float) $profile->bmr,
+                    'new_bmr'     => $newBmr,
+                    'old_tdee'    => (float) $profile->tdee,
+                    'new_tdee'    => $newTdee,
+                    'old_target'  => (float) $profile->calories_target,
+                    'new_target'  => $newTarget,
+                    'message'     => $message,
+                ];
+            }
+        }
+        // ───────────────────────────────────────────────────────────────────
+
         return response()->json([
-            'message'       => 'Progress logged successfully',
-            'log'           => $log,
-            'new_badges'    => $newBadges,
-            'token_balance' => $tokens->getBalance($user),
+            'message'              => 'Progress logged successfully',
+            'log'                  => $log,
+            'new_badges'           => $newBadges,
+            'token_balance'        => $tokens->getBalance($user),
+            'recalibration_prompt' => $recalibration,
         ], 201);
     }
 
@@ -106,16 +146,51 @@ class ProgressController extends Controller
             ->where('workout_done', true)
             ->count();
 
+        // Check if latest weight triggers recalibration prompt (±2kg vs profile calibrated weight)
+        $recalibrationPrompt = null;
+        if ($weightLatest && $profileWeight && $profile) {
+            $diff = round($weightLatest - $profileWeight, 2);
+            if (abs($diff) >= 2.0) {
+                $calculator = app(\App\Services\HealthCalculatorService::class);
+                $newBmr    = $calculator->calculateBMR((float) $weightLatest, (float) $profile->height_cm, (int) $profile->age, $profile->gender);
+                $newTdee   = $calculator->calculateTDEE($newBmr, $profile->activity_level);
+                $newTarget = $calculator->calculateCaloriesTarget($newTdee, $profile->goal);
+
+                $direction = $diff < 0 ? 'lost' : 'gained';
+                $absDiff   = abs($diff);
+                $message   = $diff < 0
+                    ? "Great job! You've lost {$absDiff} kg. Would you like to recalibrate your TDEE and calorie targets for optimal progress?"
+                    : "Notice: Your weight has changed by +{$absDiff} kg. Would you like to recalibrate your TDEE and calorie targets?";
+
+                $recalibrationPrompt = [
+                    'needed'      => true,
+                    'direction'   => $direction,
+                    'diff_kg'     => $diff,
+                    'abs_diff_kg' => $absDiff,
+                    'old_weight'  => $profileWeight,
+                    'new_weight'  => $weightLatest,
+                    'old_bmr'     => (float) $profile->bmr,
+                    'new_bmr'     => $newBmr,
+                    'old_tdee'    => (float) $profile->tdee,
+                    'new_tdee'    => $newTdee,
+                    'old_target'  => (float) $profile->calories_target,
+                    'new_target'  => $newTarget,
+                    'message'     => $message,
+                ];
+            }
+        }
+
         $summary = [
-            'weight_start'        => $weightStart,
-            'weight_latest'       => $weightLatest,
-            'weight_change'       => $weightChange,
-            'avg_calories'        => $calories->count() > 0 ? round($calories->avg(), 1) : null,
-            'avg_steps'           => round($logs->whereNotNull('steps')->avg('steps') ?? 0),
-            'workout_days'        => $logs->where('workout_done', true)->count(),   // last N days
-            'total_workout_days'  => $totalWorkoutDays,                             // all-time
-            'has_weight_logs'     => $weights->count() > 0,                        // so frontend knows if it's a profile fallback
-            'profile_weight'      => $profileWeight,
+            'weight_start'         => $weightStart,
+            'weight_latest'        => $weightLatest,
+            'weight_change'        => $weightChange,
+            'avg_calories'         => $calories->count() > 0 ? round($calories->avg(), 1) : null,
+            'avg_steps'            => round($logs->whereNotNull('steps')->avg('steps') ?? 0),
+            'workout_days'         => $logs->where('workout_done', true)->count(),   // last N days
+            'total_workout_days'   => $totalWorkoutDays,                             // all-time
+            'has_weight_logs'      => $weights->count() > 0,                        // so frontend knows if it's a profile fallback
+            'profile_weight'       => $profileWeight,
+            'recalibration_prompt' => $recalibrationPrompt,
         ];
 
         return response()->json([

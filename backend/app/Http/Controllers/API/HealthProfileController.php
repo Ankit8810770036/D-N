@@ -111,4 +111,61 @@ class HealthProfileController extends Controller
             ],
         ]);
     }
+
+    public function recalibrate(Request $request)
+    {
+        $validated = $request->validate([
+            'weight_kg' => 'required|numeric|min:10|max:500',
+        ]);
+
+        $user = $request->user()->load('profile');
+        $profile = $user->profile;
+
+        if (!$profile) {
+            return response()->json(['message' => 'Profile not found. Please complete your profile first.'], 404);
+        }
+
+        $weight = (float) $validated['weight_kg'];
+        $bmi    = $this->calculator->calculateBMI($weight, (float) $profile->height_cm);
+        $bmr    = $this->calculator->calculateBMR(
+            $weight,
+            (float) $profile->height_cm,
+            (int) $profile->age,
+            $profile->gender
+        );
+        $tdee   = $this->calculator->calculateTDEE($bmr, $profile->activity_level);
+        $target = $this->calculator->calculateCaloriesTarget($tdee, $profile->goal);
+
+        $oldMetrics = [
+            'weight_kg'       => (float) $profile->weight_kg,
+            'bmi'             => (float) $profile->bmi,
+            'bmr'             => (float) $profile->bmr,
+            'tdee'            => (float) $profile->tdee,
+            'calories_target' => (float) $profile->calories_target,
+        ];
+
+        $profile->update([
+            'weight_kg'       => $weight,
+            'bmi'             => $bmi,
+            'bmr'             => $bmr,
+            'tdee'            => $tdee,
+            'calories_target' => $target,
+        ]);
+
+        return response()->json([
+            'message'     => 'Targets successfully recalibrated for your new weight!',
+            'profile'     => $profile->fresh(),
+            'old_metrics' => $oldMetrics,
+            'new_metrics' => [
+                'weight_kg'          => $weight,
+                'bmi'                => $bmi,
+                'bmi_classification' => $this->calculator->getBMIClassification($bmi),
+                'bmr'                => $bmr,
+                'tdee'               => $tdee,
+                'calories_target'    => $target,
+                'macros'             => $this->calculator->calculateMacros($target, $profile->goal, $profile->food_preference ?? 'standard'),
+                'water_intake_liters'=> $this->calculator->calculateWaterIntake($weight),
+            ],
+        ]);
+    }
 }

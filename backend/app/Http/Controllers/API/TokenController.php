@@ -14,14 +14,15 @@ class TokenController extends Controller
 
     /**
      * GET /tokens
-     * Returns current balance + recent transaction history + today's completions.
+     * Returns current balance + recent transaction history + completions for specified date (default today).
      */
     public function balance(Request $request)
     {
-        $user    = $request->user();
-        $balance = $this->tokens->getBalance($user);
-        $history = $this->tokens->getHistory($user, 20);
-        $todayDone = $this->tokens->getTodayCompletions($user);
+        $user      = $request->user();
+        $date      = $request->input('date', Carbon::now('Asia/Kolkata')->toDateString());
+        $balance   = $this->tokens->getBalance($user);
+        $history   = $this->tokens->getHistory($user, 20);
+        $todayDone = $this->tokens->getTodayCompletions($user, $date);
 
         // Build challenge list with completion status
         $challenges = [
@@ -34,6 +35,7 @@ class TokenController extends Controller
 
         return response()->json([
             'balance'    => $balance,
+            'date'       => $date,
             'challenges' => $challenges,
             'history'    => $history,
         ]);

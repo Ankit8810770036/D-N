@@ -45,9 +45,20 @@ class AdminController extends Controller
             return response()->json(['message' => 'You cannot remove your own admin privileges.'], 403);
         }
 
+        if (isset($validated['plan_type'])) {
+            if ($validated['plan_type'] === 'premium') {
+                $validated['subscription_id'] = $user->subscription_id ?? ('admin_granted_' . $user->id . '_' . time());
+                $validated['subscribed_at'] = now();
+                $validated['subscription_expires_at'] = now()->addYear(); // 1 year active premium
+            } else {
+                $validated['subscription_expires_at'] = null;
+            }
+        }
+
         $user->update($validated);
         \Illuminate\Support\Facades\Cache::forget('admin_platform_stats');
-        return response()->json($user);
+        \Illuminate\Support\Facades\Cache::forget("recipes_user_{$user->id}");
+        return response()->json($user->fresh());
     }
 
     public function refreshCache()

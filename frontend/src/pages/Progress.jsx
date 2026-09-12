@@ -6,8 +6,20 @@ import { useAuth } from '../context/AuthContext'
 import { useQueryClient } from '@tanstack/react-query'
 import {
     LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-    ResponsiveContainer, Legend, PieChart, Pie, Cell
+    ResponsiveContainer, Legend
 } from 'recharts'
+import { 
+    Scale, 
+    Sparkles, 
+    ArrowRight, 
+    CheckCircle, 
+    X, 
+    Flame, 
+    Activity, 
+    TrendingDown, 
+    TrendingUp, 
+    Loader2 
+} from 'lucide-react'
 
 export default function Progress() {
     const { user, isAdmin } = useAuth()
@@ -17,6 +29,10 @@ export default function Progress() {
     const [summary, setSummary] = useState(null)
     const [fetching, setFetching] = useState(true)
     const [loading, setLoading] = useState(false)
+    const [recalibrating, setRecalibrating] = useState(false)
+    const [recalibrationModal, setRecalibrationModal] = useState(null)
+    const [dismissedBanner, setDismissedBanner] = useState(false)
+
     const [form, setForm] = useState({
         date: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
         weight: '', calories_consumed: '',
@@ -65,10 +81,16 @@ export default function Progress() {
         e.preventDefault()
         setLoading(true)
         try {
-            await api.post('/log-progress', form)
+            const { data } = await api.post('/log-progress', form)
             queryClient.invalidateQueries({ queryKey: ['summary'] })
             queryClient.invalidateQueries({ queryKey: ['profile'] })
             toast.success('Progress logged! 📊')
+            
+            // Check if weight difference warrants recalibration prompt
+            if (data.recalibration_prompt && data.recalibration_prompt.needed) {
+                setRecalibrationModal(data.recalibration_prompt)
+            }
+
             await fetchAnalytics();
         } catch (err) {
             toast.error(err.response?.data?.message || 'Failed to log progress.')
@@ -77,14 +99,75 @@ export default function Progress() {
         }
     }
 
+    async function handleRecalibrate(targetWeight) {
+        setRecalibrating(true)
+        try {
+            const { data } = await api.post('/profile/recalibrate', { weight_kg: targetWeight })
+            toast.success(data.message || 'Targets successfully recalibrated! 🎯')
+            queryClient.invalidateQueries({ queryKey: ['profile'] })
+            queryClient.invalidateQueries({ queryKey: ['summary'] })
+            queryClient.invalidateQueries({ queryKey: ['grocery-list'] })
+            queryClient.invalidateQueries({ queryKey: ['meal-plan'] })
+            setRecalibrationModal(null)
+            setDismissedBanner(true)
+            await fetchAnalytics()
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to recalibrate targets.')
+        } finally {
+            setRecalibrating(false)
+        }
+    }
+
     const isPremium = user?.plan_type === 'premium' || isAdmin;
+    const activePrompt = recalibrationModal || (!dismissedBanner ? summary?.recalibration_prompt : null);
 
     return (
-        <div className="space-y-6 w-full pb-10 animate-fade-in">
-            <div className="page-header">
-                <h1 className="page-title">Progress Tracker</h1>
-                <p className="page-subtitle">Log and visualize your daily health metrics</p>
+        <div className="space-y-6 w-full pb-10 animate-fade-in font-outfit">
+            <div className="page-header flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="page-title">Progress Tracker</h1>
+                    <p className="page-subtitle">Log and visualize your daily health metrics</p>
+                </div>
             </div>
+
+            {/* ── Recalibration Banner (if ±2kg difference detected) ── */}
+            {summary?.recalibration_prompt?.needed && !dismissedBanner && !recalibrationModal && (
+                <div className="bg-gradient-to-r from-emerald-900 to-teal-900 text-white rounded-2xl p-5 shadow-lg border border-emerald-700/50 flex flex-col md:flex-row md:items-center justify-between gap-4 animate-fade-in">
+                    <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-2xl shrink-0">
+                            ⚖️
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <span className="bg-emerald-400/20 text-emerald-300 text-xs font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                                    Weight Milestone &bull; {summary.recalibration_prompt.abs_diff_kg} kg {summary.recalibration_prompt.direction}
+                                </span>
+                            </div>
+                            <h3 className="font-bold text-base mt-1 text-white">
+                                {summary.recalibration_prompt.direction === 'lost' ? "🎉 Great job on your weight loss!" : "⚖️ Weight Change Detected"}
+                            </h3>
+                            <p className="text-emerald-100/80 text-sm mt-0.5 max-w-xl">
+                                Your weight changed from <strong>{summary.recalibration_prompt.old_weight} kg</strong> to <strong>{summary.recalibration_prompt.new_weight} kg</strong>. Would you like to recalibrate your TDEE ({summary.recalibration_prompt.old_tdee} &rarr; {summary.recalibration_prompt.new_tdee} kcal) and daily calorie targets?
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                        <button
+                            onClick={() => setRecalibrationModal(summary.recalibration_prompt)}
+                            className="bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-bold px-4 py-2 rounded-xl text-sm transition-all shadow hover:shadow-md flex items-center gap-1.5"
+                        >
+                            <Sparkles className="w-4 h-4" /> Recalibrate Now
+                        </button>
+                        <button
+                            onClick={() => setDismissedBanner(true)}
+                            className="text-emerald-300 hover:text-white p-2 rounded-lg hover:bg-white/10 text-xs font-semibold"
+                            title="Dismiss reminder"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {fetching ? (
                 <div className="flex items-center justify-center py-20">
@@ -96,7 +179,7 @@ export default function Progress() {
                     {summary && (
                         <>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                {/* Start Weight — falls back to profile weight if no logs yet */}
+                                {/* Start Weight */}
                                 <div className="metric-card py-3">
                                     <div className="metric-val text-xl">
                                         {summary.weight_start ?? '—'}
@@ -107,7 +190,7 @@ export default function Progress() {
                                     <div className="metric-lbl">Start Weight (kg)</div>
                                 </div>
 
-                                {/* Current Weight — same fallback */}
+                                {/* Current Weight */}
                                 <div className="metric-card py-3">
                                     <div className="metric-val text-xl">
                                         {summary.weight_latest ?? '—'}
@@ -121,7 +204,7 @@ export default function Progress() {
                                 {/* 30-Day Change */}
                                 <div className="metric-card py-3">
                                     <div className={`metric-val text-xl ${
-                                        summary.weight_change > 0 ? 'text-red-500' :
+                                        summary.weight_change > 0 ? 'text-amber-500' :
                                         summary.weight_change < 0 ? 'text-emerald-600' : ''
                                     }`}>
                                         {summary.weight_change !== null
@@ -209,8 +292,8 @@ export default function Progress() {
                                         </BarChart>
                                     </ResponsiveContainer>
                                 ) : (
-                                    <div className="h-[250px] flex flex-col items-center justify-center bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
-                                        <div className="p-4 bg-white rounded-full shadow-sm mb-4">
+                                    <div className="h-[250px] flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-800/40 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700">
+                                        <div className="p-4 bg-white dark:bg-gray-800 rounded-full shadow-sm mb-4">
                                             <svg className="w-10 h-10 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
                                         </div>
                                         <p className="text-gray-900 dark:text-white font-bold">Macro Analytics Locked</p>
@@ -289,7 +372,7 @@ export default function Progress() {
                         <input type="checkbox" id="workout" checked={form.workout_done}
                             onChange={e => set('workout_done', e.target.checked)}
                             className="w-4 h-4 accent-[#2d6a4f]" />
-                        <label htmlFor="workout" className="text-sm font-medium text-gray-700">💪 Workout Done Today</label>
+                        <label htmlFor="workout" className="text-sm font-medium text-gray-700 dark:text-gray-300">💪 Workout Done Today</label>
                     </div>
                     <div>
                         <label className="input-label">Notes <span className="text-gray-400 font-normal">(optional)</span></label>
@@ -301,6 +384,145 @@ export default function Progress() {
                     </button>
                 </form>
             </div>
+
+            {/* ── Dynamic Calorie Recalibration Modal ── */}
+            {recalibrationModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-white dark:bg-gray-900 border border-emerald-100 dark:border-gray-800 rounded-3xl max-w-lg w-full p-6 md:p-8 shadow-2xl relative overflow-hidden">
+                        {/* Background subtle glow */}
+                        <div className="absolute -right-20 -top-20 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+
+                        {/* Modal Header */}
+                        <div className="flex items-start justify-between gap-4 mb-5">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-2xl shadow-sm">
+                                    ⚖️
+                                </div>
+                                <div>
+                                    <span className="text-[11px] font-black tracking-widest text-emerald-600 uppercase bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-full">
+                                        Clinical Recalibration
+                                    </span>
+                                    <h3 className="text-xl font-black text-gray-900 dark:text-white mt-0.5">
+                                        Dynamic Target Recalibration
+                                    </h3>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setRecalibrationModal(null)}
+                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Prompt Message */}
+                        <div className="bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/70 dark:border-emerald-800/40 rounded-2xl p-4 mb-5 text-sm text-emerald-900 dark:text-emerald-200 font-medium">
+                            <p>
+                                {recalibrationModal.message}
+                            </p>
+                        </div>
+
+                        {/* Metric Comparison Cards */}
+                        <div className="space-y-3 mb-6">
+                            <h4 className="text-xs font-black uppercase tracking-wider text-gray-400">
+                                Target Comparison Preview
+                            </h4>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                {/* Weight */}
+                                <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-2xl border border-gray-100 dark:border-gray-700/60">
+                                    <span className="text-[11px] font-bold text-gray-400 uppercase">Body Weight</span>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-sm font-semibold text-gray-500 line-through">
+                                            {recalibrationModal.old_weight} kg
+                                        </span>
+                                        <ArrowRight className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                        <span className="text-base font-black text-gray-900 dark:text-white">
+                                            {recalibrationModal.new_weight} kg
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Calorie Target */}
+                                <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-2xl border border-gray-100 dark:border-gray-700/60">
+                                    <span className="text-[11px] font-bold text-gray-400 uppercase">Daily Calories</span>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-sm font-semibold text-gray-500 line-through">
+                                            {recalibrationModal.old_target} kcal
+                                        </span>
+                                        <ArrowRight className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                        <span className="text-base font-black text-emerald-600 dark:text-emerald-400">
+                                            {recalibrationModal.new_target} kcal
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* BMR */}
+                                <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-2xl border border-gray-100 dark:border-gray-700/60">
+                                    <span className="text-[11px] font-bold text-gray-400 uppercase">BMR (Mifflin-St Jeor)</span>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-sm font-semibold text-gray-500 line-through">
+                                            {recalibrationModal.old_bmr} kcal
+                                        </span>
+                                        <ArrowRight className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                        <span className="text-base font-black text-gray-900 dark:text-white">
+                                            {recalibrationModal.new_bmr} kcal
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* TDEE */}
+                                <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-2xl border border-gray-100 dark:border-gray-700/60">
+                                    <span className="text-[11px] font-bold text-gray-400 uppercase">TDEE Expenditure</span>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-sm font-semibold text-gray-500 line-through">
+                                            {recalibrationModal.old_tdee} kcal
+                                        </span>
+                                        <ArrowRight className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                        <span className="text-base font-black text-emerald-600 dark:text-emerald-400">
+                                            {recalibrationModal.new_tdee} kcal
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Scientific explanation info */}
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
+                            💡 As your body composition shifts, recalculating energy requirements prevents metabolic adaptation and weight plateaus.
+                        </p>
+
+                        {/* Action Buttons */}
+                        <div className="flex flex-col sm:flex-row gap-3">
+                            <button
+                                onClick={() => handleRecalibrate(recalibrationModal.new_weight)}
+                                disabled={recalibrating}
+                                className="btn-primary flex-1 py-3 flex items-center justify-center gap-2 font-bold shadow-lg shadow-emerald-600/20"
+                            >
+                                {recalibrating ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" /> Recalibrating...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Sparkles className="w-4 h-4" /> Recalibrate Targets Now
+                                    </>
+                                )}
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setRecalibrationModal(null);
+                                    setDismissedBanner(true);
+                                }}
+                                disabled={recalibrating}
+                                className="btn-secondary py-3 px-5 text-sm font-semibold text-gray-600 dark:text-gray-300"
+                            >
+                                Keep Current Targets
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

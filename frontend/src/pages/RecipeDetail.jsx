@@ -5,22 +5,17 @@ import api from '../services/api';
 import toast from 'react-hot-toast';
 import { ArrowLeft, Clock, Flame, BookOpen, CheckCircle2, Plus, Scale, Crown } from 'lucide-react';
 
+import { useAuth } from '../context/AuthContext';
+
 const RecipeDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { user, isPremium } = useAuth();
 
     const { data: recipe, isLoading, error } = useQuery({
         queryKey: ['recipe', id],
         queryFn: async () => {
             const response = await api.get(`/recipes/${id}`);
-            return response.data;
-        }
-    });
-
-    const { data: user } = useQuery({
-        queryKey: ['me'],
-        queryFn: async () => {
-            const response = await api.get('/me');
             return response.data;
         }
     });
@@ -77,7 +72,7 @@ const RecipeDetail = () => {
     }
 
     // Premium Check
-    if (recipe.is_premium && user?.plan_type !== 'premium' && user?.role !== 'admin') {
+    if (recipe.is_premium && !isPremium) {
         navigate('/subscription');
         return null;
     }

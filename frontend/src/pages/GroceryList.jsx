@@ -2,7 +2,22 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
-import { ShoppingBag, CheckCircle, Circle, Printer, Copy, RefreshCw, Calendar, Tag } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { 
+    ShoppingBag, 
+    CheckCircle, 
+    Circle, 
+    Printer, 
+    Copy, 
+    RefreshCw, 
+    Calendar, 
+    Tag, 
+    FileDown, 
+    Share2, 
+    MessageCircle,
+    Loader2,
+    Check
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 
 // Map category slugs → human labels + emoji
@@ -30,11 +45,19 @@ function getCategoryMeta(cat) {
 const GroceryList = () => {
     const queryClient = useQueryClient();
     const navigate    = useNavigate();
+    const { user }    = useAuth();
+    const [downloadingPdf, setDownloadingPdf] = useState(false);
+    const [copied, setCopied] = useState(false);
 
-    const { data, isLoading, refetch } = useQuery({
+    const getLocalToday = () => {
+        return new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    };
+
+    const localToday = getLocalToday();
+
+    const { data, isLoading, refetch, isFetching } = useQuery({
         queryKey: ['grocery-list'],
         queryFn: async () => {
-            const localToday = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
             const response = await api.get(`/grocery-list?date=${localToday}`);
             return response.data;
         },
@@ -47,13 +70,10 @@ const GroceryList = () => {
             return response.data;
         },
         onMutate: async ({ item_ids, is_bought }) => {
-            // Cancel any outgoing refetches
             await queryClient.cancelQueries({ queryKey: ['grocery-list'] });
 
-            // Snapshot the previous value
             const previousData = queryClient.getQueryData(['grocery-list']);
 
-            // Optimistically update to the new value
             if (previousData) {
                 queryClient.setQueryData(['grocery-list'], old => {
                     if (!old || !old.groceries) return old;
@@ -76,11 +96,9 @@ const GroceryList = () => {
             }
             toast.error('Failed to update item.');
         }
-        // Removed onSuccess invalidateQueries to prevent refetching from overwriting rapid click optimistic states
     });
 
     const handleToggle = (item) => {
-        // Read current state from cache to avoid closure staleness on rapid clicks
         const currentData = queryClient.getQueryData(['grocery-list']);
         let currentState = item.is_bought;
         
@@ -94,24 +112,6 @@ const GroceryList = () => {
         toggleMutation.mutate({ item_ids: item.item_ids, is_bought: !currentState });
     };
 
-    const handleCopy = () => {
-        const text = groceries.map(item => `• ${item.name}: ${item.total_quantity} ${item.unit}`).join('\n');
-        if (text) {
-            navigator.clipboard.writeText(text);
-            toast.success('List copied to clipboard!');
-        }
-    };
-
-    const handlePrint = () => window.print();
-
-    if (isLoading) {
-        return (
-            <div className="flex items-center justify-center min-h-[60vh]">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500" />
-            </div>
-        );
-    }
-
     const groceries  = data?.groceries  || [];
     const planDates  = data?.plan_dates  || [];
     const dateRange  = data?.date_range  || null;
@@ -124,6 +124,89 @@ const GroceryList = () => {
         acc[cat].push(item);
         return acc;
     }, {});
+
+    // Build structured text for WhatsApp and Clipboard
+    const generateFormattedText = () => {
+        let lines = [];
+        lines.push(`🛒 *Weekly Grocery Shopping List*`);
+        if (dateRange) {
+            lines.push(`📅 *Period:* ${dateRange} (${daysFound} days)`);
+        }
+        if (user?.name) {
+            lines.push(`👤 *Plan for:* ${user.name}`);
+        }
+        lines.push('');
+
+        const sortedCats = Object.keys(grouped).sort();
+        sortedCats.forEach(cat => {
+            const meta = getCategoryMeta(cat);
+            const items = grouped[cat];
+            lines.push(`${meta.emoji} *${meta.label.toUpperCase()}*`);
+            items.forEach(item => {
+                const checkMark = item.is_bought ? '[✓]' : '[ ]';
+                lines.push(`${checkMark} ${item.name} — ${item.total_quantity} ${item.unit}`);
+            });
+            lines.push('');
+        });
+
+        lines.push(`_Generated via Diet & Nutrition Planner_`);
+        return lines.join('\n');
+    };
+
+    const handleWhatsAppShare = () => {
+        if (groceries.length === 0) {
+            toast.error('Your grocery list is empty.');
+            return;
+        }
+        const text = generateFormattedText();
+        const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+        window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+        toast.success('Opening WhatsApp... 💬');
+    };
+
+    const handleDownloadPDF = async () => {
+        if (groceries.length === 0) {
+            toast.error('Your grocery list is empty.');
+            return;
+        }
+        setDownloadingPdf(true);
+        try {
+            const response = await api.get(`/grocery-list/pdf?date=${localToday}`, { responseType: 'blob' });
+            const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `grocery_shopping_list_${localToday}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+            toast.success('Grocery list PDF downloaded! 📄');
+        } catch (err) {
+            console.error('PDF download error:', err);
+            toast.error('Failed to download PDF. Please try again.');
+        } finally {
+            setDownloadingPdf(false);
+        }
+    };
+
+    const handleCopy = () => {
+        if (groceries.length === 0) return;
+        const text = generateFormattedText();
+        navigator.clipboard.writeText(text);
+        setCopied(true);
+        toast.success('Formatted shopping list copied to clipboard!');
+        setTimeout(() => setCopied(false), 2500);
+    };
+
+    const handlePrint = () => window.print();
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500" />
+            </div>
+        );
+    }
 
     const boughtCount = groceries.filter(i => i.is_bought).length;
     const progress    = groceries.length > 0 ? Math.round((boughtCount / groceries.length) * 100) : 0;
@@ -148,15 +231,65 @@ const GroceryList = () => {
                         <p className="page-subtitle">No upcoming meal plans found.</p>
                     )}
                 </div>
-                <div className="flex gap-2 flex-wrap">
-                    <button onClick={handleCopy} disabled={groceries.length === 0} className="btn-secondary flex items-center gap-2 text-sm py-2 px-4 disabled:opacity-40">
-                        <Copy className="w-4 h-4" /> Copy
+
+                {/* ── Action Buttons ── */}
+                <div className="flex gap-2 flex-wrap items-center">
+                    {/* WhatsApp Button */}
+                    <button
+                        onClick={handleWhatsAppShare}
+                        disabled={groceries.length === 0}
+                        title="Share consolidated grocery list to WhatsApp"
+                        className="bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold py-2 px-3.5 rounded-xl text-sm flex items-center gap-2 shadow-sm hover:shadow transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:-translate-y-0.5"
+                    >
+                        <MessageCircle className="w-4 h-4 fill-white text-[#25D366]" />
+                        <span>WhatsApp</span>
                     </button>
-                    <button onClick={handlePrint} disabled={groceries.length === 0} className="btn-secondary flex items-center gap-2 text-sm py-2 px-4 disabled:opacity-40">
-                        <Printer className="w-4 h-4" /> Print
+
+                    {/* PDF Download Button */}
+                    <button
+                        onClick={handleDownloadPDF}
+                        disabled={groceries.length === 0 || downloadingPdf}
+                        title="Download printable PDF shopping list"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-3.5 rounded-xl text-sm flex items-center gap-2 shadow-sm hover:shadow transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:-translate-y-0.5"
+                    >
+                        {downloadingPdf ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <FileDown className="w-4 h-4" />
+                        )}
+                        <span>{downloadingPdf ? 'Exporting...' : 'PDF List'}</span>
                     </button>
-                    <button onClick={() => refetch()} className="btn-primary flex items-center gap-2 text-sm py-2 px-4">
-                        <RefreshCw className="w-4 h-4" /> Refresh
+
+                    {/* Copy Button */}
+                    <button
+                        onClick={handleCopy}
+                        disabled={groceries.length === 0}
+                        title="Copy structured list with checkboxes"
+                        className="btn-secondary flex items-center gap-2 text-sm py-2 px-3 disabled:opacity-40"
+                    >
+                        {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                        <span>{copied ? 'Copied!' : 'Copy'}</span>
+                    </button>
+
+                    {/* Print Button */}
+                    <button
+                        onClick={handlePrint}
+                        disabled={groceries.length === 0}
+                        title="Print shopping list"
+                        className="btn-secondary flex items-center gap-2 text-sm py-2 px-3 disabled:opacity-40"
+                    >
+                        <Printer className="w-4 h-4" />
+                        <span>Print</span>
+                    </button>
+
+                    {/* Refresh Button */}
+                    <button
+                        onClick={() => refetch()}
+                        disabled={isFetching}
+                        title="Refresh grocery list"
+                        className="p-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 transition-colors"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin text-emerald-600' : ''}`} />
                     </button>
                 </div>
             </div>
@@ -178,7 +311,7 @@ const GroceryList = () => {
                     <div className="flex-1">
                         <div className="flex justify-between text-sm font-semibold text-gray-600 dark:text-gray-300 mb-1.5">
                             <span>{boughtCount} of {groceries.length} items bought</span>
-                            <span className="text-emerald-600">{progress}%</span>
+                            <span className="text-emerald-600 font-bold">{progress}%</span>
                         </div>
                         <div className="h-2.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                             <div
@@ -284,9 +417,9 @@ const GroceryList = () => {
                 <div className="relative z-10 flex items-center gap-6">
                     <div className="w-14 h-14 bg-white/10 backdrop-blur-xl rounded-2xl flex items-center justify-center text-2xl shrink-0">💡</div>
                     <div className="flex-1">
-                        <h4 className="font-black text-lg">Did you know?</h4>
+                        <h4 className="font-black text-lg">Pro Grocery Tip</h4>
                         <p className="text-emerald-100/70 text-sm mt-1">
-                            Your list updates automatically whenever you generate or swap items in the Diet Planner. Check off items as you shop to track progress!
+                            Click <strong>WhatsApp</strong> to instantly send your grocery checklist to family members, or click <strong>PDF List</strong> to generate a clean, categorized shopping sheet for supermarket visits.
                         </p>
                     </div>
                 </div>

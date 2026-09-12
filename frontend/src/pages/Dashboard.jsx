@@ -108,11 +108,15 @@ export default function Dashboard() {
         </div>
     )
 
-    const macroData = profile ? [
+    const macroData = metrics?.macros ? [
+        { name: 'Protein', value: Math.round(metrics.macros.protein_g), color: '#2d6a4f' },
+        { name: 'Carbs', value: Math.round(metrics.macros.carbs_g), color: '#40916c' },
+        { name: 'Fat', value: Math.round(metrics.macros.fat_g), color: '#f4a261' },
+    ] : (profile?.calories_target ? [
         { name: 'Protein', value: Math.round((profile.calories_target * 0.3) / 4), color: '#2d6a4f' },
         { name: 'Carbs', value: Math.round((profile.calories_target * 0.45) / 4), color: '#40916c' },
         { name: 'Fat', value: Math.round((profile.calories_target * 0.25) / 9), color: '#f4a261' },
-    ] : []
+    ] : [])
 
     const getBMIClass = (bmi) => {
         if (!bmi) return { label: 'Unknown', class: 'badge-blue' }
@@ -269,7 +273,7 @@ export default function Dashboard() {
             <BadgeSection badges={badges} />
 
             {/* Daily Challenges */}
-            <DailyChallengesCard />
+            <DailyChallengesCard date={localToday} />
 
             <CelebrationOverlay
                 newBadges={celebratingBadges}

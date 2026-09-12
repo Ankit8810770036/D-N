@@ -5,22 +5,17 @@ import { BookOpen, Search, ChevronRight, Lock, Clock, Flame, Crown } from 'lucid
 import { Link } from 'react-router-dom';
 import useDebounce from '../hooks/useDebounce';
 
+import { useAuth } from '../context/AuthContext';
+
 const Cookbook = () => {
+    const { user, isPremium } = useAuth();
     const [searchTerm, setSearchTerm] = useState('');
     const debouncedSearch = useDebounce(searchTerm, 250);
 
     const { data: recipes, isLoading } = useQuery({
-        queryKey: ['recipes'],
+        queryKey: ['recipes', user?.id],
         queryFn: async () => {
             const response = await api.get('/recipes');
-            return response.data;
-        }
-    });
-
-    const { data: user } = useQuery({
-        queryKey: ['me'],
-        queryFn: async () => {
-            const response = await api.get('/me');
             return response.data;
         }
     });
@@ -85,7 +80,7 @@ const Cookbook = () => {
                     {filteredRecipes?.length ?? 0}
                     <span className="font-normal ml-1">recipe{filteredRecipes?.length !== 1 ? 's' : ''}</span>
                 </span>
-                {user?.plan_type === 'premium' && (
+                {isPremium && (
                     <span className="badge badge-gold inline-flex items-center gap-1.5">
                         <Crown className="w-3 h-3" /> Premium Access
                     </span>
@@ -95,7 +90,7 @@ const Cookbook = () => {
             {/* Recipe Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredRecipes?.map((recipe) => {
-                    const isLocked = recipe.is_premium && user?.plan_type !== 'premium' && user?.role !== 'admin';
+                    const isLocked = recipe.is_premium && !isPremium;
 
                     return (
                         <div key={recipe.id} className="card card-hover p-0 overflow-hidden group">

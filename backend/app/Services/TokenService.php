@@ -31,13 +31,15 @@ class TokenService
     ];
 
     /**
-     * Award coins to a user idempotently.
-     * Returns the transaction if awarded, null if already awarded today/ever.
+     * Award coins to a user idempotently per user and per date.
+     * Returns the transaction if awarded, null if already awarded for that date/milestone.
      */
     public function award($user, string $reason, ?int $amount = null, array $meta = []): ?TokenTransaction
     {
-        $amount  = $amount ?? (self::AMOUNTS[$reason] ?? 0);
-        $todayIST = Carbon::now('Asia/Kolkata')->toDateString();
+        $amount     = $amount ?? (self::AMOUNTS[$reason] ?? 0);
+        $targetDate = isset($meta['date'])
+            ? Carbon::parse($meta['date'], 'Asia/Kolkata')
+            : Carbon::now('Asia/Kolkata');
 
         // Idempotency checks
         if (in_array($reason, self::ONCE_REASONS)) {
@@ -46,14 +48,21 @@ class TokenService
                 ->exists();
             if ($alreadyEarned) return null;
         } elseif (in_array($reason, self::DAILY_REASONS)) {
-            $alreadyEarnedToday = TokenTransaction::where('user_id', $user->id)
+            $startISTinUTC = (clone $targetDate)->startOfDay()->setTimezone('UTC');
+            $endISTinUTC   = (clone $targetDate)->endOfDay()->setTimezone('UTC');
+            
+            $alreadyEarnedOnDate = TokenTransaction::where('user_id', $user->id)
                 ->where('reason', $reason)
-                ->whereDate(DB::raw("DATE(CONVERT_TZ(created_at, '+00:00', '+05:30'))"), $todayIST)
+                ->whereBetween('created_at', [$startISTinUTC, $endISTinUTC])
                 ->exists();
-            if ($alreadyEarnedToday) return null;
+            if ($alreadyEarnedOnDate) return null;
         }
 
-        return DB::transaction(function () use ($user, $reason, $amount, $meta) {
+        $createdAt = isset($meta['date']) && $targetDate->toDateString() !== Carbon::now('Asia/Kolkata')->toDateString()
+            ? (clone $targetDate)->startOfDay()->addHours(12)->setTimezone('UTC')
+            : now();
+
+        return DB::transaction(function () use ($user, $reason, $amount, $meta, $targetDate, $createdAt) {
             // Upsert wallet
             $wallet = UserToken::firstOrCreate(
                 ['user_id' => $user->id],
@@ -67,8 +76,11 @@ class TokenService
                 'type'       => 'earn',
                 'reason'     => $reason,
                 'amount'     => $amount,
-                'meta'       => array_merge($meta, ['awarded_at_ist' => Carbon::now('Asia/Kolkata')->toDateTimeString()]),
-                'created_at' => now(),
+                'meta'       => array_merge($meta, [
+                    'date'           => $targetDate->toDateString(),
+                    'awarded_at_ist' => Carbon::now('Asia/Kolkata')->toDateTimeString(),
+                ]),
+                'created_at' => $createdAt,
             ]);
         });
     }
@@ -125,18 +137,21 @@ class TokenService
     }
 
     /**
-     * Get which daily challenges are already completed today (midnight IST reset).
+     * Get which daily challenges are already completed for a specific date (midnight IST reset).
+     * Defaults to current date in Asia/Kolkata if date is not provided.
      */
-    public function getTodayCompletions($user): array
+    public function getTodayCompletions($user, ?string $date = null): array
     {
-        $todayIST = Carbon::now('Asia/Kolkata')->toDateString();
+        $targetDate    = $date ? Carbon::parse($date, 'Asia/Kolkata') : Carbon::now('Asia/Kolkata');
+        $startISTinUTC = (clone $targetDate)->startOfDay()->setTimezone('UTC');
+        $endISTinUTC   = (clone $targetDate)->endOfDay()->setTimezone('UTC');
 
         $done = TokenTransaction::where('user_id', $user->id)
             ->whereIn('reason', self::DAILY_REASONS)
-            ->whereDate(DB::raw("DATE(CONVERT_TZ(created_at, '+00:00', '+05:30'))"), $todayIST)
+            ->whereBetween('created_at', [$startISTinUTC, $endISTinUTC])
             ->pluck('reason')
             ->toArray();
 
-        return $done;
+        return array_values(array_unique($done));
     }
 }

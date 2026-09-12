@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import { Coins } from 'lucide-react'
 
-// Fetch token data — reuses the /tokens endpoint
-function useTokens() {
+// Fetch token data — reuses the /tokens endpoint with date isolation
+function useTokens(date) {
+    const d = new Date();
+    const targetDate = date || new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
     return useQuery({
-        queryKey: ['tokens'],
-        queryFn: () => api.get('/tokens').then(r => r.data),
+        queryKey: ['tokens', targetDate],
+        queryFn: () => api.get(`/tokens?date=${targetDate}`).then(r => r.data),
         staleTime: 1000 * 30,
     })
 }
@@ -74,9 +76,9 @@ const CHALLENGE_ROUTES = {
 }
 
 // ── Dashboard daily-challenges card ──────────────────────────────────────────
-export function DailyChallengesCard() {
+export function DailyChallengesCard({ date }) {
     const navigate = useNavigate()
-    const { data, isLoading } = useTokens()
+    const { data, isLoading } = useTokens(date)
     const balance   = data?.balance ?? 0
     const challenges = data?.challenges ?? []
     const earned = challenges.filter(c => c.done).reduce((s, c) => s + c.coins, 0)

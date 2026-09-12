@@ -273,9 +273,9 @@ function FaqItem({ q, a }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 const Subscription = () => {
-    const { user, setUser } = useAuth();
+    const { user, setUser, isAdmin } = useAuth();
     const queryClient = useQueryClient();
-    const isPremium = user?.plan_type === 'premium';
+    const isPremium = user?.plan_type === 'premium' || isAdmin;
 
     const [showPayModal, setShowPayModal]       = useState(false);
     const [showCancelModal, setShowCancelModal] = useState(false);
@@ -517,26 +517,38 @@ const Subscription = () => {
                                     <Crown className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                                 </div>
                                 <div>
-                                    <p className="text-amber-700 dark:text-amber-300 font-bold">You're on Premium 🎉</p>
-                                    {user?.subscribed_at && (
+                                    <p className="text-amber-700 dark:text-amber-300 font-bold">
+                                        {isAdmin ? "Super Admin — Lifetime Premium Access 🛡️" : "You're on Premium 🎉"}
+                                    </p>
+                                    {isAdmin ? (
                                         <p className="text-amber-600/80 dark:text-amber-400/70 text-sm">
-                                            Active since {new Date(user.subscribed_at).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                            All features, AI chat, keto/paleo plans &amp; admin controls unlocked indefinitely.
                                         </p>
-                                    )}
-                                    {user?.subscription_expires_at && (
-                                        <p className="text-amber-600/80 dark:text-amber-400/70 text-sm">
-                                            Renews on {new Date(user.subscription_expires_at).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}
-                                        </p>
+                                    ) : (
+                                        <>
+                                            {user?.subscribed_at && (
+                                                <p className="text-amber-600/80 dark:text-amber-400/70 text-sm">
+                                                    Active since {new Date(user.subscribed_at).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                                </p>
+                                            )}
+                                            {user?.subscription_expires_at && (
+                                                <p className="text-amber-600/80 dark:text-amber-400/70 text-sm">
+                                                    Renews on {new Date(user.subscription_expires_at).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                                </p>
+                                            )}
+                                        </>
                                     )}
                                 </div>
                             </div>
-                            <button
-                                id="cancel-subscription-btn"
-                                onClick={() => setShowCancelModal(true)}
-                                className="text-sm text-red-400 hover:text-red-300 font-medium border border-red-500/30 hover:border-red-500/60 px-4 py-2 rounded-xl transition-all"
-                            >
-                                Cancel Subscription
-                            </button>
+                            {!isAdmin && (
+                                <button
+                                    id="cancel-subscription-btn"
+                                    onClick={() => setShowCancelModal(true)}
+                                    className="text-sm text-red-400 hover:text-red-300 font-medium border border-red-500/30 hover:border-red-500/60 px-4 py-2 rounded-xl transition-all"
+                                >
+                                    Cancel Subscription
+                                </button>
+                            )}
                         </div>
                     )}
 
