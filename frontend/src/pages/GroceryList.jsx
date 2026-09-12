@@ -46,14 +46,52 @@ const GroceryList = () => {
             const response = await api.put('/grocery-toggle', { item_ids, is_bought });
             return response.data;
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['grocery-list'] });
+        onMutate: async ({ item_ids, is_bought }) => {
+            // Cancel any outgoing refetches
+            await queryClient.cancelQueries({ queryKey: ['grocery-list'] });
+
+            // Snapshot the previous value
+            const previousData = queryClient.getQueryData(['grocery-list']);
+
+            // Optimistically update to the new value
+            if (previousData) {
+                queryClient.setQueryData(['grocery-list'], old => {
+                    if (!old || !old.groceries) return old;
+                    return {
+                        ...old,
+                        groceries: old.groceries.map(g => 
+                            JSON.stringify(g.item_ids) === JSON.stringify(item_ids) 
+                                ? { ...g, is_bought } 
+                                : g
+                        )
+                    };
+                });
+            }
+
+            return { previousData };
         },
-        onError: () => toast.error('Failed to update item.'),
+        onError: (err, variables, context) => {
+            if (context?.previousData) {
+                queryClient.setQueryData(['grocery-list'], context.previousData);
+            }
+            toast.error('Failed to update item.');
+        }
+        // Removed onSuccess invalidateQueries to prevent refetching from overwriting rapid click optimistic states
     });
 
     const handleToggle = (item) => {
-        toggleMutation.mutate({ item_ids: item.item_ids, is_bought: !item.is_bought });
+        // Read current state from cache to avoid closure staleness on rapid clicks
+        const currentData = queryClient.getQueryData(['grocery-list']);
+        let currentState = item.is_bought;
+        
+        if (currentData && currentData.groceries) {
+            const cacheItem = currentData.groceries.find(g => JSON.stringify(g.item_ids) === JSON.stringify(item.item_ids));
+            if (cacheItem) {
+                currentState = cacheItem.is_bought;
+            }
+        }
+        
+        toggleMutation.mutate({ item_ids: item.item_ids, is_bought: !currentState });
     };
 
     const handleCopy = () => {
@@ -91,7 +129,7 @@ const GroceryList = () => {
     const progress    = groceries.length > 0 ? Math.round((boughtCount / groceries.length) * 100) : 0;
 
     return (
-        <div className="max-w-4xl mx-auto space-y-8 pb-20 font-outfit">
+        <div className="w-full space-y-8 pb-20 font-outfit animate-fade-in">
 
             {/* ── Header ── */}
             <div className="page-header flex flex-col md:flex-row md:items-center justify-between gap-6">

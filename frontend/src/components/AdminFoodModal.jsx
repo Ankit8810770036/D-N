@@ -47,8 +47,8 @@ const AdminFoodModal = ({ isOpen, onClose, onSave, food = null, loading = false 
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white dark:bg-[#0d2b1f] w-full max-w-lg rounded-[2rem] shadow-2xl shadow-black/20 overflow-hidden flex flex-col max-h-[90vh] border border-gray-100 dark:border-white/10">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-sm">
+            <div className="bg-white dark:bg-[#0d2b1f] w-full max-w-lg rounded-[2rem] shadow-2xl shadow-black/20 overflow-hidden flex flex-col max-h-[90dvh] landscape:max-h-[95dvh] border border-gray-100 dark:border-white/10">
 
                 {/* Header */}
                 <div className="px-7 pt-7 pb-5 flex items-center justify-between border-b border-gray-100 dark:border-white/10">

@@ -3,9 +3,11 @@ import { useQuery } from '@tanstack/react-query';
 import api from '../services/api';
 import { BookOpen, Search, ChevronRight, Lock, Clock, Flame, Crown } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import useDebounce from '../hooks/useDebounce';
 
 const Cookbook = () => {
     const [searchTerm, setSearchTerm] = useState('');
+    const debouncedSearch = useDebounce(searchTerm, 250);
 
     const { data: recipes, isLoading } = useQuery({
         queryKey: ['recipes'],
@@ -24,8 +26,8 @@ const Cookbook = () => {
     });
 
     const filteredRecipes = recipes?.filter(recipe =>
-        recipe.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        recipe.description?.toLowerCase().includes(searchTerm.toLowerCase())
+        recipe.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        recipe.description?.toLowerCase().includes(debouncedSearch.toLowerCase())
     );
 
     if (isLoading) {
@@ -102,6 +104,8 @@ const Cookbook = () => {
                                 <img
                                     src={recipe.image_url || 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&q=80&w=400'}
                                     alt={recipe.name}
+                                    loading="lazy"
+                                    decoding="async"
                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                 />
                                 {/* Gradient overlay */}

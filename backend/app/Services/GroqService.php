@@ -6,20 +6,22 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Exception;
 
-class GeminiService
+class GroqService
 {
     private string $apiKey;
     private string $systemPrompt;
 
     public function __construct()
     {
-        $this->apiKey = env('GROQ_API_KEY', '');
+        // Always read from config(), never env() directly — config is cached in production
+        $this->apiKey = config('services.groq.key', '');
         $this->systemPrompt = "You are an expert Diet and Nutrition Planner assistant integrated into a health app. Provide helpful, encouraging, and concise answers to health and nutrition questions. Tailor advice to the user's profile when provided. Use formatting like **bold text** and bullet points to make responses readable and engaging. Keep responses under 300 words. If a question is entirely unrelated to health, diet, or nutrition, politely redirect the conversation back to these topics.";
     }
 
     public function isConfigured(): bool
     {
-        return true;
+        // Actually check the key — was always returning true before
+        return !empty($this->apiKey);
     }
 
     /**

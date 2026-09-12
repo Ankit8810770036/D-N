@@ -202,8 +202,8 @@ export default function OnboardingWizard({ isOpen, onComplete, initialData = {} 
         )
     ]
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="bg-white dark:bg-gray-800 border border-transparent dark:border-gray-700 rounded-[32px] shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden relative animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+            <div className="bg-white dark:bg-gray-800 border border-transparent dark:border-gray-700 rounded-[32px] shadow-2xl w-full max-w-md max-h-[90dvh] landscape:max-h-[95dvh] flex flex-col overflow-hidden relative animate-in zoom-in-95 duration-300">
                 {/* Progress bar */}
                 <div className="h-1.5 w-full bg-gray-100 dark:bg-gray-700 flex-shrink-0 flex">
                     <div

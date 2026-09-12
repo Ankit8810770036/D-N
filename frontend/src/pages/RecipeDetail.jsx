@@ -48,7 +48,7 @@ const RecipeDetail = () => {
 
     if (isLoading) {
         return (
-            <div className="space-y-6 animate-pulse max-w-4xl">
+            <div className="space-y-6 animate-pulse w-full max-w-6xl mx-auto">
                 <div className="h-5 bg-gray-200 dark:bg-white/10 rounded w-32"></div>
                 <div className="card p-0 overflow-hidden">
                     <div className="h-80 bg-gray-200 dark:bg-white/10 rounded-t-[2rem]"></div>
@@ -89,7 +89,7 @@ const RecipeDetail = () => {
     ];
 
     return (
-        <div className="space-y-6 max-w-4xl pb-20 animate-fade-in">
+        <div className="space-y-6 w-full max-w-6xl mx-auto pb-20 animate-fade-in">
 
             {/* Back link */}
             <Link
@@ -108,6 +108,8 @@ const RecipeDetail = () => {
                     <img
                         src={recipe.image_url || 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&q=80&w=800'}
                         alt={recipe.name}
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />

@@ -28,5 +28,6 @@ class DatabaseSeeder extends Seeder
 
         // Seed foods
         $this->call(FoodSeeder::class);
+        $this->call(RecipeSeeder::class);
     }
 }

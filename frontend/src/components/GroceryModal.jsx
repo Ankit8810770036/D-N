@@ -5,7 +5,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 export default function GroceryModal({ isOpen, onClose }) {
     const queryClient = useQueryClient()
-    const [toggling, setToggling] = useState(null)
 
     const { data, isLoading } = useQuery({
         queryKey: ['groceryList'],
@@ -19,7 +18,21 @@ export default function GroceryModal({ isOpen, onClose }) {
     if (!isOpen) return null
 
     async function toggleBought(item) {
-        setToggling(item.name)
+        await queryClient.cancelQueries({ queryKey: ['groceryList'] });
+        const previousList = queryClient.getQueryData(['groceryList']);
+
+        if (previousList) {
+            queryClient.setQueryData(['groceryList'], old => {
+                if (!old || !old.groceries) return old;
+                return {
+                    ...old,
+                    groceries: old.groceries.map(g =>
+                        g.name === item.name ? { ...g, is_bought: !g.is_bought } : g
+                    )
+                };
+            });
+        }
+
         try {
             await api.put('/grocery-toggle', {
                 item_ids: item.item_ids,
@@ -27,15 +40,16 @@ export default function GroceryModal({ isOpen, onClose }) {
             })
             queryClient.invalidateQueries({ queryKey: ['groceryList'] })
         } catch (err) {
+            if (previousList) {
+                queryClient.setQueryData(['groceryList'], previousList);
+            }
             toast.error('Failed to update shopping list.')
-        } finally {
-            setToggling(null)
         }
     }
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="bg-white rounded-[32px] shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+            <div className="bg-white dark:bg-gray-800 rounded-[32px] shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90dvh] landscape:max-h-[95dvh] animate-in zoom-in-95 duration-300">
                 {/* Header */}
                 <div className="p-6 bg-gradient-to-r from-[#2d6a4f] to-[#40916c] text-white flex justify-between items-center shadow-lg shrink-0">
                     <div className="flex items-center gap-3">
@@ -64,7 +78,7 @@ export default function GroceryModal({ isOpen, onClose }) {
                             {data.groceries.map((item, idx) => (
                                 <div
                                     key={idx}
-                                    onClick={() => !toggling && toggleBought(item)}
+                                    onClick={() => toggleBought(item)}
                                     className={`group flex items-center gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-all active:scale-[0.98]
                                         ${item.is_bought
                                             ? 'bg-gray-50 border-gray-100 opacity-60'
@@ -92,10 +106,6 @@ export default function GroceryModal({ isOpen, onClose }) {
                                             {item.total_quantity} {item.unit} needed
                                         </p>
                                     </div>
-
-                                    {toggling === item.name && (
-                                        <div className="w-4 h-4 animate-spin border-2 border-[#2d6a4f] border-t-transparent rounded-full" />
-                                    )}
                                 </div>
                             ))}
                         </div>

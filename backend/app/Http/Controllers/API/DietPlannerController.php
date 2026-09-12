@@ -35,7 +35,7 @@ class DietPlannerController extends Controller
 
         $target  = $profile->calories_target;
         $macros  = $this->calculator->calculateMacros($target, $profile->goal, $profile->food_preference);
-        $water   = $this->calculator->calculateWaterIntake($profile->weight_kg);
+        $water   = $this->calculator->calculateWaterIntake((float) ($profile->weight_kg ?? 65));
 
         $distribution = [
             'breakfast' => 0.25,
@@ -44,17 +44,41 @@ class DietPlannerController extends Controller
             'dinner'    => 0.30,
         ];
 
-        $foodQuery = Food::query();
-        if ($profile->food_preference === 'veg') $foodQuery->where('is_veg', true);
-        elseif ($profile->food_preference === 'vegan') $foodQuery->where('is_vegan', true);
-        elseif ($profile->food_preference === 'jain') $foodQuery->where('is_jain', true);
-        elseif ($profile->food_preference === 'keto') $foodQuery->where('carbs', '<', 10);
-        elseif ($profile->food_preference === 'paleo') $foodQuery->whereNotIn('category', ['processed', 'junk', 'fast-food']);
+        // Scope to global system foods PLUS the current user's custom foods
+        $foodQuery = Food::query()->where(function ($q) use ($user) {
+            $q->whereNull('user_id')->orWhere('user_id', $user->id);
+        });
+
+        $pref = strtolower(trim($profile->food_preference ?? ''));
+        if ($pref === 'veg' || $pref === 'vegetarian') $foodQuery->where('is_veg', true);
+        elseif ($pref === 'vegan') $foodQuery->where('is_vegan', true);
+        elseif ($pref === 'jain') $foodQuery->where('is_jain', true);
+        elseif ($pref === 'keto') $foodQuery->where('carbs', '<', 10);
+        elseif ($pref === 'paleo') $foodQuery->whereNotIn('category', ['processed', 'junk', 'fast-food']);
 
         $diseases = $profile->diseases ?? [];
         if (in_array('diabetes', $diseases)) {
             $foodQuery->where(function ($q) {
                 $q->whereNull('glycemic_index')->orWhere('glycemic_index', '<=', 55);
+            });
+        }
+        if (in_array('hypertension', $diseases)) {
+            $foodQuery->where('is_low_sodium', true);
+        }
+        if (in_array('thyroid', $diseases)) {
+            $foodQuery->where('is_thyroid_friendly', true);
+        }
+        if (in_array('heart_disease', $diseases)) {
+            $foodQuery->where('is_heart_friendly', true);
+        }
+        if (in_array('pcod', $diseases)) {
+            $foodQuery->where('is_pcod_friendly', true);
+        }
+
+        $allergies = $profile->allergies ?? [];
+        foreach ($allergies as $allergy) {
+            $foodQuery->where(function ($q) use ($allergy) {
+                $q->whereNull('allergens')->orWhereJsonDoesntContain('allergens', $allergy);
             });
         }
 
@@ -78,7 +102,7 @@ class DietPlannerController extends Controller
             $allMealItems = [];
             foreach ($distribution as $mealType => $pct) {
                 $mealCalories = $target * $pct;
-                $items = $this->assignFoodsToMeal($plan, clone $foodQuery, $mealType, $mealCalories);
+                $items = $this->assignFoodsToMeal($plan, clone $foodQuery, $mealType, $mealCalories, $user->id);
                 $allMealItems = array_merge($allMealItems, $items);
             }
 
@@ -102,10 +126,17 @@ class DietPlannerController extends Controller
 
     private function addSpecificItem(Request $request, $user, $date)
     {
+        $request->validate([
+            'meal_type' => 'nullable|string|in:breakfast,lunch,snack,dinner',
+            'quantity'  => 'nullable|numeric|min:0.1|max:5000',
+            'recipe_id' => 'nullable|integer|exists:recipes,id',
+            'food_id'   => 'nullable|integer|exists:foods,id',
+        ]);
+
         $plan = MealPlan::firstOrCreate(
             ['user_id' => $user->id, 'date' => $date],
             [
-                'total_calories' => $user->profile->calories_target,
+                'total_calories' => $user->profile?->calories_target ?? 2000,
                 'protein_target' => 0, 'carbs_target' => 0, 'fat_target' => 0, 'water_intake_liters' => 0
             ]
         );
@@ -114,38 +145,63 @@ class DietPlannerController extends Controller
 
         if ($request->has('recipe_id')) {
             $recipe = \App\Models\Recipe::findOrFail($request->recipe_id);
+
+            // Security & Authorization: verify premium access
+            if ($recipe->is_premium && !$user->isPremium()) {
+                return response()->json([
+                    'message'          => 'This is a Premium recipe. Upgrade to Premium to add it to your plan.',
+                    'premium_required' => true,
+                ], 403);
+            }
+
             $plan->mealItems()->create([
                 'recipe_id' => $recipe->id,
                 'meal_type' => $mealType,
-                'quantity' => 1,
-                'unit' => 'serving',
-                'calories' => $recipe->calories,
-                'protein' => $recipe->protein,
-                'carbs' => $recipe->carbs,
-                'fat' => $recipe->fat,
+                'quantity'  => 1,
+                'unit'      => 'serving',
+                'calories'  => $recipe->calories,
+                'protein'   => $recipe->protein,
+                'carbs'     => $recipe->carbs,
+                'fat'       => $recipe->fat,
             ]);
         } else {
-            $food = Food::findOrFail($request->food_id);
+            // Ensure food is either global or belongs to the current user
+            $food = Food::where(function ($q) use ($user) {
+                $q->whereNull('user_id')->orWhere('user_id', $user->id);
+            })->findOrFail($request->food_id);
+
+            $quantity = $request->input('quantity', $food->serving_size);
+            $factor   = $food->serving_size > 0 ? ($quantity / $food->serving_size) : 1;
+
             $plan->mealItems()->create([
-                'food_id' => $food->id,
+                'food_id'   => $food->id,
                 'meal_type' => $mealType,
-                'quantity' => $request->input('quantity', $food->serving_size),
-                'unit' => $food->serving_unit,
-                'calories' => $food->calories,
-                'protein' => $food->protein,
-                'carbs' => $food->carbs,
-                'fat' => $food->fat,
+                'quantity'  => $quantity,
+                'unit'      => $food->serving_unit,
+                'calories'  => round($food->calories * $factor, 2),
+                'protein'   => round($food->protein * $factor, 2),
+                'carbs'     => round($food->carbs * $factor, 2),
+                'fat'       => round($food->fat * $factor, 2),
             ]);
         }
 
         return response()->json(['message' => 'Item added to your meal plan!']);
     }
 
-    private function assignFoodsToMeal(MealPlan $plan, $foodQuery, string $mealType, float $targetCalories): array
+    private function assignFoodsToMeal(MealPlan $plan, $foodQuery, string $mealType, float $targetCalories, int $userId): array
     {
         $remaining    = $targetCalories;
-        $shuffled     = clone $foodQuery;
-        $foods        = $shuffled->inRandomOrder()->limit(3)->get();
+        
+        // Prioritize including 1 of the user's custom foods if available and matching dietary criteria
+        $customFoods = (clone $foodQuery)->where('user_id', $userId)->inRandomOrder()->limit(1)->get();
+        $globalCountNeeded = max(1, 3 - $customFoods->count());
+        $globalFoods = (clone $foodQuery)->whereNull('user_id')->inRandomOrder()->limit($globalCountNeeded)->get();
+
+        $foods = $customFoods->concat($globalFoods);
+        if ($foods->isEmpty()) {
+            $foods = (clone $foodQuery)->inRandomOrder()->limit(3)->get();
+        }
+
         $mealItems    = [];
 
         foreach ($foods as $food) {
@@ -324,14 +380,19 @@ class DietPlannerController extends Controller
         $profile = $user->profile;
         $targetCalories = $mealItem->calories;
 
-        // Build food filter exactly like generatePlan
-        $foodQuery = Food::query()->where('id', '!=', $mealItem->food_id);
+        // Build food filter exactly like generatePlan — global foods + user's custom foods
+        $foodQuery = Food::query()
+            ->where('id', '!=', $mealItem->food_id)
+            ->where(function ($q) use ($user) {
+                $q->whereNull('user_id')->orWhere('user_id', $user->id);
+            });
 
-        if ($profile && $profile->food_preference === 'veg') {
+        $pref = $profile ? strtolower(trim($profile->food_preference ?? '')) : '';
+        if ($pref === 'veg' || $pref === 'vegetarian') {
             $foodQuery->where('is_veg', true);
-        } elseif ($profile && $profile->food_preference === 'vegan') {
+        } elseif ($pref === 'vegan') {
             $foodQuery->where('is_vegan', true);
-        } elseif ($profile && $profile->food_preference === 'jain') {
+        } elseif ($pref === 'jain') {
             $foodQuery->where('is_jain', true);
         }
 
@@ -339,6 +400,25 @@ class DietPlannerController extends Controller
         if (in_array('diabetes', $diseases)) {
             $foodQuery->where(function ($q) {
                 $q->whereNull('glycemic_index')->orWhere('glycemic_index', '<=', 55);
+            });
+        }
+        if (in_array('hypertension', $diseases)) {
+            $foodQuery->where('is_low_sodium', true);
+        }
+        if (in_array('thyroid', $diseases)) {
+            $foodQuery->where('is_thyroid_friendly', true);
+        }
+        if (in_array('heart_disease', $diseases)) {
+            $foodQuery->where('is_heart_friendly', true);
+        }
+        if (in_array('pcod', $diseases)) {
+            $foodQuery->where('is_pcod_friendly', true);
+        }
+
+        $allergies = $profile->allergies ?? [];
+        foreach ($allergies as $allergy) {
+            $foodQuery->where(function ($q) use ($allergy) {
+                $q->whereNull('allergens')->orWhereJsonDoesntContain('allergens', $allergy);
             });
         }
 

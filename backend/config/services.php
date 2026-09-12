@@ -40,4 +40,8 @@ return [
         'key_secret' => env('RAZORPAY_KEY_SECRET', ''),
     ],
 
+    'groq' => [
+        'key' => env('GROQ_API_KEY', ''),
+    ],
+
 ];

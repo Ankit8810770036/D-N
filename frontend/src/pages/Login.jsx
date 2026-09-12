@@ -86,7 +86,12 @@ export default function Login() {
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-[9px] font-black text-white uppercase tracking-widest mb-1 ml-1">Secure Password</label>
+                                <div className="flex items-center justify-between mb-1 ml-1">
+                                    <label className="block text-[9px] font-black text-white uppercase tracking-widest">Secure Password</label>
+                                    <Link to="/forgot-password" className="text-[9px] font-bold text-green-400 hover:text-green-300 transition-colors uppercase tracking-widest">
+                                        Forgot password?
+                                    </Link>
+                                </div>
                                 <input
                                     type="password"
                                     value={form.password}

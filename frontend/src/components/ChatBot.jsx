@@ -92,12 +92,12 @@ export default function ChatBot() {
     }
 
     return (
-        <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+        <div className="fixed bottom-4 sm:bottom-6 right-4 sm:right-6 z-50 flex flex-col items-end">
             {/* Chat Window */}
             {isOpen && (
-                <div className="w-80 sm:w-96 bg-white/80 dark:bg-gray-800/90 backdrop-blur-xl border border-white/50 dark:border-gray-700 shadow-2xl rounded-2xl flex flex-col overflow-hidden mb-4 transition-all duration-300 transform origin-bottom-right" style={{ maxHeight: 'calc(100vh - 100px)' }}>
+                <div className="w-[calc(100vw-2rem)] sm:w-96 max-w-sm bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl border border-white/50 dark:border-gray-700 shadow-2xl rounded-2xl flex flex-col overflow-hidden mb-3 transition-all duration-300 transform origin-bottom-right max-h-[75dvh] landscape:max-h-[70dvh]">
                     {/* Header */}
-                    <div className="bg-gradient-to-r from-[#2d6a4f] to-[#40916c] p-4 text-white flex justify-between items-center z-10 relative shadow-sm">
+                    <div className="bg-gradient-to-r from-[#2d6a4f] to-[#40916c] p-3.5 sm:p-4 text-white flex justify-between items-center z-10 relative shadow-sm flex-shrink-0">
                         <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-xl">
                                 🥑
@@ -118,7 +118,7 @@ export default function ChatBot() {
                     </div>
 
                     {/* Messages */}
-                    <div className="flex-1 min-h-0 p-4 overflow-y-auto bg-[#f0fdf7]/30 dark:bg-gray-900/50 flex flex-col gap-3" style={{ height: '400px' }}>
+                    <div className="flex-1 min-h-0 p-3 sm:p-4 overflow-y-auto bg-[#f0fdf7]/30 dark:bg-gray-900/50 flex flex-col gap-3 h-64 sm:h-96">
                         {messages.map((msg) => (
                             <div
                                 key={msg.id}

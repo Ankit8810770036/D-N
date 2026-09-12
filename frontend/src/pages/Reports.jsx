@@ -68,7 +68,7 @@ export default function Reports() {
     const meta    = bmiMeta(bmi)
 
     return (
-        <div className="space-y-6 max-w-3xl">
+        <div className="space-y-6 w-full pb-10 animate-fade-in">
             <div className="page-header">
                 <h1 className="page-title flex items-center gap-2"><FileText className="w-7 h-7 text-[#2d6a4f]" /> Reports</h1>
                 <p className="page-subtitle">Your complete health &amp; diet overview</p>

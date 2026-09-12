@@ -17,16 +17,32 @@ class RecipeController extends Controller
      */
     public function index(Request $request)
     {
+        $hasFilters = $request->filled('category') || $request->filled('search');
+        $userId = $request->user()->id;
+
         $query = Recipe::query()->with('ingredients.food');
 
         // Global recipes + user's own recipes
-        $query->where(function ($q) use ($request) {
+        $query->where(function ($q) use ($userId) {
             $q->whereNull('user_id')
-              ->orWhere('user_id', $request->user()->id);
+              ->orWhere('user_id', $userId);
         });
 
-        if ($request->has('category')) {
-            $query->where('description', 'like', '%' . $request->category . '%');
+        // Filter by exact category column
+        if ($request->filled('category')) {
+            $query->where('category', $request->category);
+        }
+
+        // Optional name search
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        if (!$hasFilters) {
+            $cacheKey = "recipes_user_{$userId}";
+            return response()->json(\Illuminate\Support\Facades\Cache::remember($cacheKey, 3600, function () use ($query) {
+                return $query->latest()->get();
+            }));
         }
 
         return response()->json($query->latest()->get());
@@ -38,25 +54,27 @@ class RecipeController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
+            'name'         => 'required|string|max:255',
+            'description'  => 'nullable|string',
+            'category'     => 'nullable|string|in:breakfast,lunch,dinner,snack,dessert,drink,general',
             'instructions' => 'nullable|string',
-            'image_url' => 'nullable|url',
-            'ingredients' => 'required|array|min:1',
-            'ingredients.*.food_id' => 'required|exists:foods,id',
+            'image_url'    => 'nullable|url',
+            'ingredients'  => 'required|array|min:1',
+            'ingredients.*.food_id'  => 'required|exists:foods,id',
             'ingredients.*.quantity' => 'required|numeric|min:0.1',
-            'ingredients.*.unit' => 'required|string',
-            'is_premium' => 'boolean'
+            'ingredients.*.unit'     => 'required|string',
+            'is_premium'   => 'boolean'
         ]);
 
         return DB::transaction(function () use ($validated, $request) {
             $recipe = Recipe::create([
-                'user_id' => $request->user()->id,
-                'name' => $validated['name'],
-                'description' => $validated['description'],
-                'instructions' => $validated['instructions'],
-                'image_url' => $validated['image_url'],
-                'is_premium' => $validated['is_premium'] ?? false,
+                'user_id'      => $request->user()->id,
+                'name'         => $validated['name'],
+                'description'  => $validated['description'] ?? null,
+                'category'     => $validated['category'] ?? 'general',
+                'instructions' => $validated['instructions'] ?? null,
+                'image_url'    => $validated['image_url'] ?? null,
+                'is_premium'   => $validated['is_premium'] ?? false,
             ]);
 
             foreach ($validated['ingredients'] as $ing) {
@@ -64,6 +82,8 @@ class RecipeController extends Controller
             }
 
             $this->recalculateNutrition($recipe);
+            \Illuminate\Support\Facades\Cache::forget("recipes_user_{$request->user()->id}");
+            \Illuminate\Support\Facades\Cache::forget('admin_platform_stats');
 
             return response()->json($recipe->load('ingredients.food'), 201);
         });
@@ -71,9 +91,17 @@ class RecipeController extends Controller
 
     /**
      * Display the specified resource.
+     * Premium recipes are restricted to premium users and admins only.
      */
-    public function show(Recipe $recipe)
+    public function show(Recipe $recipe, Request $request)
     {
+        if ($recipe->is_premium && !$request->user()->isPremium()) {
+            return response()->json([
+                'message'          => 'This is a Premium recipe. Upgrade to Premium to unlock it.',
+                'premium_required' => true,
+            ], 403);
+        }
+
         return response()->json($recipe->load('ingredients.food'));
     }
 
@@ -87,18 +115,19 @@ class RecipeController extends Controller
         }
 
         $validated = $request->validate([
-            'name' => 'sometimes|required|string|max:255',
-            'description' => 'nullable|string',
+            'name'         => 'sometimes|required|string|max:255',
+            'description'  => 'nullable|string',
+            'category'     => 'nullable|string|in:breakfast,lunch,dinner,snack,dessert,drink,general',
             'instructions' => 'nullable|string',
-            'image_url' => 'nullable|url',
-            'ingredients' => 'sometimes|required|array|min:1',
-            'ingredients.*.food_id' => 'required|exists:foods,id',
+            'image_url'    => 'nullable|url',
+            'ingredients'  => 'sometimes|required|array|min:1',
+            'ingredients.*.food_id'  => 'required|exists:foods,id',
             'ingredients.*.quantity' => 'required|numeric|min:0.1',
-            'ingredients.*.unit' => 'required|string',
-            'is_premium' => 'boolean'
+            'ingredients.*.unit'     => 'required|string',
+            'is_premium'   => 'boolean'
         ]);
 
-        return DB::transaction(function () use ($validated, $recipe) {
+        return DB::transaction(function () use ($validated, $recipe, $request) {
             $recipe->update($validated);
 
             if (isset($validated['ingredients'])) {
@@ -109,6 +138,8 @@ class RecipeController extends Controller
             }
 
             $this->recalculateNutrition($recipe);
+            \Illuminate\Support\Facades\Cache::forget("recipes_user_{$request->user()->id}");
+            \Illuminate\Support\Facades\Cache::forget('admin_platform_stats');
 
             return response()->json($recipe->load('ingredients.food'));
         });
@@ -124,6 +155,8 @@ class RecipeController extends Controller
         }
 
         $recipe->delete();
+        \Illuminate\Support\Facades\Cache::forget("recipes_user_{$request->user()->id}");
+        \Illuminate\Support\Facades\Cache::forget('admin_platform_stats');
         return response()->json(['message' => 'Recipe deleted']);
     }
 

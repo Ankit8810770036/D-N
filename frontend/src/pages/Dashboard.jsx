@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { useQuery } from '@tanstack/react-query'
@@ -12,6 +13,7 @@ const COLORS = ['#2d6a4f', '#40916c', '#f4a261']
 
 export default function Dashboard() {
     const { user } = useAuth()
+    const location = useLocation()
     const [isWizardOpen, setIsWizardOpen] = useState(false)
 
     // Calculate local today's date correctly (avoiding UTC timezone offset issues)
@@ -39,6 +41,22 @@ export default function Dashboard() {
     const loading = loadingProfile || loadingPlan || loadingSummary
     const [celebratingBadges, setCelebratingBadges] = useState([])
     const badges = summary?.badges || []
+
+    useEffect(() => {
+        if (!loading && location.hash === '#daily-challenges') {
+            const timer = setTimeout(() => {
+                const el = document.getElementById('daily-challenges')
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                    el.classList.add('ring-4', 'ring-amber-400', 'ring-offset-2', 'shadow-2xl')
+                    setTimeout(() => {
+                        el.classList.remove('ring-4', 'ring-amber-400', 'ring-offset-2', 'shadow-2xl')
+                    }, 2000)
+                }
+            }, 100)
+            return () => clearTimeout(timer)
+        }
+    }, [location.hash, loading])
 
     useEffect(() => {
         if (badges.length > 0) {

@@ -24,7 +24,7 @@ export default function Planner() {
         is_veg: true, is_vegan: false, is_jain: false
     })
 
-    const { data: plan, isFetching: fetching, refetch: fetchPlan } = useQuery({
+    const { data: plan, isPending: fetching, refetch: fetchPlan } = useQuery({
         queryKey: ['mealPlan', date],
         queryFn: () => api.get(`/meal-plan?date=${date}`).then(res => res.data).catch(() => null),
     })
@@ -56,6 +56,22 @@ export default function Planner() {
     }
 
     async function toggleConsumed(itemId) {
+        await queryClient.cancelQueries({ queryKey: ['mealPlan', date] });
+        const previousPlan = queryClient.getQueryData(['mealPlan', date]);
+
+        if (previousPlan) {
+            queryClient.setQueryData(['mealPlan', date], old => {
+                if (!old || !old.meals) return old;
+                const newMeals = { ...old.meals };
+                for (const type in newMeals) {
+                    newMeals[type] = newMeals[type].map(item =>
+                        item.id === itemId ? { ...item, is_consumed: !item.is_consumed } : item
+                    );
+                }
+                return { ...old, meals: newMeals };
+            });
+        }
+
         try {
             const res = await api.put(`/meal-item/${itemId}/consume`);
             queryClient.invalidateQueries({ queryKey: ['mealPlan'] });
@@ -64,6 +80,9 @@ export default function Planner() {
             const label = res.data.date === new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0] ? 'today' : res.data.date;
             toast.success(`${res.data.message} — ${res.data.calories_consumed} kcal consumed on ${label}`, { duration: 2500 });
         } catch (err) {
+            if (previousPlan) {
+                queryClient.setQueryData(['mealPlan', date], previousPlan);
+            }
             toast.error(err.response?.data?.message || 'Failed to update.');
         }
     }
@@ -101,21 +120,20 @@ export default function Planner() {
 
     const handleScannerDetected = (productData) => {
         setCustomFoodForm({
-            name: productData.name,
-            calories: Math.round(productData.calories),
-            protein: Math.round(productData.protein),
-            carbs: Math.round(productData.carbs),
-            fat: Math.round(productData.fat),
-            is_veg: true, // Default to true, OFF data often doesn't specify clearly enough for a simple toggle
-            is_vegan: false,
+            name: productData.name || '',
+            calories: productData.calories !== undefined ? String(Math.round(productData.calories)) : '',
+            protein: productData.protein !== undefined ? String(Math.round(productData.protein)) : '',
+            carbs: productData.carbs !== undefined ? String(Math.round(productData.carbs)) : '',
+            fat: productData.fat !== undefined ? String(Math.round(productData.fat)) : '',
+            is_veg: productData.is_veg !== undefined ? productData.is_veg : true,
+            is_vegan: productData.is_vegan || false,
             is_jain: false
         })
         setShowCustomFoodModal(true)
-        toast.success(`Fetched: ${productData.name}`)
     }
 
     return (
-        <div className="space-y-6 max-w-4xl">
+        <div className="space-y-6 w-full pb-10 animate-fade-in">
             <div className="page-header flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="page-title">Diet Planner</h1>
@@ -143,12 +161,6 @@ export default function Planner() {
                     className="btn-primary whitespace-nowrap mt-0 sm:mt-5">
                     {loading ? '⏳ Generating...' : '✨ Generate Meal Plan'}
                 </button>
-
-                <BarcodeScanner
-                    isOpen={isScannerOpen}
-                    onClose={() => setIsScannerOpen(false)}
-                    onDetected={handleScannerDetected}
-                />
             </div>
 
             {/* Summary Row */}
@@ -324,6 +336,12 @@ export default function Planner() {
                     </div>
                 </div>
             )}
+
+            <BarcodeScanner
+                isOpen={isScannerOpen}
+                onClose={() => setIsScannerOpen(false)}
+                onDetected={handleScannerDetected}
+            />
         </div>
     )
 }

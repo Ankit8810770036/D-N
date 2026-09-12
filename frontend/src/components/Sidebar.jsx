@@ -70,23 +70,26 @@ export default function Sidebar({ isOpen, onClose }) {
                 <TokenWalletSidebar />
             </div>
 
-            {/* User info */}
-            <div className="px-4 py-4 border-t border-gray-100 dark:border-white/10">
-                <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#40916c] to-[#2d6a4f] flex items-center justify-center text-white font-bold text-sm">
-                        {user?.name?.[0]?.toUpperCase() ?? 'U'}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                            <p className="text-sm font-semibold text-gray-800 dark:text-white/90 truncate">{user?.name}</p>
-                            {user?.plan_type === 'premium' && (
-                                <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-md font-bold border border-amber-200">PRO</span>
-                            )}
-                        </div>
-                        <p className="text-xs text-gray-400 capitalize">{user?.role}</p>
-                    </div>
+            {/* User info — clickable → goes to profile */}
+            <NavLink
+                to="/profile"
+                onClick={handleLinkClick}
+                className="px-4 py-4 border-t border-gray-100 dark:border-white/10 flex items-center gap-3 hover:bg-green-50 dark:hover:bg-white/5 transition-colors cursor-pointer group"
+            >
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#40916c] to-[#2d6a4f] flex items-center justify-center text-white font-bold text-sm flex-shrink-0 group-hover:ring-2 group-hover:ring-[#40916c]/50 transition-all">
+                    {user?.name?.[0]?.toUpperCase() ?? 'U'}
                 </div>
-            </div>
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                        <p className="text-sm font-semibold text-gray-800 dark:text-white/90 truncate group-hover:text-[#2d6a4f] dark:group-hover:text-green-400 transition-colors">{user?.name}</p>
+                        {user?.plan_type === 'premium' && (
+                            <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-md font-bold border border-amber-200">PRO</span>
+                        )}
+                    </div>
+                    <p className="text-xs text-gray-400 capitalize">{user?.role}</p>
+                </div>
+                <span className="text-gray-300 dark:text-white/20 group-hover:text-[#40916c] dark:group-hover:text-green-400 transition-colors text-xs">→</span>
+            </NavLink>
         </aside>
     )
 }

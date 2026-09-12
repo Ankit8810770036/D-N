@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\API\AuthController;
+use App\Http\Controllers\API\ChatbotController;
 use App\Http\Controllers\API\DietPlannerController;
 use App\Http\Controllers\API\FoodController;
 use App\Http\Controllers\API\HealthProfileController;
@@ -15,13 +16,19 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-// ─── Public Auth Routes ────────────────────────────────────────────────────
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login',    [AuthController::class, 'login']);
+// ─── Public Auth Routes (Rate Limited) ────────────────────────────────────
+// throttle:max_attempts,decay_minutes
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
+Route::post('/login',    [AuthController::class, 'login'])->middleware('throttle:10,1');
+
+// ─── Password Reset (Public — no auth required) ────────────────────────────
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
+Route::post('/reset-password',  [AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
 
 // ─── Public Food Browse ────────────────────────────────────────────────────
-Route::get('/foods',         [FoodController::class, 'index']);
-Route::get('/foods/{food}',  [FoodController::class, 'show']);
+Route::get('/foods',                    [FoodController::class, 'index']);
+Route::get('/foods/{food}',             [FoodController::class, 'show']);
+Route::get('/barcode/lookup/{barcode}',  [FoodController::class, 'barcodeLookup']);
 
 // ─── Authenticated Routes ──────────────────────────────────────────────────
 Route::middleware('auth:sanctum')->group(function () {
@@ -30,6 +37,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me',      [AuthController::class, 'me']);
     Route::post('/profile/photo', [AuthController::class, 'updatePhoto']);
+
+    // ── Email Verification ─────────────────────────────────────────────────
+    // Resend the verification email (user clicks "Resend" on the frontend banner)
+    Route::post('/email/resend-verification', function (Illuminate\Http\Request $request) {
+        if ($request->user()->hasVerifiedEmail()) {
+            return response()->json(['message' => 'Email already verified.'], 200);
+        }
+        $request->user()->sendEmailVerificationNotification();
+        return response()->json(['message' => 'Verification email resent. Please check your inbox.']);
+    });
 
     // Health Profile
     Route::get ('/profile',         [HealthProfileController::class, 'show']);
@@ -53,7 +70,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/tokens/daily-login',  [\App\Http\Controllers\API\TokenController::class, 'dailyLogin']);
 
     // Chatbot
-    Route::post('/chat',           [\App\Http\Controllers\API\ChatbotController::class, 'ask']);
+    Route::post('/chat', [ChatbotController::class, 'ask'])->middleware('throttle:30,1');
 
     // Foods & Custom Foods
     Route::post('/foods',          [FoodController::class, 'store']);
@@ -72,9 +89,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Admin-only Data Management
     Route::middleware('can:admin')->group(function () {
-        Route::get   ('/admin/stats',   [\App\Http\Controllers\API\AdminController::class, 'getStats']);
-        Route::get   ('/admin/users',   [\App\Http\Controllers\API\AdminController::class, 'getUsers']);
+        Route::get   ('/admin/stats',        [\App\Http\Controllers\API\AdminController::class, 'getStats']);
+        Route::get   ('/admin/users',        [\App\Http\Controllers\API\AdminController::class, 'getUsers']);
+        Route::get   ('/admin/export-users', [\App\Http\Controllers\API\AdminController::class, 'exportUsers']);
         Route::put   ('/admin/users/{user}', [\App\Http\Controllers\API\AdminController::class, 'updateUser']);
+        Route::delete('/admin/users/{user}', [\App\Http\Controllers\API\AdminController::class, 'destroy']);
         Route::post  ('/admin/refresh-cache', [\App\Http\Controllers\API\AdminController::class, 'refreshCache']);
 
         Route::put   ('/foods/{food}',  [\App\Http\Controllers\API\FoodController::class, 'update']);

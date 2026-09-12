@@ -5,31 +5,44 @@ import { Utensils, Search, Plus, Trash2, Edit3, ArrowLeft, Flame, Scale } from '
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import AdminFoodModal from '../components/AdminFoodModal';
+import useDebounce from '../hooks/useDebounce';
 
 const AdminFoodList = () => {
     const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
+    const debouncedSearch = useDebounce(searchTerm, 250);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingFood, setEditingFood] = useState(null);
 
     const { data: foods, isLoading } = useQuery({
         queryKey: ['adminFoods'],
         queryFn: async () => {
-            const response = await api.get('/foods');
+            const response = await api.get('/foods?all=true');
             return response.data;
         }
     });
 
     const saveMutation = useMutation({
-        mutationFn: async (formData) => {
+        mutationFn: async ({ formData, editingFood }) => {
             if (editingFood) {
                 return api.put(`/foods/${editingFood.id}`, formData);
             }
             return api.post('/foods', formData);
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries(['adminFoods']);
-            toast.success(editingFood ? 'Food updated' : 'Food added');
+        onSuccess: (response, variables) => {
+            const savedFood = response.data;
+            const wasEditing = !!variables.editingFood;
+
+            // Immediately update the cache with the server's fresh data
+            queryClient.setQueryData(['adminFoods'], (oldData) => {
+                if (!Array.isArray(oldData)) return oldData;
+                if (wasEditing) {
+                    return oldData.map(f => f.id === savedFood.id ? savedFood : f);
+                }
+                return [savedFood, ...oldData];
+            });
+
+            toast.success(wasEditing ? 'Food updated' : 'Food added');
             handleCloseModal();
         },
         onError: (err) => {
@@ -41,8 +54,11 @@ const AdminFoodList = () => {
         mutationFn: async (foodId) => {
             return api.delete(`/foods/${foodId}`);
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries(['adminFoods']);
+        onSuccess: (_, foodId) => {
+            queryClient.setQueryData(['adminFoods'], (oldData) => {
+                if (!Array.isArray(oldData)) return oldData;
+                return oldData.filter(f => f.id !== foodId);
+            });
             toast.success('Food item deleted');
         }
     });
@@ -53,8 +69,8 @@ const AdminFoodList = () => {
 
     const foodItems = Array.isArray(foods) ? foods : (foods?.data || []);
     const filteredFoods = foodItems?.filter(food =>
-        food.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        food.brand?.toLowerCase().includes(searchTerm.toLowerCase())
+        food.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        food.brand?.toLowerCase().includes(debouncedSearch.toLowerCase())
     );
 
     if (isLoading) {
@@ -191,7 +207,7 @@ const AdminFoodList = () => {
                 isOpen={isModalOpen}
                 onClose={handleCloseModal}
                 food={editingFood}
-                onSave={(data) => saveMutation.mutate(data)}
+                onSave={(formData) => saveMutation.mutate({ formData, editingFood })}
                 loading={saveMutation.isPending}
             />
         </div>

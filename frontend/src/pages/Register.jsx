@@ -25,8 +25,8 @@ export default function Register() {
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
             return toast.error("Please enter a valid email address.")
         }
-        if (form.password.length < 6) {
-            return toast.error("Password must be at least 6 characters.")
+        if (form.password.length < 8) {
+            return toast.error("Password must be at least 8 characters.")
         }
         if (form.password !== form.password_confirmation) {
             return toast.error("Your passwords do not match!")
@@ -43,7 +43,13 @@ export default function Register() {
             toast.success('Registration successful!')
             navigate('/dashboard')
         } catch (err) {
-            toast.error(err.response?.data?.message || 'Registration failed. Please check your inputs.')
+            const serverErrors = err.response?.data?.errors
+            if (serverErrors) {
+                const firstError = Object.values(serverErrors).flat()[0]
+                toast.error(firstError || 'Validation failed. Please check your inputs.')
+            } else {
+                toast.error(err.response?.data?.message || 'Registration failed. Please check your inputs.')
+            }
         } finally {
             setLoading(false)
         }

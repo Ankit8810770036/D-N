@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import api from '../services/api'
 import toast from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
@@ -10,6 +11,7 @@ import {
 
 export default function Progress() {
     const { user, isAdmin } = useAuth()
+    const location = useLocation()
     const queryClient = useQueryClient()
     const [logs, setLogs] = useState([])
     const [summary, setSummary] = useState(null)
@@ -26,6 +28,20 @@ export default function Progress() {
     useEffect(() => {
         fetchAnalytics();
     }, [])
+
+    useEffect(() => {
+        if (!fetching && location.hash === '#log-form') {
+            const timer = setTimeout(() => {
+                const el = document.getElementById('log-form')
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                    el.classList.add('ring-4', 'ring-emerald-400', 'ring-offset-2', 'shadow-2xl')
+                    setTimeout(() => el.classList.remove('ring-4', 'ring-emerald-400', 'ring-offset-2', 'shadow-2xl'), 2000)
+                }
+            }, 100)
+            return () => clearTimeout(timer)
+        }
+    }, [location.hash, fetching])
 
     async function fetchAnalytics() {
         setFetching(true);
@@ -64,7 +80,7 @@ export default function Progress() {
     const isPremium = user?.plan_type === 'premium' || isAdmin;
 
     return (
-        <div className="space-y-6 max-w-4xl">
+        <div className="space-y-6 w-full pb-10 animate-fade-in">
             <div className="page-header">
                 <h1 className="page-title">Progress Tracker</h1>
                 <p className="page-subtitle">Log and visualize your daily health metrics</p>
@@ -220,7 +236,7 @@ export default function Progress() {
             )}
 
             {/* Log Form */}
-            <div className="card">
+            <div id="log-form" className="card scroll-mt-24 transition-all duration-500">
                 <h2 className="font-semibold text-gray-800 dark:text-white/90 mb-4">📝 Log Today's Progress</h2>
                 <form onSubmit={handleLog} className="space-y-4">
                     <div className="grid md:grid-cols-3 gap-4">

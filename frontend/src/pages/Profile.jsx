@@ -77,9 +77,15 @@ export default function Profile() {
         e.preventDefault()
         setLoading(true)
         try {
-            const { data } = await api.put('/profile/update', form)
+            await api.put('/profile/update', form)
             queryClient.invalidateQueries({ queryKey: ['profile'] })
             queryClient.invalidateQueries({ queryKey: ['summary'] })
+
+            // Sync AuthContext so navbar/sidebar reflect any name or role changes immediately
+            const { data: freshUser } = await api.get('/me')
+            setUser(freshUser)
+            localStorage.setItem('user', JSON.stringify(freshUser))
+
             toast.success('Profile updated! ✅')
         } catch (err) {
             if (err.response?.status === 403 && err.response?.data?.premium_required) {
@@ -95,7 +101,7 @@ export default function Profile() {
     }
 
     return (
-        <div className="space-y-6 max-w-4xl">
+        <div className="space-y-6 w-full pb-10 animate-fade-in">
             <div className="page-header flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="flex items-center gap-6">
                     <div className="relative group">

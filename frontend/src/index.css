@@ -16,12 +16,18 @@
   * {
     box-sizing: border-box;
     scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
     @apply bg-gradient-to-br from-[#f8faf9] via-[#ffffff] to-[#f1fcf6] min-h-screen text-gray-800 dark:bg-none dark:bg-[#081c15] dark:text-white;
     font-family: 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    overflow-x: hidden;
   }
 
   h1,
@@ -189,4 +195,37 @@
 /* Fix calendar icon in dark mode */
 .dark input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(1);
+}
+
+/* Mobile & Phone Orientation Flexibility */
+@media (max-width: 640px) {
+  .card {
+    padding: 1.25rem !important;
+    border-radius: 1.5rem !important;
+  }
+  .page-title {
+    font-size: 1.65rem !important;
+  }
+  .page-subtitle {
+    font-size: 0.875rem !important;
+  }
+  .metric-card {
+    padding: 1rem !important;
+    border-radius: 1.25rem !important;
+  }
+  .btn-primary, .btn-secondary, .btn-gold {
+    padding-left: 1.25rem !important;
+    padding-right: 1.25rem !important;
+  }
+}
+
+/* Mobile Landscape Adaptation */
+@media (max-height: 500px) and (orientation: landscape) {
+  .page-header {
+    margin-bottom: 1.25rem !important;
+  }
+  .card {
+    padding: 1rem !important;
+    border-radius: 1.25rem !important;
+  }
 }

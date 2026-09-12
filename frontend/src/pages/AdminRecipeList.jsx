@@ -1,15 +1,18 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
-import { BookOpen, Plus, Trash2, Edit3, ArrowLeft, Crown, Flame } from 'lucide-react';
+import { BookOpen, Plus, Trash2, Edit3, ArrowLeft, Crown, Flame, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import AdminRecipeModal from '../components/AdminRecipeModal';
+import useDebounce from '../hooks/useDebounce';
 
 const AdminRecipeList = () => {
     const queryClient = useQueryClient();
     const [isModalOpen, setIsModalOpen] = React.useState(false);
     const [editingRecipe, setEditingRecipe] = React.useState(null);
+    const [searchTerm, setSearchTerm] = React.useState('');
+    const debouncedSearch = useDebounce(searchTerm, 250);
 
     const { data: recipes, isLoading } = useQuery({
         queryKey: ['adminRecipes'],
@@ -20,15 +23,26 @@ const AdminRecipeList = () => {
     });
 
     const saveMutation = useMutation({
-        mutationFn: async (formData) => {
+        mutationFn: async ({ formData, editingRecipe }) => {
             if (editingRecipe) {
                 return api.put(`/recipes/${editingRecipe.id}`, formData);
             }
             return api.post('/recipes', formData);
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries(['adminRecipes']);
-            toast.success(editingRecipe ? 'Recipe updated' : 'Recipe created');
+        onSuccess: (response, variables) => {
+            const savedRecipe = response.data;
+            const wasEditing = !!variables.editingRecipe;
+
+            // Immediately update the cache with fresh server data
+            queryClient.setQueryData(['adminRecipes'], (oldData) => {
+                if (!Array.isArray(oldData)) return oldData;
+                if (wasEditing) {
+                    return oldData.map(r => r.id === savedRecipe.id ? savedRecipe : r);
+                }
+                return [savedRecipe, ...oldData];
+            });
+
+            toast.success(wasEditing ? 'Recipe updated' : 'Recipe created');
             handleCloseModal();
         },
         onError: (err) => {
@@ -40,8 +54,11 @@ const AdminRecipeList = () => {
         mutationFn: async (recipeId) => {
             return api.delete(`/recipes/${recipeId}`);
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries(['adminRecipes']);
+        onSuccess: (_, recipeId) => {
+            queryClient.setQueryData(['adminRecipes'], (oldData) => {
+                if (!Array.isArray(oldData)) return oldData;
+                return oldData.filter(r => r.id !== recipeId);
+            });
             toast.success('Recipe deleted');
         }
     });
@@ -49,6 +66,10 @@ const AdminRecipeList = () => {
     const handleCreate = () => { setEditingRecipe(null); setIsModalOpen(true); };
     const handleEdit = (recipe) => { setEditingRecipe(recipe); setIsModalOpen(true); };
     const handleCloseModal = () => { setIsModalOpen(false); setEditingRecipe(null); };
+
+    const filteredRecipes = recipes?.filter(r =>
+        r.name.toLowerCase().includes(debouncedSearch.toLowerCase())
+    );
 
     if (isLoading) {
         return (
@@ -78,23 +99,44 @@ const AdminRecipeList = () => {
                         <p className="page-subtitle text-sm mt-0">Curate premium and standard recipes</p>
                     </div>
                 </div>
-                <button onClick={handleCreate} className="btn-primary py-2.5 px-5 text-sm">
-                    <Plus className="w-4 h-4" /> Create Recipe
-                </button>
-            </div>
-
-            {/* Recipe Grid */}
-            {recipes?.length === 0 ? (
-                <div className="card flex flex-col items-center py-16 gap-4 text-gray-400">
-                    <BookOpen className="w-12 h-12 opacity-30" />
-                    <p className="font-medium">No recipes yet. Create your first recipe!</p>
-                    <button onClick={handleCreate} className="btn-primary mt-2">
+                <div className="flex items-center gap-3">
+                    <div className="relative">
+                        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                            type="text"
+                            placeholder="Search recipes..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="input-field pl-10 py-2.5 text-sm w-full md:w-56"
+                        />
+                    </div>
+                    <button onClick={handleCreate} className="btn-primary py-2.5 px-5 text-sm">
                         <Plus className="w-4 h-4" /> Create Recipe
                     </button>
                 </div>
+            </div>
+
+            {/* Recipe Grid */}
+            {filteredRecipes?.length === 0 ? (
+                <div className="card flex flex-col items-center py-16 gap-4 text-gray-400">
+                    <BookOpen className="w-12 h-12 opacity-30" />
+                    {searchTerm ? (
+                        <>
+                            <p className="font-medium">No recipes found for "{searchTerm}"</p>
+                            <button onClick={() => setSearchTerm('')} className="btn-secondary mt-2 text-sm py-2 px-6">Clear Search</button>
+                        </>
+                    ) : (
+                        <>
+                            <p className="font-medium">No recipes yet. Create your first recipe!</p>
+                            <button onClick={handleCreate} className="btn-primary mt-2">
+                                <Plus className="w-4 h-4" /> Create Recipe
+                            </button>
+                        </>
+                    )}
+                </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {recipes?.map((recipe) => (
+                    {filteredRecipes?.map((recipe) => (
                         <div key={recipe.id} className="card card-hover p-0 overflow-hidden group">
                             {/* Recipe Image */}
                             <div className="h-44 bg-gray-100 dark:bg-white/5 relative overflow-hidden rounded-t-[2rem]">
@@ -102,6 +144,8 @@ const AdminRecipeList = () => {
                                     <img
                                         src={recipe.image_url}
                                         alt={recipe.name}
+                                        loading="lazy"
+                                        decoding="async"
                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                     />
                                 ) : (
@@ -160,7 +204,7 @@ const AdminRecipeList = () => {
                 isOpen={isModalOpen}
                 onClose={handleCloseModal}
                 recipe={editingRecipe}
-                onSave={(data) => saveMutation.mutate(data)}
+                onSave={(formData) => saveMutation.mutate({ formData, editingRecipe })}
                 loading={saveMutation.isPending}
             />
         </div>

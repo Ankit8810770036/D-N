@@ -15,13 +15,17 @@ class AdminController extends Controller
 {
     public function getStats()
     {
-        return response()->json([
-            'users_count' => User::count(),
-            'foods_count' => Food::count(),
-            'recipes_count' => Recipe::count(),
-            'premium_users' => User::where('plan_type', 'premium')->count(),
-            'total_calories_logged' => DB::table('progress_logs')->sum('calories_consumed'),
-        ]);
+        $stats = \Illuminate\Support\Facades\Cache::remember('admin_platform_stats', 300, function () {
+            return [
+                'users_count' => User::count(),
+                'foods_count' => Food::count(),
+                'recipes_count' => Recipe::count(),
+                'premium_users' => User::where('plan_type', 'premium')->count(),
+                'total_calories_logged' => (float) DB::table('progress_logs')->sum('calories_consumed'),
+            ];
+        });
+
+        return response()->json($stats);
     }
 
     public function getUsers()
@@ -36,7 +40,13 @@ class AdminController extends Controller
             'plan_type' => 'sometimes|string|in:basic,premium',
         ]);
 
+        // Prevent self-demotion from admin
+        if ($user->id === $request->user()->id && isset($validated['role']) && $validated['role'] !== 'admin') {
+            return response()->json(['message' => 'You cannot remove your own admin privileges.'], 403);
+        }
+
         $user->update($validated);
+        \Illuminate\Support\Facades\Cache::forget('admin_platform_stats');
         return response()->json($user);
     }
 
@@ -79,5 +89,22 @@ class AdminController extends Controller
             "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
             "Expires"             => "0"
         ]);
+    }
+
+    public function destroy(User $user)
+    {
+        // Prevent self-deletion
+        if ($user->id === request()->user()->id) {
+            return response()->json(['message' => 'Cannot delete yourself.'], 403);
+        }
+
+        // Protect all admin accounts — they cannot be removed through the panel
+        if ($user->role === 'admin') {
+            return response()->json(['message' => 'Admin accounts cannot be deleted through the panel. Change the role first.'], 403);
+        }
+
+        $user->delete();
+        \Illuminate\Support\Facades\Cache::forget('admin_platform_stats');
+        return response()->json(['message' => 'User deleted successfully.']);
     }
 }

@@ -5,12 +5,32 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\Food;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class FoodController extends Controller
 {
     public function index(Request $request)
     {
+        $user = $request->user('sanctum');
+        $hasFilters = $request->has('search') || $request->has('category') || 
+                      $request->has('is_veg') || $request->has('is_vegan') || 
+                      $request->has('all');
+
         $query = Food::query();
+
+        // Multi-tenant isolation:
+        // Admin with admin_view flag sees all foods.
+        // Logged-in user sees global foods (user_id IS NULL) + their own custom foods (user_id = $user->id).
+        // Unauthenticated visitor sees only global foods (user_id IS NULL).
+        if ($user && $user->isAdmin() && $request->has('admin_view')) {
+            // Admin management view
+        } elseif ($user) {
+            $query->where(function ($q) use ($user) {
+                $q->whereNull('user_id')->orWhere('user_id', $user->id);
+            });
+        } else {
+            $query->whereNull('user_id');
+        }
 
         if ($request->has('search')) {
             $query->where('name', 'like', '%' . $request->search . '%');
@@ -25,7 +45,11 @@ class FoodController extends Controller
             $query->where('is_vegan', filter_var($request->is_vegan, FILTER_VALIDATE_BOOLEAN));
         }
 
-        return response()->json($query->paginate(20));
+        if ($request->has('all') && filter_var($request->all, FILTER_VALIDATE_BOOLEAN)) {
+            return response()->json($query->latest()->get());
+        }
+
+        return response()->json($query->latest()->paginate(20));
     }
 
     public function store(Request $request)
@@ -59,17 +83,35 @@ class FoodController extends Controller
         $validated['serving_size'] = $validated['serving_size'] ?? 100;
         $validated['serving_unit'] = $validated['serving_unit'] ?? 'g';
 
-        return response()->json(Food::create($validated), 201);
+        // Attach custom food exclusively to this user (or allow admin to create global food)
+        $validated['user_id'] = ($user->isAdmin() && $request->has('is_global')) ? null : $user->id;
+
+        $food = Food::create($validated);
+        $this->clearFoodCache();
+        return response()->json($food, 201);
     }
 
-    public function show(Food $food)
+    public function show(Request $request, Food $food)
     {
+        $user = $request->user('sanctum');
+        // Prevent access to other users' custom foods
+        if ($food->user_id !== null && (!$user || ($user->id !== $food->user_id && !$user->isAdmin()))) {
+            return response()->json(['message' => 'Food not found or access denied.'], 404);
+        }
+
         return response()->json($food);
     }
 
     public function update(Request $request, Food $food)
     {
-        $this->authorize('admin');
+        $user = $request->user();
+        // Regular user can only update their own custom foods; admin can update any
+        if ($food->user_id !== null && $food->user_id !== $user->id && !$user->isAdmin()) {
+            return response()->json(['message' => 'Unauthorized to update this food.'], 403);
+        }
+        if ($food->user_id === null && !$user->isAdmin()) {
+            return response()->json(['message' => 'Cannot edit global system foods.'], 403);
+        }
 
         $validated = $request->validate([
             'name'         => 'sometimes|string|max:255',
@@ -84,13 +126,152 @@ class FoodController extends Controller
         ]);
 
         $food->update($validated);
+        $this->clearFoodCache();
         return response()->json($food);
     }
 
-    public function destroy(Food $food)
+    public function destroy(Request $request, Food $food)
     {
-        $this->authorize('admin');
+        $user = $request->user();
+        // Regular user can only delete their own custom foods; admin can delete any
+        if ($food->user_id !== null && $food->user_id !== $user->id && !$user->isAdmin()) {
+            return response()->json(['message' => 'Unauthorized to delete this food.'], 403);
+        }
+        if ($food->user_id === null && !$user->isAdmin()) {
+            return response()->json(['message' => 'Cannot delete global system foods.'], 403);
+        }
+
         $food->delete();
+        $this->clearFoodCache();
         return response()->json(['message' => 'Food deleted successfully']);
+    }
+
+    public function barcodeLookup(string $barcode)
+    {
+        $cleaned = trim($barcode);
+        if (empty($cleaned)) {
+            return response()->json(['error' => 'Please provide a valid barcode.'], 422);
+        }
+
+        // 1. Check local cache first
+        $cacheKey = "barcode_lookup_{$cleaned}";
+        $cached = Cache::get($cacheKey);
+        if ($cached) {
+            return response()->json($cached);
+        }
+
+        // 2. Query OpenFoodFacts API with proper User-Agent header
+        try {
+            $response = \Illuminate\Support\Facades\Http::withHeaders([
+                'User-Agent' => 'SmartDietPlanner - Web/App - Version 1.0 (https://smartdietplanner.com; contact@smartdietplanner.com)'
+            ])->timeout(6)->get("https://world.openfoodfacts.org/api/v0/product/{$cleaned}.json");
+
+            if ($response->successful()) {
+                $data = $response->json();
+                if (($data['status'] ?? 0) === 1 && !empty($data['product'])) {
+                    $p = $data['product'];
+                    $nutriments = $p['nutriments'] ?? [];
+
+                    // Extract calories safely
+                    $calories = 0;
+                    if (isset($nutriments['energy-kcal_100g']) && is_numeric($nutriments['energy-kcal_100g'])) {
+                        $calories = (float) $nutriments['energy-kcal_100g'];
+                    } elseif (isset($nutriments['energy-kcal']) && is_numeric($nutriments['energy-kcal'])) {
+                        $calories = (float) $nutriments['energy-kcal'];
+                    } elseif (isset($nutriments['energy_100g']) && is_numeric($nutriments['energy_100g'])) {
+                        $calories = (float) $nutriments['energy_100g'] / 4.184;
+                    } elseif (isset($nutriments['energy_value']) && is_numeric($nutriments['energy_value'])) {
+                        $calories = (float) $nutriments['energy_value'] / 4.184;
+                    }
+
+                    $protein = (float) ($nutriments['proteins_100g'] ?? $nutriments['proteins'] ?? 0);
+                    $carbs   = (float) ($nutriments['carbohydrates_100g'] ?? $nutriments['carbohydrates'] ?? 0);
+                    $fat     = (float) ($nutriments['fat_100g'] ?? $nutriments['fat'] ?? 0);
+                    $fiber   = (float) ($nutriments['fiber_100g'] ?? $nutriments['fiber'] ?? 0);
+
+                    // Name
+                    $name = $p['product_name'] ?? $p['product_name_en'] ?? $p['generic_name'] ?? $p['generic_name_en'] ?? null;
+                    if (!$name && !empty($p['brands'])) {
+                        $name = "{$p['brands']} Product";
+                    }
+                    if (!$name) {
+                        $name = "Barcode #{$cleaned}";
+                    }
+
+                    // Vegetarian status analysis
+                    $isVeg = true;
+                    $isVegan = false;
+                    $analysis = $p['ingredients_analysis_tags'] ?? [];
+                    if (is_array($analysis)) {
+                        if (in_array('en:non-vegetarian', $analysis)) {
+                            $isVeg = false;
+                        }
+                        if (in_array('en:vegan', $analysis)) {
+                            $isVegan = true;
+                            $isVeg = true;
+                        }
+                    }
+
+                    $result = [
+                        'found'        => true,
+                        'name'         => substr($name, 0, 100),
+                        'brand'        => $p['brands'] ?? '',
+                        'calories'     => round($calories),
+                        'protein'      => round($protein, 1),
+                        'carbs'        => round($carbs, 1),
+                        'fat'          => round($fat, 1),
+                        'fiber'        => round($fiber, 1),
+                        'serving_size' => 100,
+                        'serving_unit' => 'g',
+                        'image_url'    => $p['image_url'] ?? $p['image_front_url'] ?? '',
+                        'barcode'      => $cleaned,
+                        'is_veg'       => $isVeg,
+                        'is_vegan'     => $isVegan,
+                    ];
+
+                    Cache::put($cacheKey, $result, 86400); // cache for 24h
+                    return response()->json($result);
+                }
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning("OpenFoodFacts API error for barcode {$cleaned}: " . $e->getMessage());
+        }
+
+        // 3. Fallback: Check if local database has food with matching name or barcode
+        $localFood = Food::where('name', 'like', "%{$cleaned}%")->first();
+        if ($localFood) {
+            return response()->json([
+                'found'        => true,
+                'name'         => $localFood->name,
+                'brand'        => '',
+                'calories'     => (float) $localFood->calories,
+                'protein'      => (float) $localFood->protein,
+                'carbs'        => (float) $localFood->carbs,
+                'fat'          => (float) $localFood->fat,
+                'fiber'        => (float) ($localFood->fiber ?? 0),
+                'serving_size' => (float) ($localFood->serving_size ?? 100),
+                'serving_unit' => $localFood->serving_unit ?? 'g',
+                'barcode'      => $cleaned,
+                'is_veg'       => (bool) $localFood->is_veg,
+                'is_vegan'     => (bool) $localFood->is_vegan,
+            ]);
+        }
+
+        // 4. If not found, return clean response with barcode so user can easily add details
+        return response()->json([
+            'found'   => false,
+            'barcode' => $cleaned,
+            'name'    => "Product #{$cleaned}",
+            'message' => 'Product not found in global database. You can enter the nutritional facts manually.',
+        ]);
+    }
+
+    private function clearFoodCache(): void
+    {
+        for ($p = 1; $p <= 20; $p++) {
+            Cache::forget("foods_default_page_{$p}");
+        }
+        Cache::forget('foods_all');
+        Cache::forget('admin_platform_stats');
     }
 }

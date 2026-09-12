@@ -273,13 +273,22 @@ function FaqItem({ q, a }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 const Subscription = () => {
-    const { user } = useAuth();
+    const { user, setUser } = useAuth();
     const queryClient = useQueryClient();
     const isPremium = user?.plan_type === 'premium';
 
     const [showPayModal, setShowPayModal]       = useState(false);
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [payLoading, setPayLoading]           = useState(false);
+
+    // Re-fetch /me and update AuthContext so UI reflects the new plan/role
+    const refreshUser = async () => {
+        try {
+            const { data } = await api.get('/me');
+            setUser(data);
+            localStorage.setItem('user', JSON.stringify(data));
+        } catch (_) {}
+    };
 
     // Fetch token balance
     const { data: tokenData } = useQuery({
@@ -292,11 +301,10 @@ const Subscription = () => {
     // ── Cancel / Downgrade ──────────────────────────────────────────────────
     const downgradeMutation = useMutation({
         mutationFn: () => api.post('/unsubscribe').then(r => r.data),
-        onSuccess: (data) => {
+        onSuccess: async (data) => {
             toast.success(data.message);
-            queryClient.invalidateQueries(['auth_user']);
+            await refreshUser();
             setShowCancelModal(false);
-            window.location.reload();
         },
         onError: (err) => {
             toast.error(err.response?.data?.message || 'Failed to cancel subscription');
@@ -307,11 +315,10 @@ const Subscription = () => {
     // ── Verify Payment (Step 2) ──────────────────────────────────────────────
     const verifyMutation = useMutation({
         mutationFn: (payload) => api.post('/payment/verify', payload).then(r => r.data),
-        onSuccess: (data) => {
+        onSuccess: async (data) => {
             toast.success(data.message, { duration: 5000 });
-            queryClient.invalidateQueries(['auth_user']);
+            await refreshUser();
             setShowPayModal(false);
-            window.location.reload();
         },
         onError: (err) => {
             toast.error(err.response?.data?.message || 'Payment verification failed. Please contact support.');
@@ -405,10 +412,9 @@ const Subscription = () => {
         try {
             const { data } = await api.post('/tokens/redeem', { type: 'free' });
             toast.success(data.message, { duration: 5000 });
-            queryClient.invalidateQueries(['auth_user']);
-            queryClient.invalidateQueries(['tokens']);
+            await refreshUser();
+            queryClient.invalidateQueries({ queryKey: ['tokens'] });
             setShowPayModal(false);
-            window.location.reload();
         } catch (err) {
             toast.error(err.response?.data?.message || 'Redemption failed.');
         } finally {
@@ -423,7 +429,7 @@ const Subscription = () => {
             // Step 1: Spend the coins (idempotent lock-in)
             const { data: redeemData } = await api.post('/tokens/redeem', { type: 'discount', coins });
             toast.success(`🪙 ${coins} coins applied! Opening payment…`);
-            queryClient.invalidateQueries(['tokens']);
+            queryClient.invalidateQueries({ queryKey: ['tokens'] });
 
             // Step 2: Load Razorpay SDK
             const sdkLoaded = await loadRazorpayScript();

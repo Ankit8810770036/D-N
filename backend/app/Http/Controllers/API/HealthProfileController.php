@@ -22,7 +22,7 @@ class HealthProfileController extends Controller
                 ? $this->calculator->calculateIdealWeightRange($profile->height_cm, $profile->gender)
                 : null;
             $extra['macros'] = $profile->calories_target
-                ? $this->calculator->calculateMacros($profile->calories_target, $profile->goal)
+                ? $this->calculator->calculateMacros($profile->calories_target, $profile->goal, $profile->food_preference ?? 'standard')
                 : null;
             $extra['water_intake_liters'] = $profile->weight_kg
                 ? $this->calculator->calculateWaterIntake($profile->weight_kg)
@@ -99,7 +99,7 @@ class HealthProfileController extends Controller
                 'bmr'                => $bmr,
                 'tdee'               => $tdee,
                 'calories_target'    => $target,
-                'macros'             => $this->calculator->calculateMacros($target, $validated['goal']),
+                'macros'             => $this->calculator->calculateMacros($target, $validated['goal'], $validated['food_preference']),
                 'water_intake_liters'=> $this->calculator->calculateWaterIntake($validated['weight_kg']),
                 'ideal_weight_range' => $this->calculator->calculateIdealWeightRange(
                     $validated['height_cm'], $validated['gender']

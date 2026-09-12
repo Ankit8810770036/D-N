@@ -2,7 +2,7 @@ import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { Users, Shield, Crown, Mail, ArrowLeft, MoreVertical } from 'lucide-react';
+import { Users, Shield, Crown, Mail, ArrowLeft, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -23,8 +23,18 @@ const AdminUserList = () => {
             return api.put(`/admin/users/${userId}`, data);
         },
         onSuccess: () => {
-            queryClient.invalidateQueries(['adminUsers']);
+            queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
             toast.success('User updated successfully');
+        }
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: async (userId) => {
+            return api.delete(`/admin/users/${userId}`);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
+            toast.success('User deleted successfully');
         }
     });
 
@@ -127,13 +137,25 @@ const AdminUserList = () => {
                                         <div className="flex items-center justify-end gap-2">
                                             {user.id !== currentUser?.id && (
                                                 <>
-                                                    {user.plan_type === 'basic' && (
+                                                    {user.plan_type === 'basic' ? (
                                                         <button
                                                             onClick={() => updateMutation.mutate({ userId: user.id, data: { plan_type: 'premium' } })}
                                                             className="p-2 hover:bg-amber-50 dark:hover:bg-amber-900/20 text-amber-500 rounded-xl transition-colors"
                                                             title="Give Premium"
                                                         >
                                                             <Crown className="w-4 h-4" />
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => {
+                                                                if (window.confirm('Remove premium access from this user?')) {
+                                                                    updateMutation.mutate({ userId: user.id, data: { plan_type: 'basic' } });
+                                                                }
+                                                            }}
+                                                            className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-400 rounded-xl transition-colors"
+                                                            title="Remove Premium"
+                                                        >
+                                                            <Crown className="w-4 h-4 opacity-50" />
                                                         </button>
                                                     )}
                                                     {user.role === 'user' ? (
@@ -157,11 +179,19 @@ const AdminUserList = () => {
                                                             <Shield className="w-4 h-4 fill-current" />
                                                         </button>
                                                     )}
+                                                    <button
+                                                        onClick={() => {
+                                                            if (window.confirm('Are you sure you want to completely delete this user? This cannot be undone.')) {
+                                                                deleteMutation.mutate(user.id);
+                                                            }
+                                                        }}
+                                                        className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 rounded-xl transition-colors"
+                                                        title="Delete User"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
                                                 </>
                                             )}
-                                            <button className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-400 rounded-xl transition-colors">
-                                                <MoreVertical className="w-4 h-4" />
-                                            </button>
                                         </div>
                                     </td>
                                 </tr>
