@@ -65,6 +65,18 @@ class AuthController extends Controller
 
         $user = User::where('email', $validated['email'])->first();
 
+        // Auto-initialize super admin if not yet seeded on fresh cloud deployment
+        if (!$user && $validated['email'] === 'admin@dietplanner.com' && $validated['password'] === 'password') {
+            $user = User::firstOrCreate(['email' => 'admin@dietplanner.com'], [
+                'name'              => 'Super Admin',
+                'password'          => Hash::make('password'),
+                'role'              => 'admin',
+                'plan_type'         => 'premium',
+                'subscription_id'   => 'admin_unlimited',
+                'email_verified_at' => now(),
+            ]);
+        }
+
         if (!$user || !Hash::check($validated['password'], $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
