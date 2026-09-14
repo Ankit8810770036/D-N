@@ -48,9 +48,10 @@ Route::get('/health-check', function () {
     }
 });
 
-Route::get('/setup-db', function () {
+Route::get('/setup-db', function (Request $request) {
     try {
-        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        $command = $request->query('fresh') ? 'migrate:fresh' : 'migrate';
+        \Illuminate\Support\Facades\Artisan::call($command, ['--force' => true]);
         $migrateOutput = \Illuminate\Support\Facades\Artisan::output();
 
         \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
@@ -59,10 +60,11 @@ Route::get('/setup-db', function () {
         return response()->json([
             'success' => true,
             'message' => 'Database successfully migrated and seeded!',
+            'command' => $command,
             'migrate_output' => $migrateOutput,
             'seed_output' => $seedOutput,
-            'foods_count' => DB::table('foods')->count(),
-            'recipes_count' => DB::table('recipes')->count(),
+            'foods_count' => Schema::hasTable('foods') ? DB::table('foods')->count() : 0,
+            'recipes_count' => Schema::hasTable('recipes') ? DB::table('recipes')->count() : 0,
         ]);
     } catch (\Throwable $e) {
         return response()->json([

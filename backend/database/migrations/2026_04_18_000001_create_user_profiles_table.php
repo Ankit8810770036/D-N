@@ -21,7 +21,7 @@ return new class extends Migration
             $table->decimal('sleep_hours', 3, 1)->nullable();
             $table->json('diseases')->nullable();
             $table->json('allergies')->nullable();
-            $table->enum('food_preference', ['veg', 'non-veg', 'vegan', 'jain'])->default('veg');
+            $table->string('food_preference')->default('veg');
             // Computed fields
             $table->decimal('bmi', 5, 2)->nullable();
             $table->decimal('bmr', 7, 2)->nullable();

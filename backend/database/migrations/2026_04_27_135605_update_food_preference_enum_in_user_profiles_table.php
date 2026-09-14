@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('user_profiles', function (Blueprint $table) {
-            $table->enum('food_preference', ['veg', 'non-veg', 'vegan', 'jain', 'keto', 'paleo'])->default('veg')->change();
-        });
+        if (DB::getDriverName() === 'mysql') {
+            Schema::table('user_profiles', function (Blueprint $table) {
+                $table->enum('food_preference', ['veg', 'non-veg', 'vegan', 'jain', 'keto', 'paleo'])->default('veg')->change();
+            });
+        }
     }
 
     /**
@@ -21,8 +23,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('user_profiles', function (Blueprint $table) {
-            $table->enum('food_preference', ['veg', 'non-veg', 'vegan', 'jain'])->default('veg')->change();
-        });
+        if (DB::getDriverName() === 'mysql') {
+            Schema::table('user_profiles', function (Blueprint $table) {
+                $table->enum('food_preference', ['veg', 'non-veg', 'vegan', 'jain'])->default('veg')->change();
+            });
+        }
     }
 };

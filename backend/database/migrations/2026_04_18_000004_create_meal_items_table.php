@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('meal_items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('meal_plan_id')->constrained()->onDelete('cascade');
-            $table->foreignId('food_id')->constrained('foods')->onDelete('cascade');
+            $table->foreignId('food_id')->nullable()->constrained('foods')->onDelete('cascade');
             $table->enum('meal_type', ['breakfast', 'lunch', 'snack', 'dinner']);
             $table->decimal('quantity', 6, 2)->default(1);
             $table->string('unit')->default('g');
