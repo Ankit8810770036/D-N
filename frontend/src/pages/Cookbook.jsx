@@ -56,9 +56,9 @@ const Cookbook = () => {
                 <div className="page-header mb-0">
                     <div className="flex items-center gap-3 mb-1">
                         <BookOpen className="w-7 h-7 text-emerald-600 dark:text-green-400" />
-                        <h1 className="page-title">Healthy Cookbook</h1>
+                        <h1 className="page-title">Healthy Indian Cookbook</h1>
                     </div>
-                    <p className="page-subtitle">Discover nutritious recipes curated for your meal plan</p>
+                    <p className="page-subtitle">Discover nutritious, authentic Indian recipes curated for your health metrics and meal plan</p>
                 </div>
 
                 {/* Search */}

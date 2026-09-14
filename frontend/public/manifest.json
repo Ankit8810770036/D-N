@@ -1,0 +1,61 @@
+{
+  "name": "NutriPlan — Diet & Nutrition Planner",
+  "short_name": "NutriPlan",
+  "description": "AI-powered personalized Indian diet planner and nutrition tracker based on your health metrics.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#081c15",
+  "theme_color": "#10b981",
+  "categories": ["health", "fitness", "lifestyle", "food"],
+  "icons": [
+    {
+      "src": "/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Meal Planner",
+      "short_name": "Planner",
+      "description": "View today's calibrated diet plan",
+      "url": "/planner",
+      "icons": [{ "src": "/icon-192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Healthy Cookbook",
+      "short_name": "Cookbook",
+      "description": "Browse authentic Indian nutrition recipes",
+      "url": "/cookbook",
+      "icons": [{ "src": "/icon-192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Track Progress",
+      "short_name": "Progress",
+      "description": "Log daily water, calories, and weight",
+      "url": "/progress",
+      "icons": [{ "src": "/icon-192.svg", "sizes": "192x192" }]
+    }
+  ]
+}

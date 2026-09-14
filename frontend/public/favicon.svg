@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#059669" />
+      <stop offset="50%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#047857" />
+    </linearGradient>
+    <linearGradient id="leafGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399" />
+      <stop offset="100%" stop-color="#a7f3d0" />
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#000" flood-opacity="0.25" />
+    </filter>
+  </defs>
+  <!-- Background with smooth rounded corners -->
+  <rect width="512" height="512" rx="128" fill="url(#bgGrad)" />
+  
+  <!-- Subtle inner ambient glow -->
+  <circle cx="256" cy="180" r="160" fill="#ffffff" opacity="0.1" />
+
+  <!-- Main Emblem: Stylized NutriLeaf & Heart Rate Spark -->
+  <g filter="url(#shadow)">
+    <!-- Organic Leaf 1 -->
+    <path d="M256 90 C340 90 410 160 410 256 C410 320 370 370 310 400 C280 340 280 260 256 180 C232 260 232 340 202 400 C142 370 102 320 102 256 C102 160 172 90 256 90 Z" fill="url(#leafGrad)" />
+    <!-- Leaf Stem / Vitality Center Line -->
+    <path d="M256 140 L256 420" stroke="#064e3b" stroke-width="14" stroke-linecap="round" />
+    <!-- Cross Vitality Spark -->
+    <path d="M180 270 L220 270 L240 220 L272 310 L292 270 L332 270" stroke="#ffffff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+</svg>

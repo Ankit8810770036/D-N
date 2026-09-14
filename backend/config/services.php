@@ -40,6 +40,13 @@ return [
         'key_secret' => env('RAZORPAY_KEY_SECRET', ''),
     ],
 
+    'nvidia' => [
+        'key'          => env('NVIDIA_NIM_API_KEY', env('NVIDIA_API_KEY', '')),
+        'base_url'     => env('NVIDIA_NIM_BASE_URL', 'https://integrate.api.nvidia.com/v1/chat/completions'),
+        'model'        => env('NVIDIA_NIM_MODEL', 'meta/llama-3.2-11b-vision-instruct'),
+        'vision_model' => env('NVIDIA_NIM_VISION_MODEL', 'meta/llama-3.2-11b-vision-instruct'),
+    ],
+
     'groq' => [
         'key' => env('GROQ_API_KEY', ''),
     ],

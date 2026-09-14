@@ -59,8 +59,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/profile/recalibrate', [HealthProfileController::class, 'recalibrate']);
 
     // Diet Planner
-    Route::post('/generate-plan',  [DietPlannerController::class, 'generatePlan']);
-    Route::get ('/meal-plan',      [DietPlannerController::class, 'getMealPlan']);
+    Route::post('/generate-plan',           [DietPlannerController::class, 'generatePlan']);
+    Route::post('/generate-ai-weekly-plan', [DietPlannerController::class, 'generateAiWeeklyPlan']);
+    Route::get ('/meal-plan',               [DietPlannerController::class, 'getMealPlan']);
     Route::get ('/grocery-list',   [DietPlannerController::class, 'getGroceryList']);
     Route::get ('/grocery-list/pdf', [ReportController::class, 'downloadGroceryPDF']);
     Route::put ('/grocery-toggle', [DietPlannerController::class, 'toggleGroceryItem']);

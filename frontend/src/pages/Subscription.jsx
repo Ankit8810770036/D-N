@@ -41,7 +41,7 @@ const faqs = [
     },
     {
         q: 'How does the AI chat work on Premium?',
-        a: 'Premium members get unlimited queries to our Gemini-powered AI which provides personalized nutrition advice based on your exact health profile.'
+        a: 'Premium members get up to 20 daily queries to our advanced NutriBot AI system which provides personalized nutrition advice and meal plate photo analysis based on your exact health profile.'
     }
 ];
 
@@ -145,7 +145,7 @@ function PaymentModal({ user, tokenBalance, onPay, onRedeemFree, onRedeemDiscoun
                                 <p className="text-xs text-gray-400 mt-1">* GST included in listed price</p>
                             </div>
                             <ul className="space-y-1.5 mb-5">
-                                {['Unlimited AI Chat Bot', 'Advanced Macro Tracking', 'Keto & Paleo Plans', 'Priority Support', 'Ad-free Experience'].map(f => (
+                                {['20 AI Chat & Scan Queries / Day', 'Advanced Macro Tracking', 'Keto & Paleo Plans', 'Priority Support', 'Ad-free Experience'].map(f => (
                                     <li key={f} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                                         <Check className="w-4 h-4 text-green-500 flex-shrink-0" /> {f}
                                     </li>
@@ -397,7 +397,7 @@ const Subscription = () => {
 
     const premiumFeatures = [
         { text: 'Everything in Basic',        icon: <Check className="w-4 h-4" />,        included: true  },
-        { text: 'Unlimited AI Chat Bot',      icon: <Infinity className="w-4 h-4" />,     included: true  },
+        { text: '20 AI Chat & Scan Queries / Day', icon: <Brain className="w-4 h-4" />,  included: true  },
         { text: 'Keto & Paleo Plans',         icon: <Flame className="w-4 h-4" />,        included: true  },
         { text: 'Advanced Macro Tracking',    icon: <BarChart3 className="w-4 h-4" />,   included: true  },
         { text: 'Create Custom Foods',        icon: <Sparkles className="w-4 h-4" />,     included: true  },

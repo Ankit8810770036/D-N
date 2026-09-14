@@ -78,10 +78,13 @@ export default function ChatBot() {
         } catch (error) {
             console.error('Chat error:', error);
             if (error.response?.status === 403 && error.response?.data?.limit_reached) {
+                const isPrem = error.response?.data?.is_premium;
+                const limitMsg = error.response?.data?.error || 'Daily AI query limit reached.';
+                const actionLink = !isPrem ? '<br/><a href="/subscription" class="text-emerald-600 dark:text-emerald-400 underline font-bold mt-1 inline-block">Upgrade to Premium for 20 daily queries →</a>' : '';
                 setMessages([...newMessages, {
                     id: Date.now(),
                     type: 'bot',
-                    text: `<b>AI Limit Reached!</b><br/>You have used your 5 daily queries. <a href="/subscription" class="text-amber-600 underline font-bold">Upgrade to Premium</a> for unlimited AI nutrition guidance!`
+                    text: `<b>⚠️ AI Quota Notice</b><br/>${limitMsg}${actionLink}`
                 }]);
             } else {
                 setMessages([...newMessages, { id: Date.now(), type: 'bot', text: 'Oops! I am having trouble connecting to the network right now.' }]);
@@ -99,12 +102,15 @@ export default function ChatBot() {
                     {/* Header */}
                     <div className="bg-gradient-to-r from-[#2d6a4f] to-[#40916c] p-3.5 sm:p-4 text-white flex justify-between items-center z-10 relative shadow-sm flex-shrink-0">
                         <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-xl">
+                            <div className="w-9 h-9 rounded-2xl bg-white/20 flex items-center justify-center text-xl shadow-inner">
                                 🥑
                             </div>
                             <div>
-                                <h3 className="font-semibold text-sm leading-tight">Diet Assistant</h3>
-                                <p className="text-xs text-green-100">AI Powered</p>
+                                <h3 className="font-bold text-sm leading-tight text-white flex items-center gap-1.5">
+                                    NutriBot AI
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-400/20 border border-emerald-300/30 text-emerald-100 font-semibold">Online</span>
+                                </h3>
+                                <p className="text-[11px] text-emerald-100/90 font-medium">Your Personal Clinical Nutritionist</p>
                             </div>
                         </div>
                         <button

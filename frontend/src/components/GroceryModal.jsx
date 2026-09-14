@@ -39,6 +39,7 @@ export default function GroceryModal({ isOpen, onClose }) {
                 is_bought: !item.is_bought
             })
             queryClient.invalidateQueries({ queryKey: ['groceryList'] })
+            queryClient.invalidateQueries({ queryKey: ['grocery-list'] })
         } catch (err) {
             if (previousList) {
                 queryClient.setQueryData(['groceryList'], previousList);

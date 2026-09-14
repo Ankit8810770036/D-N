@@ -95,7 +95,14 @@ class RecipeController extends Controller
      */
     public function show(Recipe $recipe, Request $request)
     {
-        if ($recipe->is_premium && !$request->user()->isPremium()) {
+        $user = $request->user();
+
+        // Multi-tenant isolation: prevent viewing other users' custom recipes
+        if ($recipe->user_id !== null && (!$user || ($user->id !== $recipe->user_id && !$user->isAdmin()))) {
+            return response()->json(['message' => 'Recipe not found or access denied.'], 404);
+        }
+
+        if ($recipe->is_premium && (!$user || !$user->isPremium())) {
             return response()->json([
                 'message'          => 'This is a Premium recipe. Upgrade to Premium to unlock it.',
                 'premium_required' => true,

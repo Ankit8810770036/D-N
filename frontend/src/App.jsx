@@ -39,6 +39,7 @@ const AdminRecipeList = lazy(() => import('./pages/AdminRecipeList'))
 const GroceryList = lazy(() => import('./pages/GroceryList'))
 import AppLayout from './components/AppLayout'
 import ErrorBoundary from './components/ErrorBoundary'
+import InstallPrompt from './components/InstallPrompt'
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -124,6 +125,7 @@ export default function App() {
                         <ErrorBoundary>
                             <AppRoutes />
                         </ErrorBoundary>
+                        <InstallPrompt />
                         <Toaster
                             position="top-right"
                             toastOptions={{

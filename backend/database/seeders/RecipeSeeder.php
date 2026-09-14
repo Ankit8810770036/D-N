@@ -10,99 +10,155 @@ class RecipeSeeder extends Seeder
 {
     public function run(): void
     {
+        // Clear all legacy recipes so ONLY authentic Indian recipes are present
+        Recipe::whereNull('user_id')->delete();
+
         $recipes = [
             [
-                'name' => 'Protein Oatmeal',
-                'description' => 'A hearty and healthy breakfast with oats, banana, and almonds.',
-                'instructions' => '1. Boil oats in milk. 2. Slice banana. 3. Add almonds on top.',
-                'image_url' => 'https://images.unsplash.com/photo-1517673400267-0251440c45dc?auto=format&fit=crop&q=80&w=600',
+                'name' => 'High-Protein Moong Dal Chilla',
+                'category' => 'breakfast',
+                'description' => 'Crispy and savory golden yellow moong dal crepes loaded with fresh herbs, spices, and grated paneer.',
+                'instructions' => "1. Soak yellow moong dal for 2 hours and grind into a smooth batter with ginger and green chili.\n2. Season with cumin, turmeric, and pinch of salt.\n3. Pour a ladle of batter onto a hot non-stick tawa and spread thin.\n4. Top with grated paneer and cook until golden and crisp. Serve hot with mint chutney.",
+                'image_url' => '/recipes/moong_chilla.jpg',
                 'is_premium' => false,
                 'ingredients' => [
-                    ['name' => 'Oats', 'quantity' => 50, 'unit' => 'g', 'calories' => 389, 'protein' => 17, 'carbs' => 66, 'fat' => 7, 'category' => 'Grains', 'is_veg' => true, 'is_vegan' => true, 'is_jain' => true],
-                    ['name' => 'Milk (Full Fat)', 'quantity' => 200, 'unit' => 'ml', 'calories' => 61, 'protein' => 3.2, 'carbs' => 4.8, 'fat' => 3.3, 'category' => 'Dairy', 'is_veg' => true, 'is_vegan' => false, 'is_jain' => false],
-                    ['name' => 'Banana', 'quantity' => 100, 'unit' => 'g', 'calories' => 89, 'protein' => 1.1, 'carbs' => 23, 'fat' => 0.3, 'category' => 'Fruits', 'is_veg' => true, 'is_vegan' => true, 'is_jain' => true],
-                    ['name' => 'Almonds', 'quantity' => 10, 'unit' => 'g', 'calories' => 579, 'protein' => 21, 'carbs' => 22, 'fat' => 50, 'category' => 'Nuts', 'is_veg' => true, 'is_vegan' => true, 'is_jain' => true],
+                    ['food_name' => 'Moong Dal Chilla', 'quantity' => 120, 'unit' => 'g'],
+                    ['food_name' => 'Paneer (Raw / Grilled)', 'quantity' => 40, 'unit' => 'g'],
                 ]
             ],
             [
-                'name' => 'Quinoa Chickpea Salad',
-                'description' => 'A refreshing Mediterranean salad with quinoa, chickpeas, fresh cucumber, and tomatoes.',
-                'instructions' => '1. Rinse and cook quinoa. 2. Toss with chickpeas, diced cucumber, and tomato. 3. Drizzle with olive oil and fresh herbs.',
-                'image_url' => 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&q=80&w=600',
+                'name' => 'Vegetable Poha with Roasted Peanuts',
+                'category' => 'breakfast',
+                'description' => 'A light and fluffy Maharashtrian staple tempered with mustard seeds, curry leaves, crunchy peanuts, and fresh lemon.',
+                'instructions' => "1. Gently rinse poha in a colander and drain.\n2. Heat 1 tsp oil, add mustard seeds, curry leaves, green chilies, and roasted peanuts.\n3. Sauté diced onions and turmeric.\n4. Add drained poha and toss gently on low flame for 2 mins. Garnish with fresh coriander and lemon juice.",
+                'image_url' => '/recipes/poha.jpg',
+                'is_premium' => false,
+                'ingredients' => [
+                    ['food_name' => 'Poha (Flattened Rice)', 'quantity' => 120, 'unit' => 'g'],
+                    ['food_name' => 'Roasted Peanuts (Moongfali)', 'quantity' => 15, 'unit' => 'g'],
+                ]
+            ],
+            [
+                'name' => 'Steamed Idli with Sambhar',
+                'category' => 'breakfast',
+                'description' => 'Classic South Indian gut-friendly fermented steamed rice & lentil cakes paired with protein-packed vegetable sambhar.',
+                'instructions' => "1. Steam idlis in an idli maker for 10-12 minutes until soft and fluffy.\n2. Prepare vegetable sambhar with toor dal, drumsticks, tomatoes, and sambhar spices.\n3. Serve 3 warm idlis immersed in piping hot sambhar with coconut chutney.",
+                'image_url' => '/recipes/idli_sambhar.jpg',
+                'is_premium' => false,
+                'ingredients' => [
+                    ['food_name' => 'Idli (Steamed)', 'quantity' => 120, 'unit' => 'g'],
+                    ['food_name' => 'Sambhar (South Indian)', 'quantity' => 160, 'unit' => 'g'],
+                ]
+            ],
+            [
+                'name' => 'Paneer Bhurji with 2 Phulkas & Salad',
+                'category' => 'lunch',
+                'description' => 'High-protein fresh scrambled paneer sautéed with onions, tomatoes, and aromatic Indian spices, served with warm phulkas.',
+                'instructions' => "1. Heat 1 tsp ghee/oil, sauté finely chopped onions, ginger, and green chilies.\n2. Add tomatoes, turmeric, garam masala, and salt until soft.\n3. Crumble fresh paneer into the pan and toss on medium flame for 3 minutes.\n4. Garnish with fresh coriander and serve alongside 2 warm whole wheat phulkas and cucumber salad.",
+                'image_url' => '/recipes/paneer_bhurji.jpg',
+                'is_premium' => false,
+                'ingredients' => [
+                    ['food_name' => 'Paneer Bhurji', 'quantity' => 120, 'unit' => 'g'],
+                    ['food_name' => 'Phulka', 'quantity' => 60, 'unit' => 'g'],
+                    ['food_name' => 'Cucumber (Kheera Salad)', 'quantity' => 80, 'unit' => 'g'],
+                ]
+            ],
+            [
+                'name' => 'Punjabi Rajma Masala with Steamed Basmati Rice',
+                'category' => 'lunch',
+                'description' => 'Iconic North Indian slow-simmered red kidney beans in a spiced onion-tomato gravy, served over aromatic steamed basmati rice.',
+                'instructions' => "1. Pressure cook soaked rajma until melt-in-mouth tender.\n2. In a kadai, sauté pureed onions, ginger-garlic paste, and tomato puree with coriander and cumin powders.\n3. Add cooked rajma along with its broth and simmer for 15 minutes.\n4. Serve over fragrant steamed basmati rice with sliced onions and lemon wedges.",
+                'image_url' => '/recipes/rajma_chawal.jpg',
+                'is_premium' => false,
+                'ingredients' => [
+                    ['food_name' => 'Rajma (Kidney Beans)', 'quantity' => 160, 'unit' => 'g'],
+                    ['food_name' => 'Steamed Basmati Rice', 'quantity' => 130, 'unit' => 'g'],
+                ]
+            ],
+            [
+                'name' => 'Homestyle Chicken Curry with Rotis',
+                'category' => 'dinner',
+                'description' => 'Tender chicken pieces simmered in a light, aromatic whole-spice homestyle gravy with whole wheat rotis.',
+                'instructions' => "1. Marinate chicken with curd, turmeric, and pinch of salt.\n2. Sauté whole spices (cinnamon, cloves, cardamom), sliced onions, and ginger-garlic paste.\n3. Add tomato puree and chicken pieces; sauté until browned.\n4. Add warm water and simmer covered for 20 minutes. Serve hot with 2 whole wheat rotis.",
+                'image_url' => '/recipes/chicken_curry.jpg',
+                'is_premium' => false,
+                'ingredients' => [
+                    ['food_name' => 'Homestyle Chicken Curry', 'quantity' => 170, 'unit' => 'g'],
+                    ['food_name' => 'Roti (Chapati)', 'quantity' => 70, 'unit' => 'g'],
+                ]
+            ],
+            [
+                'name' => 'Yellow Moong Dal Tadka with Phulkas & Bhindi',
+                'category' => 'lunch',
+                'description' => 'Light homestyle yellow moong dal with cumin-garlic tadka, crispy bhindi masala, and soft puffed phulkas.',
+                'instructions' => "1. Boil yellow moong dal with turmeric and salt.\n2. In a small pan, temper ghee with cumin seeds, minced garlic, hing, and dried red chilies.\n3. Pour the sizzling tadka over the hot dal.\n4. Serve with 2 fresh phulkas and spiced bhindi sabzi.",
+                'image_url' => '/recipes/dal_tadka.jpg',
+                'is_premium' => false,
+                'ingredients' => [
+                    ['food_name' => 'Yellow Moong Dal', 'quantity' => 150, 'unit' => 'g'],
+                    ['food_name' => 'Bhindi Masala (Okra)', 'quantity' => 100, 'unit' => 'g'],
+                    ['food_name' => 'Phulka', 'quantity' => 60, 'unit' => 'g'],
+                ]
+            ],
+            [
+                'name' => 'Sprouted Moong & Kala Chana Chaat',
+                'category' => 'snack',
+                'description' => 'Crunchy, zesty Indian fitness chaat made with steamed sprouts, diced cucumber, tomatoes, chaat masala, and fresh lemon.',
+                'instructions' => "1. Steam sprouted moong and boiled kala chana for 3 minutes.\n2. Mix with diced cucumber, tomatoes, green chilies, and fresh pomegranate.\n3. Season with rock salt, roasted cumin powder, and chaat masala. Squeeze fresh lemon juice on top.",
+                'image_url' => '/recipes/sprouts_chaat.jpg',
+                'is_premium' => false,
+                'ingredients' => [
+                    ['food_name' => 'Sprouts Chaat', 'quantity' => 140, 'unit' => 'g'],
+                    ['food_name' => 'Pomegranate (Anar)', 'quantity' => 40, 'unit' => 'g'],
+                ]
+            ],
+            [
+                'name' => 'High-Protein Soya Chunks Pulao with Raita',
+                'category' => 'lunch',
+                'description' => 'Fragrant basmati rice cooked with protein-dense soya chunks, carrots, peas, and whole spices with cooling cucumber raita.',
+                'instructions' => "1. Soak soya chunks in warm water, squeeze excess moisture, and lightly pan-fry.\n2. In a cooker, sauté whole spices, sliced onions, carrots, and peas.\n3. Add soaked basmati rice and soya chunks with 1.75x water.\n4. Cook for 1 whistle on medium flame. Serve with chilled cucumber mint raita.",
+                'image_url' => '/recipes/soya_pulao.jpg',
                 'is_premium' => true,
                 'ingredients' => [
-                    ['name' => 'Quinoa', 'quantity' => 100, 'unit' => 'g', 'calories' => 120, 'protein' => 4.4, 'carbs' => 21, 'fat' => 2, 'category' => 'Grains', 'is_veg' => true, 'is_vegan' => true, 'is_jain' => true],
-                    ['name' => 'Chickpeas', 'quantity' => 50, 'unit' => 'g', 'calories' => 164, 'protein' => 8.9, 'carbs' => 27, 'fat' => 2.6, 'category' => 'Legumes', 'is_veg' => true, 'is_vegan' => true, 'is_jain' => false],
-                    ['name' => 'Cucumber', 'quantity' => 50, 'unit' => 'g', 'calories' => 15, 'protein' => 0.7, 'carbs' => 3.6, 'fat' => 0.1, 'category' => 'Vegetables', 'is_veg' => true, 'is_vegan' => true, 'is_jain' => true],
-                    ['name' => 'Tomato', 'quantity' => 50, 'unit' => 'g', 'calories' => 18, 'protein' => 0.9, 'carbs' => 3.9, 'fat' => 0.2, 'category' => 'Vegetables', 'is_veg' => true, 'is_vegan' => true, 'is_jain' => false],
-                    ['name' => 'Olive Oil', 'quantity' => 10, 'unit' => 'ml', 'calories' => 884, 'protein' => 0, 'carbs' => 0, 'fat' => 100, 'category' => 'Oils', 'is_veg' => true, 'is_vegan' => true, 'is_jain' => true],
+                    ['food_name' => 'Soya Chunks Curry', 'quantity' => 120, 'unit' => 'g'],
+                    ['food_name' => 'Steamed Basmati Rice', 'quantity' => 100, 'unit' => 'g'],
+                    ['food_name' => 'Cucumber Raita', 'quantity' => 100, 'unit' => 'g'],
                 ]
             ],
             [
-                'name' => 'Healthy Egg Toast',
-                'description' => 'Crispy whole wheat toast topped with seasoned boiled eggs and olive oil.',
-                'instructions' => '1. Toast whole wheat bread. 2. Slice boiled eggs evenly. 3. Place on toast and season with pepper.',
-                'image_url' => 'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&q=80&w=600',
-                'is_premium' => false,
-                'ingredients' => [
-                    ['name' => 'Whole Wheat Bread', 'quantity' => 60, 'unit' => 'g', 'calories' => 247, 'protein' => 13, 'carbs' => 41, 'fat' => 4, 'category' => 'Grains', 'is_veg' => true, 'is_vegan' => true, 'is_jain' => false],
-                    ['name' => 'Eggs', 'quantity' => 100, 'unit' => 'g', 'calories' => 155, 'protein' => 13, 'carbs' => 1.1, 'fat' => 11, 'category' => 'Poultry', 'is_veg' => false, 'is_vegan' => false, 'is_jain' => false],
-                    ['name' => 'Olive Oil', 'quantity' => 5, 'unit' => 'ml', 'calories' => 884, 'protein' => 0, 'carbs' => 0, 'fat' => 100, 'category' => 'Oils', 'is_veg' => true, 'is_vegan' => true, 'is_jain' => true],
-                ]
-            ],
-            [
-                'name' => 'Grilled Paneer Power Bowl',
-                'description' => 'Protein-packed golden paneer cubes paired with warm brown rice, fresh spinach, and broccoli.',
-                'instructions' => '1. Season and lightly grill paneer in olive oil until golden. 2. Steam broccoli florets and sauté spinach. 3. Serve over warm brown rice with roasted flax seeds.',
-                'image_url' => 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=600',
-                'is_premium' => false,
-                'ingredients' => [
-                    ['name' => 'Paneer', 'quantity' => 120, 'unit' => 'g', 'calories' => 265, 'protein' => 18, 'carbs' => 3, 'fat' => 21, 'category' => 'Dairy', 'is_veg' => true, 'is_vegan' => false, 'is_jain' => false],
-                    ['name' => 'Brown Rice', 'quantity' => 100, 'unit' => 'g', 'calories' => 216, 'protein' => 5, 'carbs' => 45, 'fat' => 1.8, 'category' => 'Grains', 'is_veg' => true, 'is_vegan' => true, 'is_jain' => true],
-                    ['name' => 'Spinach', 'quantity' => 60, 'unit' => 'g', 'calories' => 23, 'protein' => 2.9, 'carbs' => 3.6, 'fat' => 0.4, 'category' => 'Vegetables', 'is_veg' => true, 'is_vegan' => true, 'is_jain' => false],
-                    ['name' => 'Broccoli', 'quantity' => 70, 'unit' => 'g', 'calories' => 34, 'protein' => 2.8, 'carbs' => 7, 'fat' => 0.4, 'category' => 'Vegetables', 'is_veg' => true, 'is_vegan' => true, 'is_jain' => true],
-                    ['name' => 'Olive Oil', 'quantity' => 5, 'unit' => 'ml', 'calories' => 884, 'protein' => 0, 'carbs' => 0, 'fat' => 100, 'category' => 'Oils', 'is_veg' => true, 'is_vegan' => true, 'is_jain' => true],
-                ]
-            ],
-            [
-                'name' => 'Mediterranean Grilled Salmon',
-                'description' => 'Heart-healthy pan-seared wild salmon served over fluffy quinoa, diced cucumber, and cherry tomatoes.',
-                'instructions' => '1. Season salmon fillet with herbs and sear in olive oil for 4 mins each side. 2. Fluff cooked quinoa. 3. Plate salmon alongside fresh cucumber and tomato salad.',
-                'image_url' => 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&q=80&w=600',
+                'name' => 'Palak Paneer with Jowar Roti',
+                'category' => 'dinner',
+                'description' => 'Vibrant pureed spinach gravy with golden paneer cubes paired with gluten-free, fiber-rich jowar (sorghum) roti.',
+                'instructions' => "1. Blanch fresh spinach leaves in boiling water for 2 mins and immediately chill in ice water; blend into a smooth puree.\n2. Sauté garlic, onions, and tomato puree in 1 tsp ghee.\n3. Add the spinach puree, garam masala, and paneer cubes; simmer on low for 4 mins.\n4. Serve hot with freshly made warm Jowar rotis.",
+                'image_url' => '/recipes/palak_paneer.jpg',
                 'is_premium' => true,
                 'ingredients' => [
-                    ['name' => 'Salmon', 'quantity' => 140, 'unit' => 'g', 'calories' => 208, 'protein' => 20, 'carbs' => 0, 'fat' => 13, 'category' => 'Seafood', 'is_veg' => false, 'is_vegan' => false, 'is_jain' => false],
-                    ['name' => 'Quinoa', 'quantity' => 80, 'unit' => 'g', 'calories' => 120, 'protein' => 4.4, 'carbs' => 21, 'fat' => 2, 'category' => 'Grains', 'is_veg' => true, 'is_vegan' => true, 'is_jain' => true],
-                    ['name' => 'Cucumber', 'quantity' => 50, 'unit' => 'g', 'calories' => 15, 'protein' => 0.7, 'carbs' => 3.6, 'fat' => 0.1, 'category' => 'Vegetables', 'is_veg' => true, 'is_vegan' => true, 'is_jain' => true],
-                    ['name' => 'Tomato', 'quantity' => 50, 'unit' => 'g', 'calories' => 18, 'protein' => 0.9, 'carbs' => 3.9, 'fat' => 0.2, 'category' => 'Vegetables', 'is_veg' => true, 'is_vegan' => true, 'is_jain' => false],
-                    ['name' => 'Olive Oil', 'quantity' => 8, 'unit' => 'ml', 'calories' => 884, 'protein' => 0, 'carbs' => 0, 'fat' => 100, 'category' => 'Oils', 'is_veg' => true, 'is_vegan' => true, 'is_jain' => true],
+                    ['food_name' => 'Palak Paneer', 'quantity' => 150, 'unit' => 'g'],
+                    ['food_name' => 'Jowar Roti (Sorghum)', 'quantity' => 50, 'unit' => 'g'],
                 ]
             ],
             [
-                'name' => 'High-Protein Chicken & Sweet Potato',
-                'description' => 'Juicy grilled chicken breast served with roasted sweet potato mash and steamed broccoli.',
-                'instructions' => '1. Marinate chicken breast in garlic, salt, and pepper, then grill until cooked through. 2. Steam broccoli and bake or mash sweet potato. 3. Serve warm.',
-                'image_url' => 'https://images.unsplash.com/photo-1532550907401-a500c9a57435?auto=format&fit=crop&q=80&w=600',
+                'name' => 'Desi Egg Bhurji with Whole Wheat Toast',
+                'category' => 'breakfast',
+                'description' => 'Indian spiced scrambled eggs cooked with chopped onions, green chilies, tomatoes, and cilantro over toasted whole wheat bread.',
+                'instructions' => "1. Whisk 2 whole eggs with a splash of milk, salt, and black pepper.\n2. In a pan, sauté onions, green chilies, and tomatoes in 1/2 tsp oil/ghee.\n3. Pour the eggs and scramble gently on medium-low heat until soft and fluffy.\n4. Serve over 2 crisp slices of whole wheat toast with a sprinkle of chaat masala.",
+                'image_url' => '/recipes/egg_bhurji.jpg',
                 'is_premium' => false,
                 'ingredients' => [
-                    ['name' => 'Chicken Breast', 'quantity' => 160, 'unit' => 'g', 'calories' => 165, 'protein' => 31, 'carbs' => 0, 'fat' => 3.6, 'category' => 'Poultry', 'is_veg' => false, 'is_vegan' => false, 'is_jain' => false],
-                    ['name' => 'Sweet Potato', 'quantity' => 120, 'unit' => 'g', 'calories' => 86, 'protein' => 1.6, 'carbs' => 20, 'fat' => 0.1, 'category' => 'Vegetables', 'is_veg' => true, 'is_vegan' => true, 'is_jain' => true],
-                    ['name' => 'Broccoli', 'quantity' => 80, 'unit' => 'g', 'calories' => 34, 'protein' => 2.8, 'carbs' => 7, 'fat' => 0.4, 'category' => 'Vegetables', 'is_veg' => true, 'is_vegan' => true, 'is_jain' => true],
-                    ['name' => 'Olive Oil', 'quantity' => 5, 'unit' => 'ml', 'calories' => 884, 'protein' => 0, 'carbs' => 0, 'fat' => 100, 'category' => 'Oils', 'is_veg' => true, 'is_vegan' => true, 'is_jain' => true],
+                    ['food_name' => 'Egg Bhurji (Indian Scramble)', 'quantity' => 120, 'unit' => 'g'],
+                    ['food_name' => 'Whole Wheat Bread', 'quantity' => 55, 'unit' => 'g'],
                 ]
             ],
             [
-                'name' => 'Greek Yogurt Berry Parfait',
-                'description' => 'Creamy probiotic Greek yogurt layered with sliced banana, fresh strawberries, and crunchy chia seeds.',
-                'instructions' => '1. Spoon Greek yogurt into a bowl or parfait glass. 2. Layer with sliced banana and fresh strawberries. 3. Garnish with chia seeds and crushed almonds.',
-                'image_url' => 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&q=80&w=600',
+                'name' => 'Comfort Moong Dal Khichdi with Dahi',
+                'category' => 'dinner',
+                'description' => 'Wholesome, soothing Ayurvedic blend of yellow moong dal and rice cooked with vegetables, cumin, and a dash of desi ghee.',
+                'instructions' => "1. Wash equal parts yellow moong dal and rice.\n2. In a cooker, temper cumin seeds, hing, grated ginger, and chopped carrots/peas in 1/2 tsp ghee.\n3. Add dal, rice, turmeric, salt, and 4x water.\n4. Cook for 3 whistles until soft and creamy. Serve warm with 1 bowl of fresh dahi.",
+                'image_url' => '/recipes/khichdi.jpg',
                 'is_premium' => false,
                 'ingredients' => [
-                    ['name' => 'Greek Yogurt', 'quantity' => 160, 'unit' => 'g', 'calories' => 97, 'protein' => 9, 'carbs' => 6, 'fat' => 5, 'category' => 'Dairy', 'is_veg' => true, 'is_vegan' => false, 'is_jain' => false],
-                    ['name' => 'Banana', 'quantity' => 60, 'unit' => 'g', 'calories' => 89, 'protein' => 1.1, 'carbs' => 23, 'fat' => 0.3, 'category' => 'Fruits', 'is_veg' => true, 'is_vegan' => true, 'is_jain' => true],
-                    ['name' => 'Strawberry', 'quantity' => 50, 'unit' => 'g', 'calories' => 32, 'protein' => 0.7, 'carbs' => 7.7, 'fat' => 0.3, 'category' => 'Fruits', 'is_veg' => true, 'is_vegan' => true, 'is_jain' => true],
-                    ['name' => 'Chia Seeds', 'quantity' => 10, 'unit' => 'g', 'calories' => 486, 'protein' => 17, 'carbs' => 42, 'fat' => 31, 'category' => 'Seeds', 'is_veg' => true, 'is_vegan' => true, 'is_jain' => true],
-                    ['name' => 'Almonds', 'quantity' => 12, 'unit' => 'g', 'calories' => 579, 'protein' => 21, 'carbs' => 22, 'fat' => 50, 'category' => 'Nuts', 'is_veg' => true, 'is_veg' => true, 'is_jain' => true],
+                    ['food_name' => 'Moong Dal Khichdi', 'quantity' => 160, 'unit' => 'g'],
+                    ['food_name' => 'Curd (Dahi)', 'quantity' => 100, 'unit' => 'g'],
                 ]
             ]
         ];
@@ -111,67 +167,55 @@ class RecipeSeeder extends Seeder
             $ingredients = $rData['ingredients'];
             unset($rData['ingredients']);
 
+            // Calculate macros from ingredients
+            $totCalories = 0;
+            $totProtein  = 0;
+            $totCarbs    = 0;
+            $totFat      = 0;
+
+            $ingredientModels = [];
+            foreach ($ingredients as $ing) {
+                $food = Food::where('name', $ing['food_name'])->first();
+                if ($food) {
+                    $ratio = $food->serving_size > 0 ? ($ing['quantity'] / $food->serving_size) : 1;
+                    $cal = $food->calories * $ratio;
+                    $p   = $food->protein * $ratio;
+                    $c   = $food->carbs * $ratio;
+                    $f   = $food->fat * $ratio;
+
+                    $totCalories += $cal;
+                    $totProtein  += $p;
+                    $totCarbs    += $c;
+                    $totFat      += $f;
+
+                    $ingredientModels[] = [
+                        'food_id'  => $food->id,
+                        'quantity' => $ing['quantity'],
+                        'unit'     => $ing['unit'] ?? $food->serving_unit,
+                    ];
+                }
+            }
+
+            $rData['calories'] = round($totCalories, 1);
+            $rData['protein']  = round($totProtein, 1);
+            $rData['carbs']    = round($totCarbs, 1);
+            $rData['fat']      = round($totFat, 1);
+
             $recipe = Recipe::updateOrCreate(
                 ['name' => $rData['name']],
                 $rData
             );
 
-            // Clean old recipe ingredients to prevent duplicates upon re-seeding
+            // Clean and insert ingredients
             $recipe->ingredients()->delete();
 
-            $totalCalories = 0;
-            $totalProtein  = 0;
-            $totalCarbs    = 0;
-            $totalFat      = 0;
-
-            foreach ($ingredients as $ing) {
-                $food = Food::where('name', $ing['name'])->first();
-
-                if (!$food) {
-                    $food = Food::create([
-                        'name'                 => $ing['name'],
-                        'category'             => $ing['category'] ?? 'Other',
-                        'calories'             => $ing['calories'] ?? 100,
-                        'protein'              => $ing['protein'] ?? 5,
-                        'carbs'                => $ing['carbs'] ?? 10,
-                        'fat'                  => $ing['fat'] ?? 2,
-                        'fiber'                => 1.0,
-                        'serving_size'         => 100,
-                        'serving_unit'         => in_array($ing['unit'], ['ml', 'l']) ? 'ml' : 'g',
-                        'is_veg'               => $ing['is_veg'] ?? true,
-                        'is_vegan'             => $ing['is_vegan'] ?? true,
-                        'is_jain'              => $ing['is_jain'] ?? false,
-                        'glycemic_index'       => 25,
-                        'allergens'            => [],
-                        'is_low_sodium'        => true,
-                        'is_thyroid_friendly'  => true,
-                        'is_heart_friendly'    => true,
-                        'is_pcod_friendly'     => true,
-                    ]);
-                }
-
-                $servingSize = $food->serving_size > 0 ? $food->serving_size : 100;
-                $ratio = $ing['quantity'] / $servingSize;
-
-                $recipe->ingredients()->create([
-                    'food_id'  => $food->id,
-                    'quantity' => $ing['quantity'],
-                    'unit'     => $ing['unit'],
-                ]);
-
-                $totalCalories += $food->calories * $ratio;
-                $totalProtein  += $food->protein * $ratio;
-                $totalCarbs    += $food->carbs * $ratio;
-                $totalFat      += $food->fat * $ratio;
+            foreach ($ingredientModels as $ingData) {
+                $recipe->ingredients()->create($ingData);
             }
-
-            $recipe->update([
-                'calories' => round($totalCalories, 1),
-                'protein'  => round($totalProtein, 1),
-                'carbs'    => round($totalCarbs, 1),
-                'fat'      => round($totalFat, 1),
-            ]);
         }
+
+        \Illuminate\Support\Facades\Cache::flush();
+
+        $this->command->info('✅ Indian Recipes database seeded with ' . count($recipes) . ' authentic Indian recipes.');
     }
 }
-
