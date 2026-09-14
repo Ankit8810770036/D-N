@@ -17,28 +17,30 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // ── meal_plans: queried by user + date on every Planner/Dashboard load ──
-        Schema::table('meal_plans', function (Blueprint $table) {
-            // Composite index — covers WHERE user_id = ? AND date = ? queries
-            $table->index(['user_id', 'date'], 'meal_plans_user_date_idx');
-        });
+        if (Schema::hasTable('meal_plans')) {
+            Schema::table('meal_plans', function (Blueprint $table) {
+                $table->index(['user_id', 'date'], 'meal_plans_user_date_idx');
+            });
+        }
 
-        // ── meal_items: always filtered by meal_plan_id when loading a plan ──
-        Schema::table('meal_items', function (Blueprint $table) {
-            $table->index('meal_plan_id', 'meal_items_plan_idx');
-            // Also index is_consumed for the toggle + consumed calorie sum queries
-            $table->index(['meal_plan_id', 'is_consumed'], 'meal_items_plan_consumed_idx');
-        });
+        if (Schema::hasTable('meal_items')) {
+            Schema::table('meal_items', function (Blueprint $table) {
+                $table->index('meal_plan_id', 'meal_items_plan_idx');
+                $table->index(['meal_plan_id', 'is_consumed'], 'meal_items_plan_consumed_idx');
+            });
+        }
 
-        // ── progress_logs: queried by user + date on every Dashboard/Progress load ──
-        Schema::table('progress_logs', function (Blueprint $table) {
-            $table->index(['user_id', 'date'], 'progress_logs_user_date_idx');
-        });
+        if (Schema::hasTable('progress_logs')) {
+            Schema::table('progress_logs', function (Blueprint $table) {
+                $table->index(['user_id', 'date'], 'progress_logs_user_date_idx');
+            });
+        }
 
-        // ── token_transactions: queried per user to check idempotency ──
-        Schema::table('token_transactions', function (Blueprint $table) {
-            $table->index(['user_id', 'type'], 'token_transactions_user_type_idx');
-        });
+        if (Schema::hasTable('token_transactions')) {
+            Schema::table('token_transactions', function (Blueprint $table) {
+                $table->index(['user_id', 'type'], 'token_transactions_user_type_idx');
+            });
+        }
     }
 
     /**
@@ -46,21 +48,29 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('meal_plans', function (Blueprint $table) {
-            $table->dropIndex('meal_plans_user_date_idx');
-        });
+        if (Schema::hasTable('meal_plans')) {
+            Schema::table('meal_plans', function (Blueprint $table) {
+                $table->dropIndex('meal_plans_user_date_idx');
+            });
+        }
 
-        Schema::table('meal_items', function (Blueprint $table) {
-            $table->dropIndex('meal_items_plan_idx');
-            $table->dropIndex('meal_items_plan_consumed_idx');
-        });
+        if (Schema::hasTable('meal_items')) {
+            Schema::table('meal_items', function (Blueprint $table) {
+                $table->dropIndex('meal_items_plan_idx');
+                $table->dropIndex('meal_items_plan_consumed_idx');
+            });
+        }
 
-        Schema::table('progress_logs', function (Blueprint $table) {
-            $table->dropIndex('progress_logs_user_date_idx');
-        });
+        if (Schema::hasTable('progress_logs')) {
+            Schema::table('progress_logs', function (Blueprint $table) {
+                $table->dropIndex('progress_logs_user_date_idx');
+            });
+        }
 
-        Schema::table('token_transactions', function (Blueprint $table) {
-            $table->dropIndex('token_transactions_user_type_idx');
-        });
+        if (Schema::hasTable('token_transactions')) {
+            Schema::table('token_transactions', function (Blueprint $table) {
+                $table->dropIndex('token_transactions_user_type_idx');
+            });
+        }
     }
 };
