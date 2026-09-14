@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { Eye, EyeOff } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function Login() {
@@ -8,6 +9,7 @@ export default function Login() {
     const navigate = useNavigate()
     const [form, setForm] = useState({ email: '', password: '' })
     const [loading, setLoading] = useState(false)
+    const [showPassword, setShowPassword] = useState(false)
 
     async function handleSubmit(e) {
         e.preventDefault()
@@ -92,14 +94,29 @@ export default function Login() {
                                         Forgot password?
                                     </Link>
                                 </div>
-                                <input
-                                    type="password"
-                                    value={form.password}
-                                    onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                                    className="w-full bg-black/40 backdrop-blur-md border border-white/20 rounded-xl px-6 py-3.5 text-sm text-white placeholder-white/40 focus:outline-none focus:border-green-400 focus:shadow-[0_0_20px_rgba(34,197,94,0.4)] focus:bg-black/60 transition-all duration-300 shadow-inner"
-                                    placeholder="••••••••"
-                                    required
-                                />
+                                <div className="relative overflow-hidden rounded-xl">
+                                    <input
+                                        type={showPassword ? 'text' : 'password'}
+                                        value={form.password}
+                                        onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                                        className="w-full bg-black/40 backdrop-blur-md border border-white/20 rounded-xl px-6 py-3.5 text-sm text-white placeholder-white/40 focus:outline-none focus:border-green-400 focus:shadow-[0_0_20px_rgba(34,197,94,0.4)] focus:bg-black/60 transition-all duration-300 shadow-inner pr-12"
+                                        placeholder="••••••••"
+                                        required
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors focus:outline-none p-1"
+                                        title={showPassword ? "Hide password" : "Show password"}
+                                        aria-label={showPassword ? "Hide password" : "Show password"}
+                                    >
+                                        {showPassword ? (
+                                            <EyeOff className="w-4 h-4" />
+                                        ) : (
+                                            <Eye className="w-4 h-4" />
+                                        )}
+                                    </button>
+                                </div>
                             </div>
                             <button type="submit" disabled={loading} className="w-full py-3.5 mt-4 bg-gradient-to-r from-green-500 to-emerald-700 text-white font-black rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-green-900/40 uppercase tracking-widest text-[10px] flex justify-center items-center h-12">
                                 {loading ? (

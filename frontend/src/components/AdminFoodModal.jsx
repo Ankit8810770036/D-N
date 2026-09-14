@@ -47,27 +47,27 @@ const AdminFoodModal = ({ isOpen, onClose, onSave, food = null, loading = false 
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white dark:bg-[#0d2b1f] w-full max-w-lg rounded-[2rem] shadow-2xl shadow-black/20 overflow-hidden flex flex-col max-h-[90dvh] landscape:max-h-[95dvh] border border-gray-100 dark:border-white/10">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm">
+            <div className="bg-white dark:bg-[#0d2b1f] w-full max-w-lg rounded-[2rem] shadow-2xl shadow-black/20 overflow-hidden flex flex-col max-h-[90dvh] landscape:max-h-[95dvh] border border-slate-200 dark:border-white/10">
 
                 {/* Header */}
-                <div className="px-7 pt-7 pb-5 flex items-center justify-between border-b border-gray-100 dark:border-white/10">
+                <div className="px-7 pt-7 pb-5 flex items-center justify-between border-b border-slate-200 dark:border-white/10">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-green-50 dark:bg-green-900/30 text-[#2d6a4f] dark:text-green-400 rounded-2xl flex items-center justify-center">
+                        <div className="w-10 h-10 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 rounded-2xl flex items-center justify-center shadow-inner">
                             <Utensils className="w-5 h-5" />
                         </div>
                         <div>
-                            <h2 className="text-lg font-black text-gray-900 dark:text-white tracking-tight">
+                            <h2 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
                                 {food ? 'Edit Food Entry' : 'New Food Entry'}
                             </h2>
-                            <p className="text-xs text-gray-400 dark:text-white/40 font-medium mt-0.5">
+                            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
                                 Configure nutritional parameters for the global database.
                             </p>
                         </div>
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl transition-colors text-gray-400 dark:text-white/40"
+                        className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-colors text-slate-400 hover:text-slate-600 dark:hover:text-white"
                     >
                         <X className="w-5 h-5" />
                     </button>
@@ -90,7 +90,7 @@ const AdminFoodModal = ({ isOpen, onClose, onSave, food = null, loading = false 
 
                     {/* Brand */}
                     <div>
-                        <label className="input-label">Brand Name <span className="normal-case font-normal text-gray-300">(optional)</span></label>
+                        <label className="input-label">Brand Name <span className="normal-case font-normal text-slate-400">(optional)</span></label>
                         <input
                             value={form.brand}
                             onChange={e => setForm({ ...form, brand: e.target.value })}
@@ -111,14 +111,14 @@ const AdminFoodModal = ({ isOpen, onClose, onSave, food = null, loading = false 
                                     min="0"
                                     value={form.calories}
                                     onChange={e => setForm({ ...form, calories: e.target.value })}
-                                    className="input-field pl-11"
+                                    className="input-field pl-11 font-bold"
                                 />
                             </div>
                         </div>
                         <div>
                             <label className="input-label">Protein (g) *</label>
                             <div className="relative">
-                                <Activity className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#2d6a4f] dark:text-green-400 z-10" />
+                                <Activity className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-600 dark:text-emerald-400 z-10" />
                                 <input
                                     required
                                     type="number"
@@ -126,7 +126,7 @@ const AdminFoodModal = ({ isOpen, onClose, onSave, food = null, loading = false 
                                     step="0.1"
                                     value={form.protein}
                                     onChange={e => setForm({ ...form, protein: e.target.value })}
-                                    className="input-field pl-11"
+                                    className="input-field pl-11 font-bold"
                                 />
                             </div>
                         </div>
@@ -143,7 +143,7 @@ const AdminFoodModal = ({ isOpen, onClose, onSave, food = null, loading = false 
                                 step="0.1"
                                 value={form.carbs}
                                 onChange={e => setForm({ ...form, carbs: e.target.value })}
-                                className="input-field"
+                                className="input-field font-bold"
                             />
                         </div>
                         <div>
@@ -155,7 +155,7 @@ const AdminFoodModal = ({ isOpen, onClose, onSave, food = null, loading = false 
                                 step="0.1"
                                 value={form.fat}
                                 onChange={e => setForm({ ...form, fat: e.target.value })}
-                                className="input-field"
+                                className="input-field font-bold"
                             />
                         </div>
                     </div>
@@ -170,7 +170,7 @@ const AdminFoodModal = ({ isOpen, onClose, onSave, food = null, loading = false 
                                 min="0"
                                 value={form.serving_size}
                                 onChange={e => setForm({ ...form, serving_size: e.target.value })}
-                                className="input-field"
+                                className="input-field font-bold"
                             />
                         </div>
                         <div>
@@ -178,7 +178,7 @@ const AdminFoodModal = ({ isOpen, onClose, onSave, food = null, loading = false 
                             <select
                                 value={form.serving_unit}
                                 onChange={e => setForm({ ...form, serving_unit: e.target.value })}
-                                className="input-field"
+                                className="input-field font-medium"
                             >
                                 <option value="g">Grams (g)</option>
                                 <option value="ml">Milliliters (ml)</option>
@@ -193,9 +193,9 @@ const AdminFoodModal = ({ isOpen, onClose, onSave, food = null, loading = false 
                         <label className="input-label mb-3">Dietary Tags</label>
                         <div className="flex flex-wrap gap-3">
                             {[
-                                { id: 'is_veg',   label: '🌿 Vegetarian',  activeClass: 'bg-green-50 dark:bg-green-900/30 border-[#40916c] text-[#2d6a4f] dark:text-green-400' },
-                                { id: 'is_vegan', label: '🌱 Vegan',        activeClass: 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-500 text-emerald-700 dark:text-emerald-400' },
-                                { id: 'is_jain',  label: '🟡 Jain Friendly', activeClass: 'bg-amber-50 dark:bg-amber-900/30 border-amber-400 text-amber-700 dark:text-amber-400' },
+                                { id: 'is_veg',   label: '🌿 Vegetarian',  activeClass: 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-600 text-emerald-800 dark:text-emerald-300 shadow-sm' },
+                                { id: 'is_vegan', label: '🌱 Vegan',        activeClass: 'bg-teal-50 dark:bg-teal-950/40 border-teal-600 text-teal-800 dark:text-teal-300 shadow-sm' },
+                                { id: 'is_jain',  label: '🟡 Jain Friendly', activeClass: 'bg-amber-50 dark:bg-amber-950/40 border-amber-500 text-amber-800 dark:text-amber-300 shadow-sm' },
                             ].map(opt => (
                                 <button
                                     key={opt.id}
@@ -204,7 +204,7 @@ const AdminFoodModal = ({ isOpen, onClose, onSave, food = null, loading = false 
                                     className={`px-4 py-2 rounded-2xl border-2 text-sm font-bold transition-all duration-200
                                         ${form[opt.id]
                                             ? opt.activeClass
-                                            : 'border-gray-100 dark:border-white/10 text-gray-400 dark:text-white/30 hover:border-gray-200 dark:hover:border-white/20'
+                                            : 'border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 hover:border-slate-300'
                                         }`}
                                 >
                                     {opt.label}
@@ -216,7 +216,7 @@ const AdminFoodModal = ({ isOpen, onClose, onSave, food = null, loading = false 
                 </form>
 
                 {/* Footer Actions */}
-                <div className="px-7 py-5 border-t border-gray-100 dark:border-white/10 flex gap-3">
+                <div className="px-7 py-5 border-t border-slate-200 dark:border-white/10 flex gap-3 bg-slate-50/50 dark:bg-transparent">
                     <button
                         type="button"
                         onClick={onClose}

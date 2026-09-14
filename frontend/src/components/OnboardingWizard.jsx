@@ -56,9 +56,9 @@ export default function OnboardingWizard({ isOpen, onComplete, initialData = {} 
         // Step 1: Welcome
         (
             <div className="space-y-4 text-center animate-fadeIn">
-                <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center text-4xl mx-auto mb-6">🧬</div>
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Welcome to Your New Self!</h2>
-                <p className="text-gray-500 dark:text-gray-400">We need a few details to create a meal plan that actually works for your body and goals.</p>
+                <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-950/40 rounded-full flex items-center justify-center text-4xl mx-auto mb-6 shadow-inner">🧬</div>
+                <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Welcome to Your New Self!</h2>
+                <p className="text-slate-600 dark:text-slate-300">We need a few details to create a meal plan that actually works for your body and goals.</p>
                 <div className="pt-6">
                     <button onClick={next} className="btn-primary w-full py-3 text-lg">Let's Get Started! →</button>
                 </div>
@@ -67,15 +67,15 @@ export default function OnboardingWizard({ isOpen, onComplete, initialData = {} 
         // Step 2: Basics
         (
             <div className="space-y-5">
-                <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4">The Basics</h2>
+                <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-4">The Basics</h2>
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label className="input-label">How old are you?</label>
-                        <input type="number" value={form.age} onChange={e => set('age', e.target.value)} className="input-field text-center text-lg" placeholder="25" />
+                        <input type="number" value={form.age} onChange={e => set('age', e.target.value)} className="input-field text-center text-lg font-bold" placeholder="25" />
                     </div>
                     <div>
                         <label className="input-label">Gender</label>
-                        <select value={form.gender} onChange={e => set('gender', e.target.value)} className="input-field text-lg text-center">
+                        <select value={form.gender} onChange={e => set('gender', e.target.value)} className="input-field text-lg text-center font-medium">
                             <option value="male">Male</option>
                             <option value="female">Female</option>
                         </select>
@@ -83,10 +83,10 @@ export default function OnboardingWizard({ isOpen, onComplete, initialData = {} 
                 </div>
                 <div>
                     <label className="input-label">Avg. Sleep (hours)</label>
-                    <input type="range" min="4" max="12" step="0.5" value={form.sleep_hours} onChange={e => set('sleep_hours', e.target.value)} className="w-full accent-[#2d6a4f]" />
-                    <div className="flex justify-between text-xs text-gray-400 dark:text-gray-500 mt-1">
+                    <input type="range" min="4" max="12" step="0.5" value={form.sleep_hours} onChange={e => set('sleep_hours', e.target.value)} className="w-full accent-emerald-600" />
+                    <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mt-1">
                         <span>4h</span>
-                        <span className="font-bold text-[#2d6a4f] dark:text-[#52b788] text-sm">{form.sleep_hours} hours</span>
+                        <span className="font-bold text-emerald-700 dark:text-emerald-400 text-sm">{form.sleep_hours} hours</span>
                         <span>12h</span>
                     </div>
                 </div>
@@ -99,15 +99,15 @@ export default function OnboardingWizard({ isOpen, onComplete, initialData = {} 
         // Step 3: Metrics
         (
             <div className="space-y-5">
-                <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4">Body Metrics</h2>
+                <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-4">Body Metrics</h2>
                 <div className="space-y-4">
                     <div>
                         <label className="input-label">Height (cm)</label>
-                        <input type="number" value={form.height_cm} onChange={e => set('height_cm', e.target.value)} className="input-field text-center text-lg" placeholder="170" />
+                        <input type="number" value={form.height_cm} onChange={e => set('height_cm', e.target.value)} className="input-field text-center text-lg font-bold" placeholder="170" />
                     </div>
                     <div>
                         <label className="input-label">Current Weight (kg)</label>
-                        <input type="number" value={form.weight_kg} onChange={e => set('weight_kg', e.target.value)} className="input-field text-center text-lg" placeholder="70" />
+                        <input type="number" value={form.weight_kg} onChange={e => set('weight_kg', e.target.value)} className="input-field text-center text-lg font-bold" placeholder="70" />
                     </div>
                 </div>
                 <div className="flex gap-3 pt-4">
@@ -119,14 +119,14 @@ export default function OnboardingWizard({ isOpen, onComplete, initialData = {} 
         // Step 4: Activity & Goal
         (
             <div className="space-y-5">
-                <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4">Goal & Activity</h2>
+                <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-4">Goal & Activity</h2>
                 <div>
                     <label className="input-label mb-2">What is your primary goal?</label>
                     <div className="flex gap-2">
                         {[['lose', '⬇️ Lose'], ['maintain', '✅ Maintain'], ['gain', '⬆️ Gain']].map(([v, l]) => (
                             <button key={v} onClick={() => set('goal', v)}
                                 className={`flex-1 py-3 text-sm font-bold rounded-2xl border-2 transition-all
-                                ${form.goal === v ? 'border-[#2d6a4f] bg-green-50 dark:bg-green-950/20 text-[#2d6a4f] dark:text-[#52b788]' : 'border-gray-100 dark:border-gray-700 text-gray-500 dark:text-gray-400'}`}>
+                                ${form.goal === v ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 shadow-sm' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300'}`}>
                                 {l}
                             </button>
                         ))}
@@ -138,11 +138,11 @@ export default function OnboardingWizard({ isOpen, onComplete, initialData = {} 
                         {activityLevels.map(al => (
                             <button key={al.value} onClick={() => set('activity_level', al.value)}
                                 className={`flex items-center gap-3 p-3 rounded-2xl border-2 transition-all text-left
-                                ${form.activity_level === al.value ? 'border-[#2d6a4f] bg-green-50 dark:bg-green-950/20' : 'border-gray-100 dark:border-gray-700'}`}>
+                                ${form.activity_level === al.value ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/30' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'}`}>
                                 <span className="text-xl">{al.label.split(' ')[0]}</span>
                                 <div>
-                                    <p className="text-sm font-bold text-gray-800 dark:text-gray-200">{al.label.split(' ')[1]}</p>
-                                    <p className="text-xs text-gray-400 dark:text-gray-500">{al.desc}</p>
+                                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{al.label.split(' ')[1]}</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">{al.desc}</p>
                                 </div>
                             </button>
                         ))}
@@ -157,17 +157,17 @@ export default function OnboardingWizard({ isOpen, onComplete, initialData = {} 
         // Step 5: Food Preferences
         (
             <div className="space-y-6">
-                <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4">Food Preferences</h2>
+                <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-4">Food Preferences</h2>
                 <div className="grid grid-cols-2 gap-3">
                     {['veg', 'non-veg', 'vegan', 'jain'].map(v => (
                         <button key={v} onClick={() => set('food_preference', v)}
                             className={`py-4 rounded-2xl border-2 capitalize font-bold transition-all
-                            ${form.food_preference === v ? 'border-[#2d6a4f] bg-green-50 dark:bg-green-950/20 text-[#2d6a4f] dark:text-[#52b788]' : 'border-gray-100 dark:border-gray-700 text-gray-500 dark:text-gray-400'}`}>
+                            ${form.food_preference === v ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 shadow-sm' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300'}`}>
                             {v}
                         </button>
                     ))}
                 </div>
-                <p className="text-xs text-gray-400 dark:text-gray-500 text-center italic">We'll use this to filter ingredients in your meal plans.</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 text-center italic">We'll use this to filter ingredients in your meal plans.</p>
                 <div className="flex gap-3 pt-4">
                     <button onClick={prev} className="btn-secondary flex-1">Back</button>
                     <button onClick={next} className="btn-primary flex-1">Almost Done! →</button>
@@ -179,17 +179,17 @@ export default function OnboardingWizard({ isOpen, onComplete, initialData = {} 
             <div className="space-y-6">
                 <div className="text-center">
                     <div className="text-5xl mb-4">🏁</div>
-                    <h2 className="text-2xl font-bold text-gray-800 dark:text-white">You're All Set!</h2>
-                    <p className="text-gray-500 dark:text-gray-400 mt-2">Ready to see your personalized calorie targets and meal plan?</p>
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-white">You're All Set!</h2>
+                    <p className="text-slate-600 dark:text-slate-300 mt-2">Ready to see your personalized calorie targets and meal plan?</p>
                 </div>
-                <div className="bg-green-50 dark:bg-green-950/10 rounded-2xl p-5 border border-green-100 dark:border-green-900/30 space-y-3">
+                <div className="bg-emerald-50 dark:bg-emerald-950/20 rounded-2xl p-5 border border-emerald-100 dark:border-emerald-900/30 space-y-3">
                     <div className="flex justify-between items-center text-sm">
-                        <span className="text-gray-500 dark:text-gray-400">Selected Goal</span>
-                        <span className="font-bold text-[#2d6a4f] dark:text-[#52b788] capitalize">{form.goal} Weight</span>
+                        <span className="text-slate-500 dark:text-slate-400">Selected Goal</span>
+                        <span className="font-bold text-emerald-700 dark:text-emerald-400 capitalize">{form.goal} Weight</span>
                     </div>
                     <div className="flex justify-between items-center text-sm">
-                        <span className="text-gray-500 dark:text-gray-400">Diet Type</span>
-                        <span className="font-bold text-[#2d6a4f] dark:text-[#52b788] capitalize">{form.food_preference}</span>
+                        <span className="text-slate-500 dark:text-slate-400">Diet Type</span>
+                        <span className="font-bold text-emerald-700 dark:text-emerald-400 capitalize">{form.food_preference}</span>
                     </div>
                 </div>
                 <div className="flex gap-3 pt-4">
@@ -202,12 +202,12 @@ export default function OnboardingWizard({ isOpen, onComplete, initialData = {} 
         )
     ]
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="bg-white dark:bg-gray-800 border border-transparent dark:border-gray-700 rounded-[32px] shadow-2xl w-full max-w-md max-h-[90dvh] landscape:max-h-[95dvh] flex flex-col overflow-hidden relative animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+            <div className="bg-white dark:bg-[#0d2b1f] border border-slate-200 dark:border-white/10 rounded-[32px] shadow-2xl w-full max-w-md max-h-[90dvh] landscape:max-h-[95dvh] flex flex-col overflow-hidden relative animate-in zoom-in-95 duration-300">
                 {/* Progress bar */}
-                <div className="h-1.5 w-full bg-gray-100 dark:bg-gray-700 flex-shrink-0 flex">
+                <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 flex-shrink-0 flex">
                     <div
-                        className="h-full bg-gradient-to-r from-[#2d6a4f] to-[#52b788] transition-all duration-500 ease-out"
+                        className="h-full bg-gradient-to-r from-emerald-600 to-teal-500 transition-all duration-500 ease-out"
                         style={{ width: `${(step / steps.length) * 100}%` }}
                     />
                 </div>
@@ -217,7 +217,7 @@ export default function OnboardingWizard({ isOpen, onComplete, initialData = {} 
                 </div>
 
                 <div className="px-8 pb-6 text-center flex-shrink-0">
-                    <p className="text-[10px] uppercase tracking-widest text-gray-300 dark:text-gray-600 font-bold">
+                    <p className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-slate-500 font-bold">
                         Step {step} of {steps.length}
                     </p>
                 </div>

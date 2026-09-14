@@ -67,25 +67,25 @@ const AdminRecipeModal = ({ isOpen, onClose, onSave, recipe = null, loading = fa
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white dark:bg-[#0d2b1f] w-full max-w-2xl rounded-[2rem] shadow-2xl shadow-black/20 overflow-hidden flex flex-col max-h-[90dvh] landscape:max-h-[95dvh] border border-gray-100 dark:border-white/10">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm">
+            <div className="bg-white dark:bg-[#0d2b1f] w-full max-w-2xl rounded-[2rem] shadow-2xl shadow-black/20 overflow-hidden flex flex-col max-h-[90dvh] landscape:max-h-[95dvh] border border-slate-200 dark:border-white/10">
 
                 {/* Header */}
-                <div className="px-7 pt-7 pb-5 flex items-center justify-between border-b border-gray-100 dark:border-white/10">
+                <div className="px-7 pt-7 pb-5 flex items-center justify-between border-b border-slate-200 dark:border-white/10">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-green-50 dark:bg-green-900/30 text-[#2d6a4f] dark:text-green-400 rounded-2xl flex items-center justify-center">
+                        <div className="w-10 h-10 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 rounded-2xl flex items-center justify-center shadow-inner">
                             <BookOpen className="w-5 h-5" />
                         </div>
                         <div>
-                            <h2 className="text-lg font-black text-gray-900 dark:text-white tracking-tight">
+                            <h2 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
                                 {recipe ? 'Edit Recipe' : 'New Cookbook Recipe'}
                             </h2>
-                            <p className="text-xs text-gray-400 dark:text-white/40 font-medium mt-0.5">
+                            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
                                 Curate premium culinary content for the platform.
                             </p>
                         </div>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl transition-colors text-gray-400 dark:text-white/40">
+                    <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-colors text-slate-400 hover:text-slate-600 dark:hover:text-white">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
@@ -146,7 +146,7 @@ const AdminRecipeModal = ({ isOpen, onClose, onSave, recipe = null, loading = fa
                                 className={`w-full py-3.5 px-4 rounded-2xl border-2 font-bold text-sm flex items-center justify-center gap-2 transition-all duration-200
                                     ${form.is_premium
                                         ? 'border-amber-400 bg-amber-500 text-white shadow-md shadow-amber-500/20'
-                                        : 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/50 hover:border-amber-300 dark:hover:border-amber-800'
+                                        : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:border-amber-300 dark:hover:border-amber-700/50'
                                     }`}
                             >
                                 <Crown className="w-4 h-4" />
@@ -156,12 +156,12 @@ const AdminRecipeModal = ({ isOpen, onClose, onSave, recipe = null, loading = fa
                     </div>
 
                     {/* Ingredients Section */}
-                    <div className="pt-2 border-t border-gray-100 dark:border-white/10">
+                    <div className="pt-2 border-t border-slate-200 dark:border-white/10">
                         <label className="input-label mb-3">Add Ingredients</label>
 
                         {/* Food Search */}
                         <div className="relative mb-4">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-white/30 z-10" />
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500 z-10" />
                             <input
                                 type="text"
                                 value={foodSearch}
@@ -172,16 +172,16 @@ const AdminRecipeModal = ({ isOpen, onClose, onSave, recipe = null, loading = fa
 
                             {/* Dropdown */}
                             {foodResults?.length > 0 && (
-                                <div className="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-[#0d2b1f] border border-gray-100 dark:border-white/10 rounded-2xl shadow-xl z-20 max-h-48 overflow-y-auto">
+                                <div className="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-[#0d2b1f] border border-slate-200 dark:border-white/10 rounded-2xl shadow-xl z-20 max-h-48 overflow-y-auto">
                                     {foodResults.map(food => (
                                         <button
                                             key={food.id}
                                             type="button"
                                             onClick={() => addIngredient(food)}
-                                            className="w-full text-left px-5 py-3 hover:bg-green-50 dark:hover:bg-white/5 flex items-center justify-between text-sm transition-colors border-b border-gray-50 dark:border-white/5 last:border-0"
+                                            className="w-full text-left px-5 py-3 hover:bg-emerald-50 dark:hover:bg-white/5 flex items-center justify-between text-sm transition-colors border-b border-slate-100 dark:border-white/5 last:border-0"
                                         >
-                                            <span className="font-bold text-gray-700 dark:text-white/80">{food.name}</span>
-                                            <span className="text-xs text-gray-400 dark:text-white/30">{food.calories} kcal/100g</span>
+                                            <span className="font-bold text-slate-800 dark:text-white/90">{food.name}</span>
+                                            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">{food.calories} kcal/100g</span>
                                         </button>
                                     ))}
                                 </div>
@@ -191,20 +191,20 @@ const AdminRecipeModal = ({ isOpen, onClose, onSave, recipe = null, loading = fa
                         {/* Ingredient List */}
                         <div className="space-y-2">
                             {form.ingredients.map((ing, idx) => (
-                                <div key={idx} className="flex items-center gap-3 bg-gray-50 dark:bg-white/5 p-3 rounded-2xl border border-gray-100 dark:border-white/10">
+                                <div key={idx} className="flex items-center gap-3 bg-slate-50 dark:bg-white/5 p-3 rounded-2xl border border-slate-200 dark:border-white/10">
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-bold text-gray-800 dark:text-white/80 truncate">{ing.food_name}</p>
+                                        <p className="text-sm font-bold text-slate-800 dark:text-white/90 truncate">{ing.food_name}</p>
                                     </div>
                                     <input
                                         type="number"
                                         value={ing.quantity}
                                         onChange={e => updateIngredient(ing.food_id, 'quantity', e.target.value)}
-                                        className="w-20 px-2 py-1.5 bg-white dark:bg-white/10 border border-gray-200 dark:border-white/10 rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#2d6a4f]/20 text-gray-700 dark:text-white/80"
+                                        className="w-20 px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl text-xs outline-none focus:ring-2 focus:ring-emerald-500/20 text-slate-800 dark:text-white/90 font-medium"
                                     />
                                     <select
                                         value={ing.unit}
                                         onChange={e => updateIngredient(ing.food_id, 'unit', e.target.value)}
-                                        className="w-16 px-2 py-1.5 bg-white dark:bg-white/10 border border-gray-200 dark:border-white/10 rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#2d6a4f]/20 text-gray-700 dark:text-white/80"
+                                        className="w-16 px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl text-xs outline-none focus:ring-2 focus:ring-emerald-500/20 text-slate-800 dark:text-white/90 font-medium"
                                     >
                                         <option value="g">g</option>
                                         <option value="ml">ml</option>
@@ -213,7 +213,7 @@ const AdminRecipeModal = ({ isOpen, onClose, onSave, recipe = null, loading = fa
                                     <button
                                         type="button"
                                         onClick={() => removeIngredient(ing.food_id)}
-                                        className="p-1.5 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-rose-500 rounded-xl transition-colors shrink-0"
+                                        className="p-1.5 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-500 rounded-xl transition-colors shrink-0"
                                     >
                                         <Trash2 className="w-4 h-4" />
                                     </button>
@@ -221,9 +221,9 @@ const AdminRecipeModal = ({ isOpen, onClose, onSave, recipe = null, loading = fa
                             ))}
 
                             {form.ingredients.length === 0 && (
-                                <div className="text-center py-8 bg-gray-50 dark:bg-white/5 rounded-2xl border-2 border-dashed border-gray-200 dark:border-white/10">
-                                    <BookOpen className="w-8 h-8 text-gray-300 dark:text-white/20 mx-auto mb-2" />
-                                    <p className="text-xs text-gray-400 dark:text-white/30 font-medium">No ingredients yet. Search and select foods above.</p>
+                                <div className="text-center py-8 bg-slate-50 dark:bg-white/5 rounded-2xl border-2 border-dashed border-slate-200 dark:border-white/10">
+                                    <BookOpen className="w-8 h-8 text-slate-400 dark:text-white/20 mx-auto mb-2" />
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">No ingredients yet. Search and select foods above.</p>
                                 </div>
                             )}
                         </div>
@@ -231,7 +231,7 @@ const AdminRecipeModal = ({ isOpen, onClose, onSave, recipe = null, loading = fa
                 </form>
 
                 {/* Footer */}
-                <div className="px-7 py-5 border-t border-gray-100 dark:border-white/10 flex gap-3">
+                <div className="px-7 py-5 border-t border-slate-200 dark:border-white/10 flex gap-3 bg-slate-50/50 dark:bg-transparent">
                     <button type="button" onClick={onClose} className="btn-secondary flex-1 justify-center">
                         Cancel
                     </button>

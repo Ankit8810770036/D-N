@@ -171,7 +171,7 @@ export default function Progress() {
 
             {fetching ? (
                 <div className="flex items-center justify-center py-20">
-                    <div className="animate-spin w-8 h-8 border-4 border-[#2d6a4f] border-t-transparent rounded-full" />
+                    <div className="animate-spin w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full" />
                 </div>
             ) : (
                 <>
@@ -184,7 +184,7 @@ export default function Progress() {
                                     <div className="metric-val text-xl">
                                         {summary.weight_start ?? '—'}
                                         {!summary.has_weight_logs && summary.weight_start && (
-                                            <span className="block text-[9px] font-semibold text-blue-500 uppercase tracking-wide mt-0.5">From Profile</span>
+                                            <span className="block text-[9px] font-semibold text-sky-600 dark:text-sky-400 uppercase tracking-wide mt-0.5">From Profile</span>
                                         )}
                                     </div>
                                     <div className="metric-lbl">Start Weight (kg)</div>
@@ -195,7 +195,7 @@ export default function Progress() {
                                     <div className="metric-val text-xl">
                                         {summary.weight_latest ?? '—'}
                                         {!summary.has_weight_logs && summary.weight_latest && (
-                                            <span className="block text-[9px] font-semibold text-blue-500 uppercase tracking-wide mt-0.5">From Profile</span>
+                                            <span className="block text-[9px] font-semibold text-sky-600 dark:text-sky-400 uppercase tracking-wide mt-0.5">From Profile</span>
                                         )}
                                     </div>
                                     <div className="metric-lbl">Current Weight (kg)</div>
@@ -223,11 +223,11 @@ export default function Progress() {
 
                             {/* Nudge when no weight has been logged yet */}
                             {!summary.has_weight_logs && (
-                                <div className="flex items-start gap-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-2xl px-4 py-3 text-sm">
-                                    <span className="text-blue-500 text-lg mt-0.5">💡</span>
+                                <div className="flex items-start gap-3 bg-sky-50 dark:bg-blue-900/20 border border-sky-200 dark:border-blue-800/50 rounded-2xl px-4 py-3.5 text-sm shadow-sm">
+                                    <span className="text-sky-600 text-lg mt-0.5">💡</span>
                                     <div>
-                                        <p className="font-semibold text-blue-800 dark:text-blue-300">Log your weight to track progress</p>
-                                        <p className="text-blue-600 dark:text-blue-400 text-xs mt-0.5">
+                                        <p className="font-bold text-sky-950 dark:text-blue-300">Log your weight to track progress</p>
+                                        <p className="text-sky-800/80 dark:text-blue-400 text-xs mt-0.5">
                                             {summary.profile_weight
                                                 ? `Your profile weight (${summary.profile_weight} kg) is shown as a baseline. Log your daily weight below to see real trends and changes.`
                                                 : 'Use the form below to log your weight and other health metrics. Your trends will appear here automatically.'}
@@ -243,61 +243,61 @@ export default function Progress() {
                         <div className="grid md:grid-cols-2 gap-4">
                             {/* Weight Trend */}
                             <div className="card">
-                                <h3 className="font-semibold text-gray-800 dark:text-white/90 mb-4">⚖️ Weight Trend (30 Days)</h3>
+                                <h3 className="font-bold text-slate-900 dark:text-white/90 mb-4">⚖️ Weight Trend (30 Days)</h3>
                                 <ResponsiveContainer width="100%" height={180}>
                                     <LineChart data={logs}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                                        <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                                        <YAxis tick={{ fontSize: 10 }} unit="kg" />
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                        <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="#94a3b8" />
+                                        <YAxis tick={{ fontSize: 10 }} unit="kg" stroke="#94a3b8" />
                                         <Tooltip formatter={(v) => [`${v} kg`, 'Weight']} />
-                                        <Line type="monotone" dataKey="weight" stroke="#2d6a4f" strokeWidth={2} dot={{ r: 3 }} />
+                                        <Line type="monotone" dataKey="weight" stroke="#059669" strokeWidth={2.5} dot={{ r: 3, fill: '#059669' }} />
                                     </LineChart>
                                 </ResponsiveContainer>
                             </div>
 
                             {/* Calories Bar */}
                             <div className="card">
-                                <h3 className="font-semibold text-gray-800 dark:text-white/90 mb-4">🔥 Calories Consumed (30 Days)</h3>
+                                <h3 className="font-bold text-slate-900 dark:text-white/90 mb-4">🔥 Calories Consumed (30 Days)</h3>
                                 <ResponsiveContainer width="100%" height={180}>
                                     <BarChart data={logs}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                                        <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                                        <YAxis tick={{ fontSize: 10 }} />
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                        <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="#94a3b8" />
+                                        <YAxis tick={{ fontSize: 10 }} stroke="#94a3b8" />
                                         <Tooltip formatter={(v) => [`${v} kcal`, 'Calories']} />
-                                        <Bar dataKey="calories_consumed" fill="#40916c" radius={[4, 4, 0, 0]} />
+                                        <Bar dataKey="calories_consumed" fill="#10b981" radius={[6, 6, 0, 0]} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
 
                             {/* Macro Breakdown (Premium/Admin) */}
                             <div className="card md:col-span-2 relative overflow-hidden">
-                                <h3 className="font-semibold text-gray-800 dark:text-white/90 mb-4 flex items-center justify-between">
+                                <h3 className="font-bold text-slate-900 dark:text-white/90 mb-4 flex items-center justify-between">
                                     <span>🥩 Macro Distribution History</span>
                                     {!isPremium && (
-                                        <span className="bg-amber-100 text-amber-700 text-[10px] px-2 py-0.5 rounded-full font-bold">PREMIUM ONLY</span>
+                                        <span className="badge badge-gold">PREMIUM ONLY</span>
                                     )}
                                 </h3>
 
                                 {isPremium ? (
                                     <ResponsiveContainer width="100%" height={250}>
                                         <BarChart data={logs}>
-                                            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                                            <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                                            <YAxis tick={{ fontSize: 10 }} unit="g" />
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                            <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="#94a3b8" />
+                                            <YAxis tick={{ fontSize: 10 }} unit="g" stroke="#94a3b8" />
                                             <Tooltip />
                                             <Legend verticalAlign="top" height={36} />
-                                            <Bar dataKey="protein" stackId="a" fill="#2d6a4f" name="Protein (g)" />
-                                            <Bar dataKey="carbs" stackId="a" fill="#40916c" name="Carbs (g)" />
-                                            <Bar dataKey="fat" stackId="a" fill="#b7e4c7" name="Fat (g)" />
+                                            <Bar dataKey="protein" stackId="a" fill="#059669" name="Protein (g)" />
+                                            <Bar dataKey="carbs" stackId="a" fill="#10b981" name="Carbs (g)" />
+                                            <Bar dataKey="fat" stackId="a" fill="#f59e0b" name="Fat (g)" />
                                         </BarChart>
                                     </ResponsiveContainer>
                                 ) : (
-                                    <div className="h-[250px] flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-800/40 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700">
+                                    <div className="h-[250px] flex flex-col items-center justify-center bg-slate-50 dark:bg-gray-800/40 rounded-2xl border-2 border-dashed border-slate-200 dark:border-gray-700">
                                         <div className="p-4 bg-white dark:bg-gray-800 rounded-full shadow-sm mb-4">
                                             <svg className="w-10 h-10 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
                                         </div>
-                                        <p className="text-gray-900 dark:text-white font-bold">Macro Analytics Locked</p>
-                                        <p className="text-gray-500 text-sm mb-6 px-12 text-center">Upgrade to Premium to visualize your protein, carb, and fat distribution over time.</p>
+                                        <p className="text-slate-900 dark:text-white font-bold">Macro Analytics Locked</p>
+                                        <p className="text-slate-500 text-sm mb-6 px-12 text-center">Upgrade to Premium to visualize your protein, carb, and fat distribution over time.</p>
                                         <button
                                             onClick={() => window.location.href = '/subscription'}
                                             className="px-6 py-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold rounded-xl shadow-lg shadow-amber-500/20 hover:scale-105 transition-transform"

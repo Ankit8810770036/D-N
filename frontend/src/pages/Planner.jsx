@@ -206,7 +206,7 @@ export default function Planner() {
                             <div key={type} className="card">
                                 <div className="flex items-center gap-2 mb-4">
                                     <span className="text-2xl">{mealIcons[type]}</span>
-                                    <h3 className="font-semibold text-gray-800 dark:text-white/90">{mealLabels[type]}</h3>
+                                    <h3 className="font-bold text-slate-900 dark:text-white/90">{mealLabels[type]}</h3>
                                     {items.length > 0 && (
                                         <span className="ml-auto badge badge-green">
                                             {Math.round(items.reduce((s, i) => s + Number(i.calories), 0))} kcal
@@ -216,23 +216,23 @@ export default function Planner() {
                                 {items.length > 0 ? (
                                     <div className="space-y-2">
                                         {items.map((item, idx) => (
-                                            <div key={idx} className={`flex items-center justify-between p-3 rounded-xl group hover:shadow-sm transition-all border ${item.is_consumed ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800/50' : 'bg-gray-50 border-transparent hover:border-gray-200 dark:bg-gray-800/50 dark:hover:border-gray-700'}`}>
+                                            <div key={idx} className={`flex items-center justify-between p-3.5 rounded-2xl group hover:shadow-sm transition-all border ${item.is_consumed ? 'bg-emerald-50/80 border-emerald-200 dark:bg-green-900/20 dark:border-green-800/50' : 'bg-slate-50/80 border-slate-200/60 hover:border-slate-300 dark:bg-gray-800/50 dark:hover:border-gray-700'}`}>
                                                 <div className="flex items-center gap-3 flex-1 min-w-0">
                                                     <input
                                                         type="checkbox"
                                                         checked={!!item.is_consumed}
                                                         onChange={() => toggleConsumed(item.id)}
-                                                        className="w-4 h-4 accent-green-600 cursor-pointer rounded shrink-0"
+                                                        className="w-4 h-4 accent-emerald-600 cursor-pointer rounded shrink-0"
                                                         title={item.is_consumed ? 'Mark as not consumed' : 'Mark as consumed'}
                                                     />
                                                     <div className="min-w-0">
                                                         <div className="flex items-center gap-1.5">
-                                                            <p className={`text-sm font-medium ${item.is_consumed ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-800 dark:text-white/90'}`}>
+                                                            <p className={`text-sm font-semibold ${item.is_consumed ? 'line-through text-slate-400 dark:text-gray-500' : 'text-slate-800 dark:text-white/90'}`}>
                                                                 {item.recipe ? item.recipe.name : item.food?.name}
                                                             </p>
-                                                            {item.recipe && <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-tighter">Recipe</span>}
+                                                            {item.recipe && <span className="text-[10px] bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 px-1.5 py-0.5 rounded-md font-bold uppercase tracking-tighter">Recipe</span>}
                                                         </div>
-                                                        <p className="text-xs text-gray-400 mt-0.5">
+                                                        <p className="text-xs text-slate-400 mt-0.5 font-medium">
                                                             {item.recipe ? '1 serving' : `${item.quantity}${item.unit}`} &nbsp;·&nbsp;
                                                             P:{Math.round(item.protein)}g C:{Math.round(item.carbs)}g F:{Math.round(item.fat)}g
                                                         </p>
@@ -240,17 +240,17 @@ export default function Planner() {
                                                 </div>
                                                 <div className="flex items-center gap-3 shrink-0">
                                                     {!item.is_consumed && (
-                                                        <button onClick={() => swapItem(item.id)} className="opacity-0 group-hover:opacity-100 transition-opacity bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-500 dark:text-gray-300 rounded-lg p-1.5 shadow-sm border border-gray-200 dark:border-gray-600 scale-95 hover:scale-105" title="Swap this ingredient for another">
+                                                        <button onClick={() => swapItem(item.id)} className="opacity-0 group-hover:opacity-100 transition-opacity bg-white hover:bg-slate-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-slate-600 dark:text-gray-300 rounded-lg p-1.5 shadow-sm border border-slate-200 dark:border-gray-600 scale-95 hover:scale-105" title="Swap this ingredient for another">
                                                             🔄
                                                         </button>
                                                     )}
-                                                    <span className={`text-sm font-bold ${item.is_consumed ? 'text-green-600' : 'text-[#2d6a4f]'}`}>{item.calories} kcal</span>
+                                                    <span className={`text-sm font-bold ${item.is_consumed ? 'text-emerald-600' : 'text-emerald-700 dark:text-green-400'}`}>{item.calories} kcal</span>
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
                                 ) : (
-                                    <p className="text-sm text-gray-400 italic">No items added</p>
+                                    <p className="text-sm text-slate-400 italic">No items added</p>
                                 )}
                             </div>
                         )
@@ -259,8 +259,8 @@ export default function Planner() {
             ) : (
                 <div className="card flex flex-col items-center py-12 gap-3">
                     <span className="text-5xl">🍽️</span>
-                    <p className="font-semibold text-gray-700">No meal plan for this date</p>
-                    <p className="text-sm text-gray-400">Click "Generate Meal Plan" to create one automatically</p>
+                    <p className="font-semibold text-slate-700 dark:text-slate-200">No meal plan for this date</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Click "Generate Meal Plan" to create one automatically</p>
                 </div>
             )}
 
@@ -268,22 +268,22 @@ export default function Planner() {
 
             {/* Custom Food Modal */}
             {showCustomFoodModal && (
-                <div className="fixed inset-0 min-h-screen z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 overflow-y-auto">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col my-auto relative border border-transparent dark:border-gray-700">
-                        <div className="p-5 border-b dark:border-gray-700 flex justify-between items-center bg-orange-50/50 dark:bg-orange-900/10">
+                <div className="fixed inset-0 min-h-screen z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
+                    <div className="bg-white dark:bg-[#0d2b1f] rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col my-auto relative border border-slate-200 dark:border-white/10">
+                        <div className="p-5 border-b border-slate-200 dark:border-white/10 flex justify-between items-center bg-slate-50 dark:bg-white/5">
                             <div>
-                                <h3 className="text-lg font-bold text-gray-800 dark:text-white/90">🍎 Add Custom Food</h3>
-                                <p className="text-xs text-gray-500">Add to your personal database for AI planning.</p>
+                                <h3 className="text-lg font-bold text-slate-800 dark:text-white/90">🍎 Add Custom Food</h3>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">Add to your personal database for AI planning.</p>
                             </div>
-                            <button onClick={() => setShowCustomFoodModal(false)} className="text-gray-400 hover:text-gray-700 font-bold p-2 text-xl">&times;</button>
+                            <button onClick={() => setShowCustomFoodModal(false)} className="text-slate-400 hover:text-slate-700 dark:hover:text-white font-bold p-2 text-xl">&times;</button>
                         </div>
                         <form onSubmit={handleAddCustomFood}>
                             {!isPremium && (
-                                <div className="mx-6 mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2 text-sm">
+                                <div className="mx-6 mt-4 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 rounded-xl flex items-start gap-2 text-sm">
                                     <span className="text-amber-500 mt-0.5">⭐</span>
                                     <div>
-                                        <p className="font-semibold text-amber-800">Premium Feature</p>
-                                        <p className="text-amber-700 text-xs mt-0.5">Adding custom foods requires a Premium plan. <button type="button" onClick={() => { setShowCustomFoodModal(false); navigate('/subscription') }} className="underline font-bold hover:text-amber-900">Upgrade now →</button></p>
+                                        <p className="font-semibold text-amber-800 dark:text-amber-300">Premium Feature</p>
+                                        <p className="text-amber-700 dark:text-amber-400/90 text-xs mt-0.5">Adding custom foods requires a Premium plan. <button type="button" onClick={() => { setShowCustomFoodModal(false); navigate('/subscription') }} className="underline font-bold hover:text-amber-900 dark:hover:text-amber-200">Upgrade now →</button></p>
                                     </div>
                                 </div>
                             )}
@@ -317,16 +317,16 @@ export default function Planner() {
                                 </div>
                                 <div className="flex gap-4 pt-2">
                                     <label className="flex items-center gap-2 cursor-pointer">
-                                        <input type="checkbox" checked={customFoodForm.is_veg} onChange={e => setCustomFoodForm({ ...customFoodForm, is_veg: e.target.checked })} className="accent-green-600" />
-                                        <span className="text-sm font-medium text-gray-700">Vegetarian</span>
+                                        <input type="checkbox" checked={customFoodForm.is_veg} onChange={e => setCustomFoodForm({ ...customFoodForm, is_veg: e.target.checked })} className="accent-emerald-600" />
+                                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Vegetarian</span>
                                     </label>
                                     <label className="flex items-center gap-2 cursor-pointer">
-                                        <input type="checkbox" checked={customFoodForm.is_vegan} onChange={e => setCustomFoodForm({ ...customFoodForm, is_vegan: e.target.checked })} className="accent-green-600" />
-                                        <span className="text-sm font-medium text-gray-700">Vegan</span>
+                                        <input type="checkbox" checked={customFoodForm.is_vegan} onChange={e => setCustomFoodForm({ ...customFoodForm, is_vegan: e.target.checked })} className="accent-emerald-600" />
+                                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Vegan</span>
                                     </label>
                                 </div>
                             </div>
-                            <div className="p-4 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3">
+                            <div className="p-4 border-t border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 flex justify-end gap-3">
                                 <button type="button" onClick={() => setShowCustomFoodModal(false)} className="btn-secondary">Cancel</button>
                                 <button type="submit" disabled={loading} className="btn-primary">
                                     {loading ? 'Adding...' : 'Add Food 🍎'}

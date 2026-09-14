@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { Eye, EyeOff } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const foodPrefs = ['veg', 'non-veg', 'vegan', 'jain']
@@ -11,6 +12,8 @@ export default function Register() {
     const navigate = useNavigate()
     const [step, setStep] = useState(1)
     const [loading, setLoading] = useState(false)
+    const [showPassword, setShowPassword] = useState(false)
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false)
     const [form, setForm] = useState({
         name: '', email: '', password: '', password_confirmation: '',
         role: 'user', food_preference: 'veg', goal: 'maintain',
@@ -132,19 +135,61 @@ export default function Register() {
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-[9px] font-black text-white uppercase tracking-widest mb-1 ml-1">Password</label>
-                                            <input type="password" value={form.password} onChange={e => set('password', e.target.value)}
-                                                className={`w-full bg-black/40 backdrop-blur-md border ${form.password.length >= 6 && form.password === form.password_confirmation ? 'border-green-500/50 shadow-[0_0_15px_rgba(34,197,94,0.3)]' : 'border-white/20'} rounded-xl px-5 py-3.5 text-white placeholder-white/40 focus:outline-none focus:border-green-400 focus:shadow-[0_0_20px_rgba(34,197,94,0.4)] focus:bg-black/60 transition-all font-outfit text-sm shadow-inner`} placeholder="••••••••" required />
+                                            <div className="relative overflow-hidden rounded-xl">
+                                                <input
+                                                    type={showPassword ? 'text' : 'password'}
+                                                    value={form.password}
+                                                    onChange={e => set('password', e.target.value)}
+                                                    className={`w-full bg-black/40 backdrop-blur-md border ${form.password.length >= 6 && form.password === form.password_confirmation ? 'border-green-500/50 shadow-[0_0_15px_rgba(34,197,94,0.3)]' : 'border-white/20'} rounded-xl px-5 py-3.5 text-white placeholder-white/40 focus:outline-none focus:border-green-400 focus:shadow-[0_0_20px_rgba(34,197,94,0.4)] focus:bg-black/60 transition-all font-outfit text-sm shadow-inner pr-10`}
+                                                    placeholder="••••••••"
+                                                    required
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowPassword(!showPassword)}
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors focus:outline-none p-1"
+                                                    title={showPassword ? "Hide password" : "Show password"}
+                                                    aria-label={showPassword ? "Hide password" : "Show password"}
+                                                >
+                                                    {showPassword ? (
+                                                        <EyeOff className="w-4 h-4" />
+                                                    ) : (
+                                                        <Eye className="w-4 h-4" />
+                                                    )}
+                                                </button>
+                                            </div>
                                         </div>
                                         <div>
                                             <label className="block text-[9px] font-black text-white uppercase tracking-widest mb-1 ml-1">Confirm</label>
                                             <div className="relative overflow-hidden rounded-xl">
-                                                <input type="password" value={form.password_confirmation} onChange={e => set('password_confirmation', e.target.value)}
-                                                    className={`w-full bg-black/40 backdrop-blur-md border ${form.password.length >= 6 && form.password === form.password_confirmation ? 'border-green-500/50 shadow-[0_0_15px_rgba(34,197,94,0.3)]' : 'border-white/20'} rounded-xl px-5 py-3.5 text-white placeholder-white/40 focus:outline-none focus:border-green-400 focus:shadow-[0_0_20px_rgba(34,197,94,0.4)] focus:bg-black/60 transition-all font-outfit text-sm shadow-inner pr-10`} placeholder="••••••••" required />
-                                                <div className={`absolute right-3 top-1/2 -translate-y-1/2 transition-all duration-500 ease-out ${form.password.length >= 6 && form.password === form.password_confirmation ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4 pointer-events-none'}`}>
-                                                    <svg className="w-4 h-4 text-green-400 drop-shadow-[0_0_8px_rgba(34,197,94,0.8)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                                                <input
+                                                    type={showConfirmPassword ? 'text' : 'password'}
+                                                    value={form.password_confirmation}
+                                                    onChange={e => set('password_confirmation', e.target.value)}
+                                                    className={`w-full bg-black/40 backdrop-blur-md border ${form.password.length >= 6 && form.password === form.password_confirmation ? 'border-green-500/50 shadow-[0_0_15px_rgba(34,197,94,0.3)]' : 'border-white/20'} rounded-xl px-5 py-3.5 text-white placeholder-white/40 focus:outline-none focus:border-green-400 focus:shadow-[0_0_20px_rgba(34,197,94,0.4)] focus:bg-black/60 transition-all font-outfit text-sm shadow-inner pr-14`}
+                                                    placeholder="••••••••"
+                                                    required
+                                                />
+                                                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                                                    {form.password.length >= 6 && form.password === form.password_confirmation && (
+                                                        <svg className="w-4 h-4 text-green-400 drop-shadow-[0_0_8px_rgba(34,197,94,0.8)] animate-in fade-in zoom-in-75 duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                                                    )}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                        className="text-white/50 hover:text-white transition-colors focus:outline-none p-1"
+                                                        title={showConfirmPassword ? "Hide password" : "Show password"}
+                                                        aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                                                    >
+                                                        {showConfirmPassword ? (
+                                                            <EyeOff className="w-4 h-4" />
+                                                        ) : (
+                                                            <Eye className="w-4 h-4" />
+                                                        )}
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>

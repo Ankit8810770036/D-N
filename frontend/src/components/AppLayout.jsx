@@ -10,7 +10,7 @@ export default function AppLayout() {
     const { user, daysUntilExpiry } = useAuth()
 
     return (
-        <div className="flex min-h-screen bg-gradient-to-br from-[#f0fdf7] via-white to-[#f0fdf4] dark:bg-none dark:bg-[#081c15] transition-colors duration-300">
+        <div className="flex min-h-screen bg-[#f8fafc] dark:bg-none dark:bg-[#081c15] transition-colors duration-300">
             {/* Mobile Backdrop */}
             {isSidebarOpen && (
                 <div 

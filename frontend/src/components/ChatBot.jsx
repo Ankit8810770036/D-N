@@ -118,7 +118,7 @@ export default function ChatBot() {
                     </div>
 
                     {/* Messages */}
-                    <div className="flex-1 min-h-0 p-3 sm:p-4 overflow-y-auto bg-[#f0fdf7]/30 dark:bg-gray-900/50 flex flex-col gap-3 h-64 sm:h-96">
+                    <div className="flex-1 min-h-0 p-3 sm:p-4 overflow-y-auto bg-slate-50/60 dark:bg-gray-900/50 flex flex-col gap-3 h-64 sm:h-96">
                         {messages.map((msg) => (
                             <div
                                 key={msg.id}
@@ -126,14 +126,14 @@ export default function ChatBot() {
                             >
                                 <div
                                     className={`relative max-w-[85%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${msg.type === 'user'
-                                        ? 'bg-gradient-to-br from-[#2d6a4f] to-[#40916c] text-white rounded-br-sm shadow-md'
-                                        : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-sm shadow-sm border border-gray-100 dark:border-gray-600'
+                                        ? 'bg-gradient-to-br from-emerald-600 to-teal-700 text-white rounded-br-sm shadow-md'
+                                        : 'bg-white dark:bg-gray-700 text-slate-800 dark:text-gray-200 rounded-bl-sm shadow-sm border border-slate-200/80 dark:border-gray-600'
                                         }`}
                                 >
                                     {/* Small arrow marker pointing towards sender */}
                                     <div className={`absolute top-0 w-3 h-3 ${msg.type === 'user'
-                                        ? '-right-1.5 bg-[#40916c] transform rotate-45 opacity-0' // Optional arrow
-                                        : '-left-1.5 bg-white dark:bg-gray-700 border-l border-t border-gray-100 dark:border-gray-600 transform -rotate-45'
+                                        ? '-right-1.5 bg-teal-700 transform rotate-45 opacity-0' // Optional arrow
+                                        : '-left-1.5 bg-white dark:bg-gray-700 border-l border-t border-slate-200/80 dark:border-gray-600 transform -rotate-45'
                                         }`}></div>
                                     {msg.image && (
                                         <img src={msg.image} alt="uploaded" className="max-w-full rounded-md mb-2 shadow-sm" />
@@ -145,10 +145,10 @@ export default function ChatBot() {
 
                         {isLoading && (
                             <div className="flex justify-start">
-                                <div className="bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm border border-gray-100 dark:border-gray-600 flex items-center gap-1.5 relative">
-                                    <div className="w-1.5 h-1.5 bg-[#40916c]/60 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                                    <div className="w-1.5 h-1.5 bg-[#40916c]/60 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                                    <div className="w-1.5 h-1.5 bg-[#40916c]/60 rounded-full animate-bounce"></div>
+                                <div className="bg-white dark:bg-gray-700 text-slate-500 dark:text-gray-400 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm border border-slate-200/80 dark:border-gray-600 flex items-center gap-1.5 relative">
+                                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce"></div>
                                 </div>
                             </div>
                         )}
@@ -157,19 +157,19 @@ export default function ChatBot() {
 
                     {/* Image Preview Area */}
                     {selectedImage && (
-                        <div className="px-4 py-2 bg-gray-50 dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                        <div className="px-4 py-2 bg-slate-50 dark:bg-gray-800 border-t border-slate-100 dark:border-gray-700 flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                                <img src={selectedImage.previewUrl} alt="preview" className="h-10 w-10 object-cover rounded shadow-sm border border-gray-200 dark:border-gray-600" />
-                                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Image attached</span>
+                                <img src={selectedImage.previewUrl} alt="preview" className="h-10 w-10 object-cover rounded-lg shadow-sm border border-slate-200 dark:border-gray-600" />
+                                <span className="text-xs text-slate-600 dark:text-gray-400 font-semibold">Image attached</span>
                             </div>
-                            <button type="button" onClick={() => { setSelectedImage(null); if (fileInputRef.current) fileInputRef.current.value = ''; }} className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors p-1">
+                            <button type="button" onClick={() => { setSelectedImage(null); if (fileInputRef.current) fileInputRef.current.value = ''; }} className="text-slate-400 dark:text-gray-500 hover:text-rose-500 dark:hover:text-red-400 transition-colors p-1">
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                             </button>
                         </div>
                     )}
 
                     {/* Input Area */}
-                    <form onSubmit={handleSend} className="p-3 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 flex gap-2 items-center">
+                    <form onSubmit={handleSend} className="p-3 bg-white dark:bg-gray-800 border-t border-slate-100 dark:border-gray-700 flex gap-2 items-center">
                         <input
                             type="file"
                             accept="image/*"
@@ -180,7 +180,7 @@ export default function ChatBot() {
                         <button
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
-                            className="text-gray-400 hover:text-[#2d6a4f] dark:hover:text-green-400 transition-colors p-2 rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none"
+                            className="text-slate-400 hover:text-emerald-600 dark:hover:text-green-400 transition-colors p-2 rounded-full hover:bg-slate-50 dark:hover:bg-gray-700 focus:outline-none"
                             title="Upload an image of your food"
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -192,13 +192,13 @@ export default function ChatBot() {
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             placeholder="Type a question or upload food..."
-                            className="flex-1 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-full px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/20 focus:border-[#2d6a4f] outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-gray-500 min-w-0"
+                            className="flex-1 bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-600 text-slate-900 dark:text-white text-sm rounded-full px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-gray-500 min-w-0"
                             disabled={isLoading}
                         />
                         <button
                             type="submit"
                             disabled={isLoading || (!input.trim() && !selectedImage)}
-                            className="w-10 h-10 flex items-center justify-center bg-gradient-to-br from-[#2d6a4f] to-[#1b4332] text-white rounded-full hover:shadow-lg hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-none shadow-md shrink-0 focus:outline-none focus:ring-2 focus:ring-[#2d6a4f] focus:ring-offset-2"
+                            className="w-10 h-10 flex items-center justify-center bg-gradient-to-br from-emerald-600 to-teal-800 text-white rounded-full hover:shadow-lg hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-none shadow-md shrink-0 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
                         >
                             <svg className="w-4 h-4 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
@@ -211,9 +211,9 @@ export default function ChatBot() {
             {/* Floating Toggle Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95 focus:outline-none focus:ring-4 focus:ring-[#2d6a4f]/30 ${isOpen
-                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rotate-90 scale-90 hover:bg-gray-200 dark:hover:bg-gray-600 shadow-md'
-                    : 'bg-gradient-to-br from-[#2d6a4f] via-[#1b4332] to-[#081c15] text-white'
+                className={`w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95 focus:outline-none focus:ring-4 focus:ring-emerald-600/30 ${isOpen
+                    ? 'bg-slate-100 dark:bg-gray-700 text-slate-600 dark:text-gray-300 rotate-90 scale-90 hover:bg-slate-200 dark:hover:bg-gray-600 shadow-md'
+                    : 'bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-900 text-white shadow-emerald-900/30'
                     }`}
             >
                 {isOpen ? (

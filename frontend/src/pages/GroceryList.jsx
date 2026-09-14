@@ -328,11 +328,11 @@ const GroceryList = () => {
 
             {/* ── Empty State ── */}
             {groceries.length === 0 ? (
-                <div className="card flex flex-col items-center py-16 gap-4 text-center border-dashed border-2">
+                <div className="card flex flex-col items-center py-16 gap-4 text-center border-dashed border-2 border-slate-200">
                     <div className="w-20 h-20 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center text-4xl shadow-inner">🛒</div>
                     <div>
-                        <h3 className="text-xl font-black text-gray-800 dark:text-white/90">Your list is empty</h3>
-                        <p className="text-gray-500 max-w-xs mt-2">
+                        <h3 className="text-xl font-black text-slate-900 dark:text-white/90">Your list is empty</h3>
+                        <p className="text-slate-500 max-w-xs mt-2 text-sm">
                             Generate a meal plan for today or upcoming days in the Planner — your shopping list will automatically fill up here.
                         </p>
                     </div>
@@ -353,9 +353,9 @@ const GroceryList = () => {
                                 {/* Category header */}
                                 <div className="flex items-center gap-2 mb-3">
                                     <span className="text-xl">{meta.emoji}</span>
-                                    <h2 className="text-sm font-black uppercase tracking-widest text-gray-500 dark:text-gray-400">{meta.label}</h2>
-                                    <span className="ml-auto text-xs text-gray-400">{boughtInCat}/{items.length}</span>
-                                    <div className={`w-2 h-2 rounded-full ${allBought ? 'bg-emerald-500' : 'bg-gray-200'}`} />
+                                    <h2 className="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-gray-400">{meta.label}</h2>
+                                    <span className="ml-auto text-xs font-semibold text-slate-400">{boughtInCat}/{items.length}</span>
+                                    <div className={`w-2 h-2 rounded-full ${allBought ? 'bg-emerald-500' : 'bg-slate-300'}`} />
                                 </div>
 
                                 <div className="grid gap-3">
@@ -363,18 +363,18 @@ const GroceryList = () => {
                                         <div
                                             key={idx}
                                             onClick={() => handleToggle(item)}
-                                            className={`card p-4 group cursor-pointer transition-all border-2 flex items-center justify-between gap-4
+                                            className={`card p-4 group cursor-pointer transition-all border flex items-center justify-between gap-4
                                                 ${item.is_bought
-                                                    ? 'bg-gray-50/60 dark:bg-gray-800/30 border-gray-100 dark:border-gray-700/50 opacity-60'
-                                                    : 'hover:border-emerald-200 bg-white dark:bg-gray-800 hover:shadow-lg hover:-translate-y-0.5'
+                                                    ? 'bg-slate-50/60 dark:bg-gray-800/30 border-slate-100 dark:border-gray-700/50 opacity-60'
+                                                    : 'hover:border-emerald-300 bg-white dark:bg-gray-800 hover:shadow-md hover:-translate-y-0.5'
                                                 }`}
                                         >
                                             <div className="flex items-center gap-4 flex-1 min-w-0">
                                                 {/* Checkbox circle */}
                                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all
                                                     ${item.is_bought
-                                                        ? 'bg-emerald-500 text-white'
-                                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-300 group-hover:bg-emerald-50 group-hover:text-emerald-400'
+                                                        ? 'bg-emerald-500 text-white shadow-sm'
+                                                        : 'bg-slate-100 dark:bg-gray-700 text-slate-300 group-hover:bg-emerald-50 group-hover:text-emerald-500'
                                                     }`}>
                                                     {item.is_bought
                                                         ? <CheckCircle className="w-5 h-5" />
@@ -384,10 +384,10 @@ const GroceryList = () => {
 
                                                 <div className="min-w-0">
                                                     <p className={`font-bold text-base tracking-tight truncate
-                                                        ${item.is_bought ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-800 dark:text-white/90'}`}>
+                                                        ${item.is_bought ? 'line-through text-slate-400 dark:text-gray-500' : 'text-slate-800 dark:text-white/90'}`}>
                                                         {item.name}
                                                     </p>
-                                                    <p className="text-[11px] font-medium text-gray-400 uppercase tracking-widest flex items-center gap-1 mt-0.5">
+                                                    <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1 mt-0.5">
                                                         <Tag className="w-2.5 h-2.5" /> {meta.label}
                                                     </p>
                                                 </div>
@@ -396,9 +396,9 @@ const GroceryList = () => {
                                             {/* Quantity badge */}
                                             <div className="shrink-0 text-right">
                                                 <p className={`text-2xl font-black tabular-nums leading-none
-                                                    ${item.is_bought ? 'text-gray-300' : 'text-emerald-700 dark:text-emerald-400'}`}>
+                                                    ${item.is_bought ? 'text-slate-300' : 'text-emerald-700 dark:text-emerald-400'}`}>
                                                     {item.total_quantity}
-                                                    <span className="text-sm font-bold text-gray-400 ml-1 uppercase">
+                                                    <span className="text-xs font-bold text-slate-400 ml-1 uppercase">
                                                         {item.unit}
                                                     </span>
                                                 </p>

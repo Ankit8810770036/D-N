@@ -70,31 +70,31 @@ export default function Reports() {
     return (
         <div className="space-y-6 w-full pb-10 animate-fade-in">
             <div className="page-header">
-                <h1 className="page-title flex items-center gap-2"><FileText className="w-7 h-7 text-[#2d6a4f]" /> Reports</h1>
+                <h1 className="page-title flex items-center gap-2"><FileText className="w-7 h-7 text-emerald-600 dark:text-green-400" /> Reports</h1>
                 <p className="page-subtitle">Your complete health &amp; diet overview</p>
             </div>
 
             {/* ── Loading ── */}
             {loading ? (
                 <div className="flex items-center justify-center py-16">
-                    <div className="animate-spin w-10 h-10 border-4 border-[#2d6a4f] border-t-transparent rounded-full" />
+                    <div className="animate-spin w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full" />
                 </div>
             ) : summary ? (
                 <>
                     {/* ── User Card ── */}
-                    <div className="card bg-gradient-to-br from-[#2d6a4f] to-[#40916c] text-white">
+                    <div className="card bg-gradient-to-br from-emerald-700 via-emerald-800 to-teal-900 text-white shadow-xl shadow-emerald-900/15">
                         <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 rounded-2xl bg-white/15 flex items-center justify-center text-3xl shrink-0">
+                            <div className="w-14 h-14 rounded-2xl bg-white/15 flex items-center justify-center text-3xl shrink-0 shadow-inner">
                                 👤
                             </div>
                             <div className="flex-1 min-w-0">
                                 <h2 className="text-xl font-bold truncate">{summary.user?.name}</h2>
-                                <p className="text-white/70 text-sm truncate">{summary.user?.email}</p>
+                                <p className="text-white/80 text-sm truncate">{summary.user?.email}</p>
                             </div>
                             {stats?.streak > 0 && (
                                 <div className="shrink-0 text-right">
-                                    <p className="text-2xl font-black">🔥 {stats.streak}</p>
-                                    <p className="text-white/60 text-xs">Day Streak</p>
+                                    <p className="text-2xl font-black text-amber-300">🔥 {stats.streak}</p>
+                                    <p className="text-white/70 text-xs font-semibold">Day Streak</p>
                                 </div>
                             )}
                         </div>
@@ -247,7 +247,7 @@ export default function Reports() {
                     </h3>
                     <div className="flex flex-wrap gap-2">
                         {summary.badges.map(b => (
-                            <span key={b.id} className="inline-flex items-center gap-1.5 text-xs bg-amber-50 border border-amber-200 text-amber-800 px-3 py-1.5 rounded-full font-semibold">
+                            <span key={b.id} className="inline-flex items-center gap-1.5 text-xs bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 text-amber-800 dark:text-amber-300 px-3 py-1.5 rounded-full font-semibold">
                                 🏅 {b.badge_name}
                             </span>
                         ))}
@@ -256,9 +256,9 @@ export default function Reports() {
             )}
 
             {/* ── Tips ── */}
-            <div className="card bg-green-50/60 border border-green-100">
-                <h3 className="font-semibold text-[#2d6a4f] mb-3">💡 Health Tips</h3>
-                <ul className="space-y-2 text-sm text-gray-600">
+            <div className="card bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-800/30">
+                <h3 className="font-semibold text-emerald-800 dark:text-emerald-300 mb-3">💡 Health Tips</h3>
+                <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
                     {[
                         'Drink at least 2–3 liters of water per day.',
                         'Eat protein-rich foods at every meal to preserve muscle mass.',
@@ -268,7 +268,7 @@ export default function Reports() {
                         'Track your progress consistently — small wins compound over time.',
                     ].map((tip, i) => (
                         <li key={i} className="flex items-start gap-2">
-                            <span className="text-[#40916c] font-bold mt-0.5">•</span>
+                            <span className="text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">•</span>
                             <span>{tip}</span>
                         </li>
                     ))}

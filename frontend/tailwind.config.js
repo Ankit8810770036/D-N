@@ -21,11 +21,11 @@ export default {
                     900: '#14532d',
                 },
                 brand: {
-                    green: '#2d6a4f',
-                    light: '#40916c',
-                    gold: '#f4a261',
-                    dark: '#1b4332',
-                    cream: '#f9f6ef',
+                    green: '#059669',
+                    light: '#10b981',
+                    gold: '#f59e0b',
+                    dark: '#064e3b',
+                    cream: '#f8fafc',
                 }
             },
             fontFamily: {

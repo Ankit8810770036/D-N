@@ -9,7 +9,7 @@ import BadgeSection from '../components/BadgeSection'
 import CelebrationOverlay from '../components/CelebrationOverlay'
 import { DailyChallengesCard } from '../components/TokenWallet'
 
-const COLORS = ['#2d6a4f', '#40916c', '#f4a261']
+const COLORS = ['#059669', '#10b981', '#f59e0b']
 
 export default function Dashboard() {
     const { user } = useAuth()
@@ -78,29 +78,29 @@ export default function Dashboard() {
     if (loading) return (
         <div className="space-y-6 animate-pulse">
             <div className="page-header">
-                <div className="h-8 bg-gray-200 rounded w-64 mt-1"></div>
-                <div className="h-4 bg-gray-100 rounded w-96 mt-3"></div>
+                <div className="h-8 bg-slate-200 dark:bg-white/10 rounded-xl w-64 mt-1"></div>
+                <div className="h-4 bg-slate-100 dark:bg-white/5 rounded-lg w-96 mt-3"></div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[1, 2, 3, 4].map(i => (
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                {[1, 2, 3, 4, 5].map(i => (
                     <div key={i} className="card p-5 h-[116px] flex flex-col items-center justify-center gap-3">
-                        <div className="h-8 bg-gray-200 rounded-xl w-16"></div>
-                        <div className="h-3 bg-gray-100 rounded w-20"></div>
+                        <div className="h-8 bg-slate-200 dark:bg-white/10 rounded-xl w-16"></div>
+                        <div className="h-3 bg-slate-100 dark:bg-white/5 rounded w-20"></div>
                     </div>
                 ))}
             </div>
 
             <div className="grid md:grid-cols-2 gap-4">
                 <div className="card h-[280px] flex flex-col items-center justify-center">
-                    <div className="w-32 h-32 rounded-full border-[12px] border-gray-100"></div>
+                    <div className="w-32 h-32 rounded-full border-[12px] border-slate-100 dark:border-white/10"></div>
                 </div>
                 <div className="card h-[280px] space-y-4">
-                    <div className="h-5 bg-gray-200 rounded w-32 mb-4"></div>
+                    <div className="h-5 bg-slate-200 dark:bg-white/10 rounded w-32 mb-4"></div>
                     {[1, 2, 3, 4].map(i => (
-                        <div key={i} className="h-10 bg-gray-50 rounded-xl flex items-center p-2 gap-3">
-                            <div className="w-6 h-6 rounded shrink-0 bg-gray-200"></div>
-                            <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+                        <div key={i} className="h-10 bg-slate-50 dark:bg-white/5 rounded-xl flex items-center p-2 gap-3">
+                            <div className="w-6 h-6 rounded shrink-0 bg-slate-200 dark:bg-white/10"></div>
+                            <div className="h-3 bg-slate-200 dark:bg-white/10 rounded w-1/3"></div>
                         </div>
                     ))}
                 </div>
@@ -109,13 +109,13 @@ export default function Dashboard() {
     )
 
     const macroData = metrics?.macros ? [
-        { name: 'Protein', value: Math.round(metrics.macros.protein_g), color: '#2d6a4f' },
-        { name: 'Carbs', value: Math.round(metrics.macros.carbs_g), color: '#40916c' },
-        { name: 'Fat', value: Math.round(metrics.macros.fat_g), color: '#f4a261' },
+        { name: 'Protein', value: Math.round(metrics.macros.protein_g), color: '#059669' },
+        { name: 'Carbs', value: Math.round(metrics.macros.carbs_g), color: '#10b981' },
+        { name: 'Fat', value: Math.round(metrics.macros.fat_g), color: '#f59e0b' },
     ] : (profile?.calories_target ? [
-        { name: 'Protein', value: Math.round((profile.calories_target * 0.3) / 4), color: '#2d6a4f' },
-        { name: 'Carbs', value: Math.round((profile.calories_target * 0.45) / 4), color: '#40916c' },
-        { name: 'Fat', value: Math.round((profile.calories_target * 0.25) / 9), color: '#f4a261' },
+        { name: 'Protein', value: Math.round((profile.calories_target * 0.3) / 4), color: '#059669' },
+        { name: 'Carbs', value: Math.round((profile.calories_target * 0.45) / 4), color: '#10b981' },
+        { name: 'Fat', value: Math.round((profile.calories_target * 0.25) / 9), color: '#f59e0b' },
     ] : [])
 
     const getBMIClass = (bmi) => {
@@ -139,7 +139,7 @@ export default function Dashboard() {
             {/* Metrics Row */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div className="metric-card">
-                    <div className="metric-val text-orange-500 font-bold">🔥 {metrics?.streak ?? 0}</div>
+                    <div className="metric-val text-amber-500 font-bold">🔥 {metrics?.streak ?? 0}</div>
                     <div className="metric-lbl">Day Streak</div>
                 </div>
                 <div className="metric-card">
@@ -150,27 +150,27 @@ export default function Dashboard() {
                 <div className="metric-card">
                     <div className="metric-val">{profile?.calories_target ? Math.round(profile.calories_target) : '—'}</div>
                     <div className="metric-lbl">Daily Target</div>
-                    <span className="text-xs text-gray-400">kcal/day</span>
+                    <span className="text-xs text-slate-400 font-medium">kcal/day</span>
                 </div>
                 <div className="metric-card">
-                    <div className="metric-val text-[#2d6a4f]">{metrics?.calories_consumed ? Math.round(metrics.calories_consumed) : '0'}</div>
+                    <div className="metric-val text-emerald-600 dark:text-green-400">{metrics?.calories_consumed ? Math.round(metrics.calories_consumed) : '0'}</div>
                     <div className="metric-lbl">Consumed</div>
-                    <span className="text-xs text-gray-400">kcal today</span>
+                    <span className="text-xs text-slate-400 font-medium">kcal today</span>
                 </div>
                 <div className="metric-card">
-                    <div className="metric-val text-orange-500">{profile?.calories_target ? Math.round(profile.calories_target - (metrics?.calories_consumed || 0)) : '—'}</div>
+                    <div className="metric-val text-amber-500">{profile?.calories_target ? Math.round(profile.calories_target - (metrics?.calories_consumed || 0)) : '—'}</div>
                     <div className="metric-lbl">Remaining</div>
-                    <span className="text-xs text-gray-400">kcal left</span>
+                    <span className="text-xs text-slate-400 font-medium">kcal left</span>
                 </div>
 
             </div>
 
             {!profile?.bmi && (
-                <div className="card border-dashed border-2 border-[#40916c]/30 bg-green-50/50 flex flex-col items-center py-8 gap-3">
+                <div className="card border-dashed border-2 border-emerald-300 dark:border-emerald-700/50 bg-emerald-50/50 dark:bg-emerald-950/20 flex flex-col items-center py-8 gap-3">
                     <span className="text-4xl">🧬</span>
-                    <p className="font-semibold text-gray-700">Complete Your Health Profile</p>
-                    <p className="text-sm text-gray-500 text-center">Add your metrics to get your BMI, calorie target, and personalized meal plan</p>
-                    <button onClick={() => setIsWizardOpen(true)} className="btn-primary btn-sm">Start Onboarding Wizard →</button>
+                    <p className="font-bold text-slate-800 dark:text-white">Complete Your Health Profile</p>
+                    <p className="text-sm text-slate-600 dark:text-slate-300 text-center max-w-md">Add your metrics to get your BMI, calorie target, and personalized meal plan</p>
+                    <button onClick={() => setIsWizardOpen(true)} className="btn-primary btn-sm mt-1">Start Onboarding Wizard →</button>
                 </div>
             )}
 
@@ -185,7 +185,7 @@ export default function Dashboard() {
                 {/* Macro Breakdown */}
                 {macroData.length > 0 && (
                     <div className="card">
-                        <h2 className="font-semibold text-gray-800 dark:text-white/90 mb-4">Macro Targets</h2>
+                        <h2 className="font-bold text-slate-900 dark:text-white mb-4">Macro Targets</h2>
                         <ResponsiveContainer width="100%" height={180}>
                             <PieChart>
                                 <Pie data={macroData} cx="50%" cy="50%" innerRadius={55} outerRadius={80}
@@ -199,7 +199,7 @@ export default function Dashboard() {
                             {macroData.map(d => (
                                 <div key={d.name} className="flex items-center gap-1.5 text-xs">
                                     <span className="w-3 h-3 rounded-full inline-block" style={{ background: d.color }} />
-                                    <span className="text-gray-600">{d.name}: <strong>{d.value}g</strong></span>
+                                    <span className="text-slate-600 dark:text-slate-300 font-medium">{d.name}: <strong className="text-slate-900 dark:text-white">{d.value}g</strong></span>
                                 </div>
                             ))}
                         </div>
@@ -208,7 +208,7 @@ export default function Dashboard() {
 
                 {/* Today's Meal Summary */}
                 <div className="card">
-                    <h2 className="font-semibold text-gray-800 dark:text-white/90 mb-4">Today's Meal Plan</h2>
+                    <h2 className="font-bold text-slate-900 dark:text-white mb-4">Today's Meal Plan</h2>
                     {plan ? (
                         <div className="space-y-3">
                             {['breakfast', 'lunch', 'snack', 'dinner'].map(type => {
@@ -216,15 +216,15 @@ export default function Dashboard() {
                                 const icons = { breakfast: '🌅', lunch: '☀️', snack: '🫐', dinner: '🌙' }
                                 const allConsumed = items.length > 0 && items.every(i => i.is_consumed);
                                 return (
-                                    <div key={type} className={`flex items-start gap-3 p-3 rounded-xl border transition-colors ${allConsumed ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800/50' : 'bg-gray-50 border-transparent dark:bg-gray-800/50 dark:border-gray-700'}`}>
-                                        <span className="text-xl">{icons[type]}</span>
+                                    <div key={type} className={`flex items-start gap-3 p-3.5 rounded-2xl border transition-all ${allConsumed ? 'bg-emerald-50/80 border-emerald-200 dark:bg-green-900/20 dark:border-green-800/50' : 'bg-slate-50/80 border-slate-200/60 hover:border-slate-300 dark:bg-gray-800/50 dark:border-gray-700'}`}>
+                                        <span className="text-xl mt-0.5">{icons[type]}</span>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 capitalize flex items-center gap-2">
+                                            <p className="text-sm font-bold text-slate-800 dark:text-gray-300 capitalize flex items-center gap-2">
                                                 {type}
-                                                {allConsumed && <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-tighter">Done</span>}
+                                                {allConsumed && <span className="text-[10px] bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Done</span>}
                                             </p>
                                             {items.length > 0
-                                                ? <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                                ? <p className="text-xs text-slate-500 dark:text-gray-400 truncate mt-0.5">
                                                     {items.map((i, idx) => {
                                                         const name = i.recipe ? i.recipe.name : i.food?.name;
                                                         return (
@@ -234,7 +234,7 @@ export default function Dashboard() {
                                                         );
                                                     })}
                                                   </p>
-                                                : <p className="text-xs text-gray-400 italic">No items</p>
+                                                : <p className="text-xs text-slate-400 italic mt-0.5">No items</p>
                                             }
                                         </div>
                                     </div>
@@ -244,7 +244,7 @@ export default function Dashboard() {
                     ) : (
                         <div className="flex flex-col items-center py-6 gap-3">
                             <span className="text-4xl">🍽️</span>
-                            <p className="text-sm text-gray-500">No meal plan generated for today</p>
+                            <p className="text-sm text-slate-500">No meal plan generated for today</p>
                             <a href="/planner" className="btn-primary btn-sm">Generate Plan →</a>
                         </div>
                     )}

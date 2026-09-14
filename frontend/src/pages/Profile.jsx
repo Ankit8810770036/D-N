@@ -161,7 +161,7 @@ export default function Profile() {
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {/* Basic Info */}
                     <div>
-                        <h3 className="font-semibold text-gray-800 dark:text-white/90 mb-3">Basic Information</h3>
+                        <h3 className="font-bold text-slate-900 dark:text-white/90 mb-3">Basic Information</h3>
                         <div className="grid md:grid-cols-3 gap-4">
                             <div>
                                 <label className="input-label">Age</label>
@@ -186,7 +186,7 @@ export default function Profile() {
 
                     {/* Body Metrics */}
                     <div>
-                        <h3 className="font-semibold text-gray-800 dark:text-white/90 mb-3">Body Metrics</h3>
+                        <h3 className="font-bold text-slate-900 dark:text-white/90 mb-3">Body Metrics</h3>
                         <div className="grid md:grid-cols-3 gap-4">
                             <div>
                                 <label className="input-label">Height (cm)</label>
@@ -208,7 +208,7 @@ export default function Profile() {
 
                     {/* Goals */}
                     <div>
-                        <h3 className="font-semibold text-gray-800 dark:text-white/90 mb-3">Goal & Activity</h3>
+                        <h3 className="font-bold text-slate-900 dark:text-white/90 mb-3">Goal & Activity</h3>
                         <div className="grid md:grid-cols-2 gap-4">
                             <div>
                                 <label className="input-label">Primary Goal</label>
@@ -217,8 +217,8 @@ export default function Profile() {
                                         <button type="button" key={v} onClick={() => set('goal', v)}
                                             className={`flex-1 py-2.5 text-xs font-bold rounded-xl border-2 transition-all
                         ${form.goal === v
-                            ? 'border-[#2d6a4f] bg-[#2d6a4f] text-white shadow-md shadow-green-900/20'
-                            : 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/50 hover:border-[#40916c]/40 dark:hover:border-white/20'}`}>
+                            ? 'border-emerald-600 bg-emerald-600 text-white shadow-md shadow-emerald-700/20'
+                            : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/50 hover:border-emerald-500/40 dark:hover:border-white/20'}`}>
                                             {l}
                                         </button>
                                     ))}
@@ -234,8 +234,8 @@ export default function Profile() {
                                             onClick={() => set('food_preference', v)}
                                             className={`px-3 py-2 text-[10px] font-bold rounded-xl border-2 capitalize transition-all relative overflow-hidden
                                                 ${form.food_preference === v
-                                                    ? 'border-[#2d6a4f] bg-[#2d6a4f] text-white shadow-md shadow-green-900/20'
-                                                    : 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/50 hover:border-[#40916c]/40 dark:hover:border-white/20'}
+                                                    ? 'border-emerald-600 bg-emerald-600 text-white shadow-md shadow-emerald-700/20'
+                                                    : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/50 hover:border-emerald-500/40 dark:hover:border-white/20'}
                                                 ${['keto', 'paleo'].includes(v) && profileData?.user?.plan_type !== 'premium' && profileData?.user?.role !== 'admin' ? 'opacity-70' : ''}`}
                                         >
                                             {v}
@@ -257,10 +257,10 @@ export default function Profile() {
                                     <button type="button" key={al.value} onClick={() => set('activity_level', al.value)}
                                         className={`p-3 rounded-xl border-2 text-center transition-all
                       ${form.activity_level === al.value
-                          ? 'border-[#2d6a4f] bg-[#2d6a4f] shadow-md shadow-green-900/20'
-                          : 'border-gray-200 dark:border-white/10 hover:border-[#40916c]/40 dark:hover:border-white/20'}`}>
-                                        <p className={`text-sm font-bold ${form.activity_level === al.value ? 'text-white' : 'text-gray-800 dark:text-white/80'}`}>{al.label}</p>
-                                        <p className={`text-xs mt-0.5 ${form.activity_level === al.value ? 'text-white/80' : 'text-gray-400 dark:text-white/40'}`}>{al.desc}</p>
+                          ? 'border-emerald-600 bg-emerald-600 shadow-md shadow-emerald-700/20 text-white'
+                          : 'border-slate-200 dark:border-white/10 hover:border-emerald-500/40 dark:hover:border-white/20'}`}>
+                                        <p className={`text-sm font-bold ${form.activity_level === al.value ? 'text-white' : 'text-slate-800 dark:text-white/80'}`}>{al.label}</p>
+                                        <p className={`text-xs mt-0.5 ${form.activity_level === al.value ? 'text-white/80' : 'text-slate-400 dark:text-white/40'}`}>{al.desc}</p>
                                     </button>
                                 ))}
                             </div>

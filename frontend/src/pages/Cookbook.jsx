@@ -55,7 +55,7 @@ const Cookbook = () => {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="page-header mb-0">
                     <div className="flex items-center gap-3 mb-1">
-                        <BookOpen className="w-7 h-7 text-[#2d6a4f]" />
+                        <BookOpen className="w-7 h-7 text-emerald-600 dark:text-green-400" />
                         <h1 className="page-title">Healthy Cookbook</h1>
                     </div>
                     <p className="page-subtitle">Discover nutritious recipes curated for your meal plan</p>
@@ -63,7 +63,7 @@ const Cookbook = () => {
 
                 {/* Search */}
                 <div className="relative shrink-0">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/30 w-4 h-4" />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/30 w-4 h-4" />
                     <input
                         type="text"
                         placeholder="Search recipes..."
@@ -75,7 +75,7 @@ const Cookbook = () => {
             </div>
 
             {/* Stats bar */}
-            <div className="flex items-center gap-4 text-sm text-gray-400 dark:text-white/40">
+            <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-white/40">
                 <span className="font-bold">
                     {filteredRecipes?.length ?? 0}
                     <span className="font-normal ml-1">recipe{filteredRecipes?.length !== 1 ? 's' : ''}</span>
@@ -116,7 +116,7 @@ const Cookbook = () => {
 
                                 {/* Title overlay on image */}
                                 <div className="absolute bottom-4 left-4 right-4">
-                                    <span className="text-[10px] font-black bg-[#2d6a4f]/80 text-white px-2.5 py-1 rounded-lg uppercase tracking-widest backdrop-blur-sm">
+                                    <span className="text-[10px] font-black bg-emerald-600/90 text-white px-2.5 py-1 rounded-lg uppercase tracking-widest backdrop-blur-sm">
                                         Healthy
                                     </span>
                                     <h3 className="text-lg font-black text-white mt-1.5 tracking-tight line-clamp-1 drop-shadow">

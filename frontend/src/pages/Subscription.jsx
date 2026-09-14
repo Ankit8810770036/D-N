@@ -493,46 +493,46 @@ const Subscription = () => {
             <div className="space-y-6 max-w-6xl mx-auto py-8">
 
                     {/* ── Hero ── */}
-                    <div className="text-center mb-20">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-sm font-semibold mb-6">
-                            <Star className="w-4 h-4 fill-amber-400" />
+                    <div className="text-center mb-16">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-bold mb-6 uppercase tracking-wider">
+                            <Star className="w-4 h-4 fill-amber-500 text-amber-500" />
                             Trusted by 10,000+ users worldwide
                         </div>
-                        <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 dark:text-white mb-6 leading-tight">
+                        <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-slate-900 dark:text-white mb-5 leading-tight tracking-tight">
                             Choose Your Path{' '}
-                            <span className="bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
+                            <span className="bg-gradient-to-r from-amber-500 via-amber-600 to-orange-500 bg-clip-text text-transparent">
                                 to Health
                             </span>
                         </h1>
-                        <p className="text-xl text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
+                        <p className="text-lg sm:text-xl text-slate-500 dark:text-gray-400 max-w-2xl mx-auto font-medium">
                             Unlock elite features, specialized plans, and unlimited AI guidance to reach your fitness goals faster than ever.
                         </p>
                     </div>
 
                     {/* ── Current Plan Banner (if premium) ── */}
                     {isPremium && (
-                        <div className="mb-10 p-5 rounded-2xl border border-amber-500/40 bg-amber-500/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="mb-10 p-5 rounded-3xl border border-amber-500/30 bg-amber-50/80 dark:bg-amber-500/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
-                                    <Crown className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                                <div className="w-11 h-11 rounded-2xl bg-amber-500/20 flex items-center justify-center">
+                                    <Crown className="w-6 h-6 text-amber-600 dark:text-amber-400" />
                                 </div>
                                 <div>
-                                    <p className="text-amber-700 dark:text-amber-300 font-bold">
+                                    <p className="text-amber-800 dark:text-amber-300 font-bold">
                                         {isAdmin ? "Super Admin — Lifetime Premium Access 🛡️" : "You're on Premium 🎉"}
                                     </p>
                                     {isAdmin ? (
-                                        <p className="text-amber-600/80 dark:text-amber-400/70 text-sm">
+                                        <p className="text-amber-700/80 dark:text-amber-400/70 text-xs font-medium">
                                             All features, AI chat, keto/paleo plans &amp; admin controls unlocked indefinitely.
                                         </p>
                                     ) : (
                                         <>
                                             {user?.subscribed_at && (
-                                                <p className="text-amber-600/80 dark:text-amber-400/70 text-sm">
+                                                <p className="text-amber-700/80 dark:text-amber-400/70 text-xs font-medium">
                                                     Active since {new Date(user.subscribed_at).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}
                                                 </p>
                                             )}
                                             {user?.subscription_expires_at && (
-                                                <p className="text-amber-600/80 dark:text-amber-400/70 text-sm">
+                                                <p className="text-amber-700/80 dark:text-amber-400/70 text-xs font-medium">
                                                     Renews on {new Date(user.subscription_expires_at).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}
                                                 </p>
                                             )}
@@ -544,7 +544,7 @@ const Subscription = () => {
                                 <button
                                     id="cancel-subscription-btn"
                                     onClick={() => setShowCancelModal(true)}
-                                    className="text-sm text-red-400 hover:text-red-300 font-medium border border-red-500/30 hover:border-red-500/60 px-4 py-2 rounded-xl transition-all"
+                                    className="text-xs text-rose-600 hover:text-rose-700 font-bold border border-rose-200 hover:border-rose-300 bg-white px-4 py-2 rounded-xl transition-all shadow-sm"
                                 >
                                     Cancel Subscription
                                 </button>
@@ -553,91 +553,91 @@ const Subscription = () => {
                     )}
 
                     {/* ── Plan Cards ── */}
-                    <div className="grid md:grid-cols-2 gap-6 lg:gap-10 items-start mb-20">
+                    <div className="grid md:grid-cols-2 gap-6 lg:gap-8 items-start mb-20">
 
                         {/* Basic Plan */}
-                        <div className={`relative rounded-3xl border p-8 transition-all duration-300 ${isPremium ? 'border-gray-200 bg-white/50 dark:border-gray-700 dark:bg-gray-800/50 opacity-75' : 'border-gray-200 bg-white hover:border-emerald-300 hover:shadow-xl dark:border-gray-700 dark:bg-gray-800/80 dark:hover:border-gray-600'}`}>
-                            <div className="flex items-center justify-between mb-8">
+                        <div className={`relative rounded-[2rem] border p-8 transition-all duration-300 ${isPremium ? 'border-slate-200 bg-white/60 dark:border-gray-700 dark:bg-gray-800/50 opacity-75' : 'border-slate-200/90 bg-white hover:border-emerald-300 hover:shadow-xl dark:border-gray-700 dark:bg-gray-800/80 dark:hover:border-gray-600 shadow-sm'}`}>
+                            <div className="flex items-center justify-between mb-6">
                                 <div>
-                                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Basic</h2>
-                                    <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">Essential tools to get started</p>
+                                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Basic</h2>
+                                    <p className="text-slate-500 dark:text-gray-400 mt-1 text-xs font-medium">Essential tools to get started</p>
                                 </div>
-                                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                                    <Zap className="w-6 h-6 text-emerald-400" />
+                                <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200/80 flex items-center justify-center">
+                                    <Zap className="w-6 h-6 text-emerald-600" />
                                 </div>
                             </div>
 
                             <div className="mb-8">
-                                <span className="text-5xl font-extrabold text-gray-900 dark:text-white">Free</span>
-                                <span className="text-gray-400 dark:text-gray-500 ml-2">forever</span>
+                                <span className="text-5xl font-black text-slate-900 dark:text-white">Free</span>
+                                <span className="text-slate-400 dark:text-gray-500 ml-2 font-medium">forever</span>
                             </div>
 
-                            <ul className="space-y-3 mb-10">
+                            <ul className="space-y-3.5 mb-10">
                                 {basicFeatures.map((f, i) => (
                                     <li key={i} className="flex items-center gap-3">
-                                        <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${f.included ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'}`}>
+                                        <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${f.included ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-slate-100 text-slate-400 dark:bg-gray-700 dark:text-gray-500'}`}>
                                             {f.included ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
                                         </div>
-                                        <span className={`text-sm ${f.included ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-600'}`}>{f.text}</span>
+                                        <span className={`text-sm ${f.included ? 'text-slate-700 dark:text-gray-300 font-medium' : 'text-slate-400 dark:text-gray-600'}`}>{f.text}</span>
                                     </li>
                                 ))}
                             </ul>
 
-                            <div className={`w-full py-4 rounded-2xl text-center font-bold text-sm ${!isPremium ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-gray-700 dark:text-gray-400 dark:border-transparent cursor-default' : 'bg-gray-100 text-gray-500 dark:bg-gray-700/50 dark:text-gray-500 cursor-default'}`}>
+                            <div className={`w-full py-4 rounded-2xl text-center font-bold text-sm ${!isPremium ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80 dark:bg-gray-700 dark:text-gray-400 dark:border-transparent cursor-default' : 'bg-slate-100 text-slate-500 dark:bg-gray-700/50 dark:text-gray-500 cursor-default'}`}>
                                 {!isPremium ? '✓ Current Plan' : 'Basic Plan'}
                             </div>
                         </div>
 
                         {/* Premium Plan */}
-                        <div className="relative rounded-3xl border-2 border-amber-300 bg-white dark:border-amber-500/50 dark:bg-gradient-to-br dark:from-gray-800 dark:to-gray-900 p-8 shadow-2xl shadow-amber-500/10 hover:shadow-amber-500/20 hover:border-amber-400 dark:hover:border-amber-500/80 transition-all duration-300">
+                        <div className="relative rounded-[2rem] border-2 border-amber-300/80 bg-white dark:border-amber-500/50 dark:bg-gradient-to-br dark:from-gray-800 dark:to-gray-900 p-8 shadow-xl shadow-amber-500/10 hover:shadow-2xl hover:shadow-amber-500/15 hover:border-amber-400 dark:hover:border-amber-500/80 transition-all duration-300">
                             {/* Recommended badge */}
-                            <div className="absolute -top-4 right-8 bg-gradient-to-r from-amber-500 to-orange-600 text-white px-5 py-1.5 rounded-full text-xs font-bold shadow-lg tracking-wide">
+                            <div className="absolute -top-3.5 right-8 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-1 rounded-full text-[11px] font-bold shadow-md shadow-amber-500/30 tracking-wider uppercase">
                                 MOST POPULAR
                             </div>
 
                             {/* Animated shimmer border effect */}
-                            <div className="absolute inset-0 rounded-3xl opacity-20" style={{ background: 'linear-gradient(135deg, transparent 40%, rgba(251,191,36,0.15) 50%, transparent 60%)' }} />
+                            <div className="absolute inset-0 rounded-[2rem] opacity-20 pointer-events-none" style={{ background: 'linear-gradient(135deg, transparent 40%, rgba(251,191,36,0.15) 50%, transparent 60%)' }} />
 
                             <div className="relative">
-                                <div className="flex items-center justify-between mb-8">
+                                <div className="flex items-center justify-between mb-6">
                                     <div>
-                                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Premium</h2>
-                                        <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">Advanced tools for serious results</p>
+                                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Premium</h2>
+                                        <p className="text-slate-500 dark:text-gray-400 mt-1 text-xs font-medium">Advanced tools for serious results</p>
                                     </div>
-                                    <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
-                                        <Crown className="w-6 h-6 text-amber-400" />
+                                    <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200/80 flex items-center justify-center">
+                                        <Crown className="w-6 h-6 text-amber-500" />
                                     </div>
                                 </div>
 
                                 <div className="mb-8">
-                                    <span className="text-5xl font-extrabold text-gray-900 dark:text-white">₹499</span>
-                                    <span className="text-gray-500 dark:text-gray-400 ml-2">/month</span>
-                                    <div className="mt-2 inline-flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-100 dark:border-transparent">
-                                        <Sparkles className="w-3 h-3" />
+                                    <span className="text-5xl font-black text-slate-900 dark:text-white">₹499</span>
+                                    <span className="text-slate-500 dark:text-gray-400 ml-2 font-medium">/month</span>
+                                    <div className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-200/80 dark:border-transparent">
+                                        <Sparkles className="w-3 h-3 text-emerald-600" />
                                         Cancel anytime
                                     </div>
                                 </div>
 
-                                <ul className="space-y-3 mb-10">
+                                <ul className="space-y-3.5 mb-10">
                                     {premiumFeatures.map((f, i) => (
                                         <li key={i} className="flex items-center gap-3">
-                                            <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
+                                            <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 bg-amber-50 text-amber-700 border border-amber-200/80 dark:bg-amber-500/20 dark:text-amber-400">
                                                 {f.icon || <Check className="w-3 h-3" />}
                                             </div>
-                                            <span className="text-sm text-gray-700 dark:text-gray-200">{f.text}</span>
+                                            <span className="text-sm text-slate-800 dark:text-gray-200 font-medium">{f.text}</span>
                                         </li>
                                     ))}
                                 </ul>
 
                                 {isPremium ? (
-                                    <div className="w-full py-4 rounded-2xl text-center font-bold text-sm bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/30 cursor-default">
+                                    <div className="w-full py-4 rounded-2xl text-center font-bold text-sm bg-amber-50 text-amber-800 border border-amber-200/80 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/30 cursor-default">
                                         ✓ Your Current Plan
                                     </div>
                                 ) : (
                                     <button
                                         id="upgrade-premium-btn"
                                         onClick={() => setShowPayModal(true)}
-                                        className="w-full py-4 rounded-2xl font-bold text-white bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 transition-all duration-200 transform hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-2"
+                                        className="btn-gold w-full py-4 text-center justify-center flex items-center gap-2"
                                     >
                                         <Crown className="w-5 h-5" />
                                         Upgrade to Premium
@@ -650,22 +650,22 @@ const Subscription = () => {
                     {/* ── Trust Badges ── */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-20">
                         {[
-                            { icon: <Shield className="w-6 h-6 text-blue-400" />,   label: 'Secure Payment',    sub: 'PCI-DSS Certified' },
-                            { icon: <Lock className="w-6 h-6 text-emerald-400" />,  label: 'Data Encrypted',    sub: '256-bit SSL' },
-                            { icon: <Zap className="w-6 h-6 text-amber-400" />,     label: 'Instant Activation',sub: 'Access in seconds' },
-                            { icon: <Star className="w-6 h-6 text-rose-400 fill-rose-400" />, label: '4.9★ Rated', sub: '10k+ happy users' },
+                            { icon: <Shield className="w-6 h-6 text-sky-500" />,   label: 'Secure Payment',    sub: 'PCI-DSS Certified' },
+                            { icon: <Lock className="w-6 h-6 text-emerald-500" />,  label: 'Data Encrypted',    sub: '256-bit SSL' },
+                            { icon: <Zap className="w-6 h-6 text-amber-500" />,     label: 'Instant Activation',sub: 'Access in seconds' },
+                            { icon: <Star className="w-6 h-6 text-rose-500 fill-rose-500" />, label: '4.9★ Rated', sub: '10k+ happy users' },
                         ].map((b, i) => (
-                            <div key={i} className="flex flex-col items-center text-center p-5 rounded-2xl bg-white border border-gray-100 dark:bg-gray-800/60 dark:border-gray-700/50 shadow-sm">
+                            <div key={i} className="flex flex-col items-center text-center p-5 rounded-2xl bg-white border border-slate-200/80 dark:bg-gray-800/60 dark:border-gray-700/50 shadow-sm">
                                 <div className="mb-3">{b.icon}</div>
-                                <p className="text-gray-900 dark:text-white font-semibold text-sm">{b.label}</p>
-                                <p className="text-gray-500 text-xs mt-0.5">{b.sub}</p>
+                                <p className="text-slate-900 dark:text-white font-bold text-sm">{b.label}</p>
+                                <p className="text-slate-500 text-xs mt-0.5 font-medium">{b.sub}</p>
                             </div>
                         ))}
                     </div>
 
                     {/* ── FAQ ── */}
                     <div>
-                        <h2 className="text-3xl font-bold text-gray-900 dark:text-white text-center mb-10">Frequently Asked Questions</h2>
+                        <h2 className="text-3xl font-black text-slate-900 dark:text-white text-center mb-10 tracking-tight">Frequently Asked Questions</h2>
                         <div className="max-w-2xl mx-auto space-y-3">
                             {faqs.map((faq, i) => (
                                 <FaqItem key={i} q={faq.q} a={faq.a} />

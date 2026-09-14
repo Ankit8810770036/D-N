@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Eye, EyeOff } from 'lucide-react'
 import api from '../services/api'
 import toast from 'react-hot-toast'
 
@@ -97,9 +98,11 @@ export default function ResetPassword() {
                                 <button
                                     type="button"
                                     onClick={() => setShowPass(!showPass)}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80 transition-colors text-xs"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors p-1 focus:outline-none"
+                                    title={showPass ? "Hide password" : "Show password"}
+                                    aria-label={showPass ? "Hide password" : "Show password"}
                                 >
-                                    {showPass ? '🙈' : '👁️'}
+                                    {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                 </button>
                             </div>
                             {/* Strength bar */}

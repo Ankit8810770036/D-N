@@ -91,20 +91,20 @@ export function DailyChallengesCard({ date }) {
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
                 <div>
-                    <h2 className="font-bold text-gray-800 dark:text-white/90 flex items-center gap-2 text-lg">
+                    <h2 className="font-bold text-slate-900 dark:text-white/90 flex items-center gap-2 text-lg">
                         🪙 Daily Challenges
                     </h2>
-                    <p className="text-xs text-gray-400 mt-0.5">Click any task below to go directly and complete it</p>
+                    <p className="text-xs text-slate-500 mt-0.5">Click any task below to go directly and complete it</p>
                 </div>
                 <div className="text-right">
                     <p className="text-2xl font-black text-amber-600 dark:text-amber-400">{balance.toLocaleString()}</p>
-                    <p className="text-[10px] text-gray-400 uppercase tracking-wide">Total Coins</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Coins</p>
                 </div>
             </div>
 
             {/* Progress */}
             <div className="flex items-center gap-2 mb-4">
-                <div className="flex-1 h-2.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div className="flex-1 h-2.5 bg-slate-100 dark:bg-gray-700 rounded-full overflow-hidden">
                     <div
                         className="h-full bg-gradient-to-r from-amber-400 to-orange-500 rounded-full transition-all duration-700"
                         style={{ width: `${total > 0 ? (earned / total) * 100 : 0}%` }}
@@ -139,41 +139,41 @@ export function DailyChallengesCard({ date }) {
                                     }
                                 }
                             }}
-                            className={`flex items-center gap-3 p-3 rounded-2xl transition-all cursor-pointer group ${
+                            className={`flex items-center gap-3 p-3.5 rounded-2xl transition-all cursor-pointer group ${
                                 ch.done
                                     ? 'bg-emerald-50/70 dark:bg-emerald-900/20 border border-emerald-200/80 dark:border-emerald-800/40 opacity-90'
-                                    : 'bg-white dark:bg-gray-800/80 border border-gray-100 dark:border-white/10 hover:border-[#2d6a4f]/50 dark:hover:border-green-500/50 hover:shadow-md hover:scale-[1.01]'
+                                    : 'bg-white dark:bg-gray-800/80 border border-slate-200/80 dark:border-white/10 hover:border-emerald-500/50 dark:hover:border-green-500/50 hover:shadow-sm hover:scale-[1.01]'
                             }`}
                             title={routeInfo.tooltip}
                         >
                             <span className={`w-7 h-7 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 transition-transform group-hover:scale-110 ${
                                 ch.done
                                     ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/30'
-                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-400'
+                                    : 'bg-slate-100 dark:bg-gray-700 text-slate-400'
                             }`}>
                                 {ch.done ? '✓' : '○'}
                             </span>
                             <div className="flex-1 min-w-0">
                                 <span className={`text-sm font-semibold flex items-center gap-1.5 ${
                                     ch.done 
-                                        ? 'line-through text-gray-400 dark:text-gray-500' 
-                                        : 'text-gray-800 dark:text-gray-200 group-hover:text-[#2d6a4f] dark:group-hover:text-green-400 transition-colors'
+                                        ? 'line-through text-slate-400 dark:text-gray-500' 
+                                        : 'text-slate-800 dark:text-gray-200 group-hover:text-emerald-700 dark:group-hover:text-green-400 transition-colors'
                                 }`}>
                                     {ch.label}
                                     {!ch.done && (
-                                        <span className="opacity-0 group-hover:opacity-100 text-xs text-[#2d6a4f] dark:text-green-400 transition-all ml-1">
+                                        <span className="opacity-0 group-hover:opacity-100 text-xs text-emerald-600 dark:text-green-400 transition-all ml-1">
                                             →
                                         </span>
                                     )}
                                 </span>
-                                <p className="text-[11px] text-gray-400 truncate">
+                                <p className="text-[11px] text-slate-400 truncate">
                                     {ch.done ? 'Completed today' : 'Click to complete this challenge'}
                                 </p>
                             </div>
                             <span className={`text-xs font-black px-2.5 py-1 rounded-xl shrink-0 transition-colors ${
                                 ch.done
-                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400'
-                                    : 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200/50 dark:border-amber-700/50 group-hover:bg-amber-100'
+                                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-400'
+                                    : 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200/70 dark:border-amber-700/50 group-hover:bg-amber-100'
                             }`}>
                                 +{ch.coins} 🪙
                             </span>
@@ -183,7 +183,7 @@ export function DailyChallengesCard({ date }) {
             </div>
 
             {/* Milestone hint */}
-            <div className="mt-4 p-3 bg-amber-50/80 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-700/30 rounded-xl text-xs text-amber-700 dark:text-amber-400">
+            <div className="mt-4 p-3 bg-amber-50/80 dark:bg-amber-900/20 border border-amber-200/60 dark:border-amber-700/30 rounded-2xl text-xs text-amber-800 dark:text-amber-400 font-medium">
                 <span className="font-bold">🏆 Milestones:</span> 7-day streak → +50 coins &nbsp;|&nbsp; 30-day streak → +200 coins
             </div>
         </div>
