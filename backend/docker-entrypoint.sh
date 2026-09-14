@@ -15,5 +15,10 @@ php artisan migrate --force || echo "Migration notice: check DB connection if ta
 echo "==> Running database seeders..."
 php artisan db:seed --force || echo "Seeding notice: already seeded or DB not ready."
 
+if [ -n "$PORT" ]; then
+    echo "==> Configuring Apache port to $PORT..."
+    sed -i "s/80/$PORT/g" /etc/apache2/sites-available/000-default.conf /etc/apache2/ports.conf
+fi
+
 echo "==> Starting Apache web server..."
 exec apache2-foreground
