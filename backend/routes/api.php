@@ -25,6 +25,53 @@ Route::post('/login',    [AuthController::class, 'login'])->middleware('throttle
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
 Route::post('/reset-password',  [AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
 
+// ─── Setup & Health Check ──────────────────────────────────────────────────
+Route::get('/health-check', function () {
+    try {
+        DB::connection()->getPdo();
+        $dbName = DB::connection()->getDatabaseName();
+        $foodsCount = Schema::hasTable('foods') ? DB::table('foods')->count() : 0;
+        return response()->json([
+            'status' => 'healthy',
+            'database_connected' => true,
+            'database' => $dbName,
+            'driver' => DB::connection()->getDriverName(),
+            'foods_count' => $foodsCount,
+            'tables_exist' => Schema::hasTable('foods'),
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'status' => 'error',
+            'database_connected' => false,
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+});
+
+Route::get('/setup-db', function () {
+    try {
+        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        $migrateOutput = \Illuminate\Support\Facades\Artisan::output();
+
+        \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
+        $seedOutput = \Illuminate\Support\Facades\Artisan::output();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Database successfully migrated and seeded!',
+            'migrate_output' => $migrateOutput,
+            'seed_output' => $seedOutput,
+            'foods_count' => DB::table('foods')->count(),
+            'recipes_count' => DB::table('recipes')->count(),
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+});
+
 // ─── Public Food Browse ────────────────────────────────────────────────────
 Route::get('/foods',                    [FoodController::class, 'index']);
 Route::get('/foods/{food}',             [FoodController::class, 'show']);
