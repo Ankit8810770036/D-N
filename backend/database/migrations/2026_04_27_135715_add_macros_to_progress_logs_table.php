@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('progress_logs', function (Blueprint $table) {
-            $table->decimal('protein', 8, 2)->nullable()->after('calories_consumed');
-            $table->decimal('carbs', 8, 2)->nullable()->after('protein');
-            $table->decimal('fat', 8, 2)->nullable()->after('carbs');
+            $table->decimal('protein', 8, 2)->nullable();
+            $table->decimal('carbs', 8, 2)->nullable();
+            $table->decimal('fat', 8, 2)->nullable();
         });
     }
 

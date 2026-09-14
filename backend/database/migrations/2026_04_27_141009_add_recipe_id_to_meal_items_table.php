@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('meal_items', function (Blueprint $table) {
             $table->unsignedBigInteger('food_id')->nullable()->change();
-            $table->foreignId('recipe_id')->nullable()->after('food_id')->constrained('recipes')->onDelete('cascade');
+            $table->foreignId('recipe_id')->nullable()->constrained('recipes')->onDelete('cascade');
         });
     }
 

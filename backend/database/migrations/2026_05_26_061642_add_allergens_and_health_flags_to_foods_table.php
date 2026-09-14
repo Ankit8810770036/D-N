@@ -12,11 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('foods', function (Blueprint $table) {
-            $table->json('allergens')->nullable()->after('glycemic_index');
-            $table->boolean('is_low_sodium')->default(true)->after('allergens');
-            $table->boolean('is_thyroid_friendly')->default(true)->after('is_low_sodium');
-            $table->boolean('is_heart_friendly')->default(true)->after('is_thyroid_friendly');
-            $table->boolean('is_pcod_friendly')->default(true)->after('is_heart_friendly');
+            $table->json('allergens')->nullable();
+            $table->boolean('is_low_sodium')->default(true);
+            $table->boolean('is_thyroid_friendly')->default(true);
+            $table->boolean('is_heart_friendly')->default(true);
+            $table->boolean('is_pcod_friendly')->default(true);
         });
     }
 

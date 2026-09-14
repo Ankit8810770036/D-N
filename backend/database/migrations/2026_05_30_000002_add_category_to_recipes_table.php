@@ -18,7 +18,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('recipes', function (Blueprint $table) {
-            $table->string('category')->nullable()->default('general')->after('description');
+            $table->string('category')->nullable()->default('general');
             $table->index('category', 'recipes_category_idx');
         });
     }

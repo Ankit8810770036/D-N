@@ -9,9 +9,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('subscription_id')->nullable()->after('plan_type');
-            $table->timestamp('subscribed_at')->nullable()->after('subscription_id');
-            $table->timestamp('subscription_expires_at')->nullable()->after('subscribed_at');
+            $table->string('subscription_id')->nullable();
+            $table->timestamp('subscribed_at')->nullable();
+            $table->timestamp('subscription_expires_at')->nullable();
         });
     }
 
