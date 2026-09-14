@@ -273,5 +273,6 @@ class FoodController extends Controller
         }
         Cache::forget('foods_all');
         Cache::forget('admin_platform_stats');
+        Cache::flush();
     }
 }

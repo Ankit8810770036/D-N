@@ -41,6 +41,7 @@ const AdminRecipeList = () => {
                 }
                 return [savedRecipe, ...oldData];
             });
+            queryClient.invalidateQueries({ queryKey: ['recipes'] });
 
             toast.success(wasEditing ? 'Recipe updated' : 'Recipe created');
             handleCloseModal();
@@ -59,6 +60,7 @@ const AdminRecipeList = () => {
                 if (!Array.isArray(oldData)) return oldData;
                 return oldData.filter(r => r.id !== recipeId);
             });
+            queryClient.invalidateQueries({ queryKey: ['recipes'] });
             toast.success('Recipe deleted');
         }
     });

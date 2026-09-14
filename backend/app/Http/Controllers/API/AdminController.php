@@ -56,13 +56,13 @@ class AdminController extends Controller
         }
 
         $user->update($validated);
-        \Illuminate\Support\Facades\Cache::forget('admin_platform_stats');
-        \Illuminate\Support\Facades\Cache::forget("recipes_user_{$user->id}");
+        \Illuminate\Support\Facades\Cache::flush();
         return response()->json($user->fresh());
     }
 
     public function refreshCache()
     {
+        \Illuminate\Support\Facades\Cache::flush();
         \Illuminate\Support\Facades\Artisan::call('cache:clear');
         return response()->json(['message' => 'System cache cleared and synchronized.']);
     }
@@ -115,7 +115,7 @@ class AdminController extends Controller
         }
 
         $user->delete();
-        \Illuminate\Support\Facades\Cache::forget('admin_platform_stats');
+        \Illuminate\Support\Facades\Cache::flush();
         return response()->json(['message' => 'User deleted successfully.']);
     }
 }

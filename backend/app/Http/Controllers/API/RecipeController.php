@@ -38,13 +38,6 @@ class RecipeController extends Controller
             $query->where('name', 'like', '%' . $request->search . '%');
         }
 
-        if (!$hasFilters) {
-            $cacheKey = "recipes_user_{$userId}";
-            return response()->json(\Illuminate\Support\Facades\Cache::remember($cacheKey, 3600, function () use ($query) {
-                return $query->latest()->get();
-            }));
-        }
-
         return response()->json($query->latest()->get());
     }
 
@@ -82,8 +75,7 @@ class RecipeController extends Controller
             }
 
             $this->recalculateNutrition($recipe);
-            \Illuminate\Support\Facades\Cache::forget("recipes_user_{$request->user()->id}");
-            \Illuminate\Support\Facades\Cache::forget('admin_platform_stats');
+            \Illuminate\Support\Facades\Cache::flush();
 
             return response()->json($recipe->load('ingredients.food'), 201);
         });
@@ -145,8 +137,7 @@ class RecipeController extends Controller
             }
 
             $this->recalculateNutrition($recipe);
-            \Illuminate\Support\Facades\Cache::forget("recipes_user_{$request->user()->id}");
-            \Illuminate\Support\Facades\Cache::forget('admin_platform_stats');
+            \Illuminate\Support\Facades\Cache::flush();
 
             return response()->json($recipe->load('ingredients.food'));
         });
@@ -162,8 +153,7 @@ class RecipeController extends Controller
         }
 
         $recipe->delete();
-        \Illuminate\Support\Facades\Cache::forget("recipes_user_{$request->user()->id}");
-        \Illuminate\Support\Facades\Cache::forget('admin_platform_stats');
+        \Illuminate\Support\Facades\Cache::flush();
         return response()->json(['message' => 'Recipe deleted']);
     }
 
