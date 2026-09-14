@@ -19,10 +19,13 @@ return [
 
     'allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 
-    'allowed_origins' => array_filter(array_map('trim', explode(',', env('FRONTEND_URL', 'http://localhost:5173,http://127.0.0.1:5173,https://diet-nutrition-planner.vercel.app')))),
+    'allowed_origins' => array_unique(array_filter(array_merge(
+        ['http://localhost:5173', 'http://127.0.0.1:5173', 'https://diet-nutrition-planner.vercel.app'],
+        explode(',', env('FRONTEND_URL', ''))
+    ))),
 
     'allowed_origins_patterns' => [
-        '#^https?:\/\/.*\.vercel\.app$#',
+        '#^https?:\/\/[a-z0-9-]+\.vercel\.app$#',
         '#^https?:\/\/localhost(:\d+)?$#',
         '#^https?:\/\/127\.0\.0\.1(:\d+)?$#',
     ],
