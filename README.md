@@ -148,14 +148,6 @@ flowchart TD
 
 ---
 
-## 🔑 Demo & Admin Credentials
-
-| Role | Email | Password | Access Level |
-|---|---|---|---|
-| **Super Admin** | `admin@dietplanner.com` | `password` | Global Management, Catalog CRUD, Unlimited Access |
-
----
-
 ## 🚀 Getting Started Locally
 
 ### Prerequisites
