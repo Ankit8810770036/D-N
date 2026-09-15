@@ -129,35 +129,35 @@ export default function Dashboard() {
     const bmiInfo = getBMIClass(profile?.bmi)
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 w-full min-w-0">
             {/* Page Header */}
-            <div className="page-header">
+            <div className="page-header w-full">
                 <h1 className="page-title">Your Health Dashboard</h1>
                 <p className="page-subtitle">Track your nutrition and wellness journey at a glance</p>
             </div>
 
             {/* Metrics Row */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                <div className="metric-card">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 w-full">
+                <div className="metric-card w-full">
                     <div className="metric-val text-amber-500 font-bold">🔥 {metrics?.streak ?? 0}</div>
                     <div className="metric-lbl">Day Streak</div>
                 </div>
-                <div className="metric-card">
+                <div className="metric-card w-full">
                     <div className="metric-val">{profile?.bmi ?? '—'}</div>
                     <div className="metric-lbl">BMI</div>
                     {profile?.bmi && <span className={`badge ${bmiInfo.class} mt-1`}>{bmiInfo.label}</span>}
                 </div>
-                <div className="metric-card">
+                <div className="metric-card w-full">
                     <div className="metric-val">{profile?.calories_target ? Math.round(profile.calories_target) : '—'}</div>
                     <div className="metric-lbl">Daily Target</div>
                     <span className="text-xs text-slate-400 font-medium">kcal/day</span>
                 </div>
-                <div className="metric-card">
+                <div className="metric-card w-full">
                     <div className="metric-val text-emerald-600 dark:text-green-400">{metrics?.calories_consumed ? Math.round(metrics.calories_consumed) : '0'}</div>
                     <div className="metric-lbl">Consumed</div>
                     <span className="text-xs text-slate-400 font-medium">kcal today</span>
                 </div>
-                <div className="metric-card">
+                <div className="metric-card col-span-2 sm:col-span-2 lg:col-span-1 w-full">
                     <div className="metric-val text-amber-500">{profile?.calories_target ? Math.round(profile.calories_target - (metrics?.calories_consumed || 0)) : '—'}</div>
                     <div className="metric-lbl">Remaining</div>
                     <span className="text-xs text-slate-400 font-medium">kcal left</span>
@@ -166,7 +166,7 @@ export default function Dashboard() {
             </div>
 
             {!profile?.bmi && (
-                <div className="card border-dashed border-2 border-emerald-300 dark:border-emerald-700/50 bg-emerald-50/50 dark:bg-emerald-950/20 flex flex-col items-center py-8 gap-3">
+                <div className="card w-full border-dashed border-2 border-emerald-300 dark:border-emerald-700/50 bg-emerald-50/50 dark:bg-emerald-950/20 flex flex-col items-center py-8 gap-3">
                     <span className="text-4xl">🧬</span>
                     <p className="font-bold text-slate-800 dark:text-white">Complete Your Health Profile</p>
                     <p className="text-sm text-slate-600 dark:text-slate-300 text-center max-w-md">Add your metrics to get your BMI, calorie target, and personalized meal plan</p>
@@ -181,21 +181,23 @@ export default function Dashboard() {
             />
 
             {/* Macros + Today's Plan */}
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full min-w-0">
                 {/* Macro Breakdown */}
                 {macroData.length > 0 && (
-                    <div className="card">
-                        <h2 className="font-bold text-slate-900 dark:text-white mb-4">Macro Targets</h2>
-                        <ResponsiveContainer width="100%" height={180}>
-                            <PieChart>
-                                <Pie data={macroData} cx="50%" cy="50%" innerRadius={55} outerRadius={80}
-                                    paddingAngle={4} dataKey="value">
-                                    {macroData.map((d, i) => <Cell key={i} fill={d.color} />)}
-                                </Pie>
-                                <Tooltip formatter={(v, n) => [`${v}g`, n]} />
-                            </PieChart>
-                        </ResponsiveContainer>
-                        <div className="flex justify-center gap-4 mt-2">
+                    <div className="card w-full min-w-0 overflow-hidden flex flex-col justify-between">
+                        <h2 className="font-bold text-slate-900 dark:text-white mb-3">Macro Targets</h2>
+                        <div className="w-full h-[180px] min-w-0 flex items-center justify-center">
+                            <ResponsiveContainer width="99%" height={180}>
+                                <PieChart>
+                                    <Pie data={macroData} cx="50%" cy="50%" innerRadius={55} outerRadius={80}
+                                        paddingAngle={4} dataKey="value">
+                                        {macroData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                                    </Pie>
+                                    <Tooltip formatter={(v, n) => [`${v}g`, n]} />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                        <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mt-3">
                             {macroData.map(d => (
                                 <div key={d.name} className="flex items-center gap-1.5 text-xs">
                                     <span className="w-3 h-3 rounded-full inline-block" style={{ background: d.color }} />
@@ -207,7 +209,7 @@ export default function Dashboard() {
                 )}
 
                 {/* Today's Meal Summary */}
-                <div className="card">
+                <div className="card w-full min-w-0 flex flex-col justify-between">
                     <h2 className="font-bold text-slate-900 dark:text-white mb-4">Today's Meal Plan</h2>
                     {plan ? (
                         <div className="space-y-3">

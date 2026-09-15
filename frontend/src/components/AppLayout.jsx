@@ -21,7 +21,7 @@ export default function AppLayout() {
 
             <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
             
-            <div className="flex-1 flex flex-col ml-0 lg:ml-64 min-w-0">
+            <div className="flex-1 flex flex-col ml-0 lg:ml-64 min-w-0 w-full">
                 <Navbar onMenuClick={() => setIsSidebarOpen(true)} />
                 
                 {/* Expiry Warning Banner */}
@@ -44,10 +44,10 @@ export default function AppLayout() {
                     </div>
                 )}
 
-                <main className={`flex-1 px-4 sm:px-8 lg:px-10 pb-6 w-full max-w-[96rem] mx-auto ${
+                <main className={`flex-1 px-3.5 sm:px-8 lg:px-10 pb-8 w-full max-w-[96rem] mx-auto min-w-0 ${
                     user?.plan_type === 'premium' && daysUntilExpiry !== null && daysUntilExpiry <= 3 
                         ? 'pt-4 sm:pt-6' 
-                        : 'pt-28'
+                        : 'pt-24 sm:pt-28'
                 }`}>
                     <Outlet />
                 </main>

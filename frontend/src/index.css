@@ -58,7 +58,7 @@
 
   /* Cards */
   .card {
-    @apply bg-white rounded-[2rem] shadow-premium border border-slate-200/80 p-7 transition-all duration-300 dark:bg-black/40 dark:backdrop-blur-md dark:border-white/20 dark:shadow-none;
+    @apply bg-white rounded-[2rem] shadow-premium border border-slate-200/80 p-7 transition-all duration-300 dark:bg-black/40 dark:backdrop-blur-md dark:border-white/20 dark:shadow-none w-full min-w-0;
   }
 
   .card-hover {
@@ -202,7 +202,10 @@
 
 /* Mobile & Phone Orientation Flexibility */
 @media (max-width: 640px) {
-  .card {
+  .card, .metric-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
     padding: 1.25rem !important;
     border-radius: 1.5rem !important;
   }

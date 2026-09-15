@@ -87,7 +87,7 @@ export function DailyChallengesCard({ date }) {
     if (isLoading) return null
 
     return (
-        <div id="daily-challenges" className="card transition-all duration-500 scroll-mt-24 font-outfit">
+        <div id="daily-challenges" className="card w-full min-w-0 transition-all duration-500 scroll-mt-24 font-outfit">
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
                 <div>

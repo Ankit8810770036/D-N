@@ -27,7 +27,7 @@ const BADGE_CONFIG = {
 
 export default function BadgeSection({ badges = [] }) {
     if (badges.length === 0) return (
-        <div className="card bg-slate-50/50 border-dashed border-2 border-slate-200 flex flex-col items-center py-6 text-slate-400">
+        <div className="card w-full min-w-0 bg-slate-50/50 border-dashed border-2 border-slate-200 flex flex-col items-center py-6 text-slate-400">
             <span className="text-3xl mb-2">🏅</span>
             <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">No badges earned yet.</p>
             <p className="text-xs text-slate-400 mt-0.5">Complete logs and stick to your plan to unlock more!</p>
@@ -35,7 +35,7 @@ export default function BadgeSection({ badges = [] }) {
     )
 
     return (
-        <div className="card">
+        <div className="card w-full min-w-0">
             <div className="flex justify-between items-center mb-4">
                 <h2 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <span>Achievements</span>
