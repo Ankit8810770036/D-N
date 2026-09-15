@@ -10,7 +10,7 @@ function useTokens(date) {
     return useQuery({
         queryKey: ['tokens', targetDate],
         queryFn: () => api.get(`/tokens?date=${targetDate}`).then(r => r.data),
-        staleTime: 1000 * 30,
+        staleTime: 5 * 60 * 1000, // 5 minutes fresh data
     })
 }
 

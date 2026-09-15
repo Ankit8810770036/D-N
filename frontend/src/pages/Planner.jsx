@@ -278,11 +278,10 @@ export default function Planner() {
                             <button
                                 key={d.dateStr}
                                 onClick={() => setDate(d.dateStr)}
-                                className={`py-2.5 px-1.5 rounded-2xl text-center transition-all duration-200 flex flex-col items-center justify-center border ${
-                                    isSelected
+                                className={`py-2.5 px-1.5 rounded-2xl text-center transition-all duration-200 flex flex-col items-center justify-center border ${isSelected
                                         ? 'bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-lg shadow-emerald-700/25 dark:shadow-[0_0_20px_rgba(16,185,129,0.3)] font-bold scale-[1.03] border-emerald-500/50 dark:border-emerald-400'
                                         : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200/60 hover:border-slate-300 dark:bg-white/5 dark:hover:bg-white/10 dark:text-white/80 dark:border-white/10 dark:hover:border-white/20'
-                                }`}
+                                    }`}
                             >
                                 <span className={`text-[11px] uppercase tracking-wider font-semibold ${isSelected ? 'text-emerald-100' : 'text-slate-400 dark:text-white/40'}`}>
                                     {d.dayName}

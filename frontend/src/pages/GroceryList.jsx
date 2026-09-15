@@ -61,7 +61,7 @@ const GroceryList = () => {
             const response = await api.get(`/grocery-list?date=${localToday}`);
             return response.data;
         },
-        staleTime: 1000 * 60 * 2, // 2 min cache
+        staleTime: 5 * 60 * 1000, // 5 min cache
     });
 
     const toggleMutation = useMutation({
