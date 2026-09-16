@@ -821,12 +821,12 @@ class DietPlannerController extends Controller
         $stats = MealItem::whereHas('mealPlan', function ($q) use ($user, $planDate) {
             $q->where('user_id', $user->id)->where('date', $planDate);
         })->selectRaw('
-            SUM(CASE WHEN is_consumed = 1 THEN calories ELSE 0 END) as calories,
-            SUM(CASE WHEN is_consumed = 1 THEN protein ELSE 0 END) as protein,
-            SUM(CASE WHEN is_consumed = 1 THEN carbs ELSE 0 END) as carbs,
-            SUM(CASE WHEN is_consumed = 1 THEN fat ELSE 0 END) as fat,
+            SUM(CASE WHEN is_consumed THEN calories ELSE 0 END) as calories,
+            SUM(CASE WHEN is_consumed THEN protein ELSE 0 END) as protein,
+            SUM(CASE WHEN is_consumed THEN carbs ELSE 0 END) as carbs,
+            SUM(CASE WHEN is_consumed THEN fat ELSE 0 END) as fat,
             COUNT(*) as total_items,
-            SUM(CASE WHEN is_consumed = 1 THEN 1 ELSE 0 END) as consumed_items
+            SUM(CASE WHEN is_consumed THEN 1 ELSE 0 END) as consumed_items
         ')->first();
 
         $cals          = round((float) ($stats->calories ?? 0), 2);
