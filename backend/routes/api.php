@@ -91,7 +91,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Auth
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me',      [AuthController::class, 'me']);
-    Route::post('/profile/photo', [AuthController::class, 'updatePhoto']);
+    Route::post  ('/profile/photo', [AuthController::class, 'updatePhoto']);
+    Route::delete('/profile/photo', [AuthController::class, 'deletePhoto']);
 
     // ── Email Verification ─────────────────────────────────────────────────
     // Resend the verification email (user clicks "Resend" on the frontend banner)

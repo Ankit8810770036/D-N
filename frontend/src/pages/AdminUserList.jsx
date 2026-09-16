@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Users, Shield, Crown, Mail, ArrowLeft, Trash2 } from 'lucide-react';
+import UserAvatar from '../components/UserAvatar';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -88,9 +89,7 @@ const AdminUserList = () => {
                                 <tr key={user.id} className="hover:bg-green-50/40 dark:hover:bg-white/5 transition-colors">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
-                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white shadow-sm ${user.role === 'admin' ? 'bg-gradient-to-br from-[#2d6a4f] to-[#1b4332]' : 'bg-gradient-to-br from-[#40916c] to-[#2d6a4f]'}`}>
-                                                {user.name.charAt(0)}
-                                            </div>
+                                            <UserAvatar user={user} size="md" />
                                             <div>
                                                 <p className="font-bold text-gray-800 dark:text-white/90 text-sm">
                                                     {user.name}

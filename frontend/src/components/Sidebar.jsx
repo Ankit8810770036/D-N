@@ -2,12 +2,13 @@ import { NavLink } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { TokenWalletSidebar } from './TokenWallet'
 import { X } from 'lucide-react'
+import UserAvatar from './UserAvatar'
 
 const navItems = [
     { to: '/dashboard', icon: '🏠', label: 'Dashboard' },
     { to: '/profile', icon: '👤', label: 'My Profile' },
     { to: '/planner', icon: '🍽️', label: 'Diet Planner' },
-    { to: '/workouts', icon: '🏋️', label: 'Workouts', badge: 'SOON' },
+    { to: '/workouts', icon: '🏋️', label: 'Workouts' },
     { to: '/shopping-list', icon: '🛒', label: 'Shopping List' },
     { to: '/cookbook', icon: '📖', label: 'Cookbook' },
     { to: '/progress', icon: '📈', label: 'Progress' },
@@ -79,26 +80,27 @@ export default function Sidebar({ isOpen, onClose }) {
                 <TokenWalletSidebar />
             </div>
 
-            {/* User info — clickable → goes to profile */}
-            <NavLink
-                to="/profile"
-                onClick={handleLinkClick}
-                className="px-4 py-4 border-t border-slate-100 dark:border-white/10 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors cursor-pointer group"
-            >
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-600 to-teal-700 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 group-hover:ring-2 group-hover:ring-emerald-500/50 transition-all shadow-sm">
-                    {user?.name?.[0]?.toUpperCase() ?? 'U'}
-                </div>
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                        <p className="text-sm font-semibold text-slate-800 dark:text-white/90 truncate group-hover:text-emerald-700 dark:group-hover:text-green-400 transition-colors">{user?.name}</p>
-                        {user?.plan_type === 'premium' && (
-                            <span className="text-[10px] bg-amber-50 text-amber-800 px-1.5 py-0.5 rounded-md font-bold border border-amber-200/90">PRO</span>
-                        )}
+            {/* User Info */}
+            <div className="p-3 border-t border-slate-100 dark:border-white/10">
+                <NavLink
+                    to="/profile"
+                    onClick={handleLinkClick}
+                    className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group"
+                >
+                    <UserAvatar user={user} size="sm" className="w-9 h-9" />
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-800 dark:text-white/90 truncate group-hover:text-emerald-700 dark:group-hover:text-green-400 transition-colors">
+                            {user?.name}
+                        </p>
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-xs text-slate-400 capitalize">{user?.role}</span>
+                            {user?.plan_type === 'premium' && (
+                                <span className="text-[9px] bg-amber-50 text-amber-800 px-1.5 py-0.2 rounded font-bold border border-amber-200">PRO</span>
+                            )}
+                        </div>
                     </div>
-                    <p className="text-xs text-slate-400 capitalize">{user?.role}</p>
-                </div>
-                <span className="text-slate-300 dark:text-white/20 group-hover:text-emerald-600 dark:group-hover:text-green-400 transition-colors text-xs">→</span>
-            </NavLink>
+                </NavLink>
+            </div>
         </aside>
     )
 }

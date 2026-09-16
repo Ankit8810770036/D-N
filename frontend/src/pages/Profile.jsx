@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import toast from 'react-hot-toast'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
-import { Camera, User as UserIcon } from 'lucide-react'
+import { Camera, Trash2, User as UserIcon } from 'lucide-react'
 
 const activityLevels = [
     { value: 'sedentary', label: '🪑 Sedentary', desc: 'Little or no exercise' },
@@ -21,30 +21,52 @@ export default function Profile() {
     const { user: authUser, setUser } = useAuth()
     const queryClient = useQueryClient()
     const navigate = useNavigate()
+    const fileInputRef = useRef(null)
     const [form, setForm] = useState({
         age: '', gender: 'male', height_cm: '', weight_kg: '', waist_cm: '',
         goal: 'maintain', activity_level: 'sedentary', sleep_hours: '',
         diseases: [], allergies: [], food_preference: 'veg',
     })
     const [loading, setLoading] = useState(false)
+    const [photoLoading, setPhotoLoading] = useState(false)
 
-    const { data: profileData, isLoading: fetching } = useQuery({
+    // Load existing profile via React Query cache
+    const { data: profile } = useQuery({
         queryKey: ['profile'],
-        queryFn: () => api.get('/profile').then(res => res.data),
+        queryFn: async () => {
+            const { data } = await api.get('/profile')
+            return data
+        },
+        staleTime: 60 * 1000,
     })
 
-    const metrics = profileData?.metrics
+    const { data: metrics } = useQuery({
+        queryKey: ['summary'],
+        queryFn: async () => {
+            const { data } = await api.get('/report/summary')
+            return data.stats
+        },
+        staleTime: 60 * 1000,
+    })
 
     useEffect(() => {
-        if (profileData?.profile && !form.age) {
-            setForm(f => ({
-                ...f,
-                ...profileData.profile,
-                diseases: profileData.profile.diseases ?? [],
-                allergies: profileData.profile.allergies ?? [],
-            }))
+        if (profile) {
+            const p = profile.profile || profile
+            setForm({
+                age: p.age ?? '',
+                gender: p.gender ?? 'male',
+                height_cm: p.height_cm ?? '',
+                weight_kg: p.weight_kg ?? '',
+                waist_cm: p.waist_cm ?? '',
+                goal: p.goal ?? 'maintain',
+                activity_level: p.activity_level ?? 'sedentary',
+                sleep_hours: p.sleep_hours ?? '',
+                diseases: p.diseases ?? [],
+                allergies: p.allergies ?? [],
+                food_preference: p.food_preference ?? 'veg',
+            })
         }
-    }, [profileData])
+    }, [profile])
 
     const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
     const toggle = (key, val) => setForm(f => ({
@@ -52,24 +74,51 @@ export default function Profile() {
     }))
 
     async function handlePhotoUpload(e) {
-        const file = e.target.files[0]
+        const file = e.target.files?.[0]
         if (!file) return
+
+        if (!file.type.startsWith('image/')) {
+            toast.error('Please select a valid image file (JPEG, PNG, WebP).')
+            return
+        }
+
+        if (file.size > 2 * 1024 * 1024) {
+            toast.error('Image size must be under 2 MB.')
+            return
+        }
 
         const formData = new FormData()
         formData.append('photo', file)
 
-        setLoading(true)
+        setPhotoLoading(true)
         try {
             const { data } = await api.post('/profile/photo', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             })
-            // Update the global auth user to reflect the new photo immediately
-            setUser({ ...authUser, profile_photo_url: data.profile_photo_url })
-            toast.success('Photo updated!')
+            const updatedUser = data.user || { ...authUser, profile_photo_url: data.profile_photo_url }
+            setUser(updatedUser)
+            localStorage.setItem('user', JSON.stringify(updatedUser))
+            toast.success('Profile photo updated! 📸')
         } catch (err) {
-            toast.error('Failed to upload photo.')
+            toast.error(err.response?.data?.message || 'Failed to upload profile photo.')
         } finally {
-            setLoading(false)
+            setPhotoLoading(false)
+            if (fileInputRef.current) fileInputRef.current.value = ''
+        }
+    }
+
+    async function handlePhotoDelete() {
+        setPhotoLoading(true)
+        try {
+            const { data } = await api.delete('/profile/photo')
+            const updatedUser = data.user || { ...authUser, profile_photo_url: data.profile_photo_url, profile_photo_path: null }
+            setUser(updatedUser)
+            localStorage.setItem('user', JSON.stringify(updatedUser))
+            toast.success('Profile photo removed.')
+        } catch (err) {
+            toast.error('Failed to remove photo.')
+        } finally {
+            setPhotoLoading(false)
         }
     }
 
@@ -101,27 +150,63 @@ export default function Profile() {
         }
     }
 
+    const hasCustomPhoto = authUser?.profile_photo_path || (authUser?.profile_photo_url && !authUser.profile_photo_url.includes('ui-avatars.com'))
+
     return (
         <div className="space-y-6 w-full pb-10 animate-fade-in">
             <div className="page-header flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="flex items-center gap-6">
                     <div className="relative group">
-                        <div className="w-24 h-24 rounded-3xl overflow-hidden shadow-lg border-2 border-white dark:border-white/10 ring-4 ring-green-50 dark:ring-green-900/20 bg-gray-100 dark:bg-white/5 flex items-center justify-center">
+                        <div className="w-24 h-24 rounded-3xl overflow-hidden shadow-lg border-2 border-white dark:border-white/10 ring-4 ring-green-50 dark:ring-green-900/20 bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center relative">
                             {authUser?.profile_photo_url ? (
-                                <img src={authUser.profile_photo_url} alt="Profile" className="w-full h-full object-cover" />
+                                <img
+                                    src={authUser.profile_photo_url}
+                                    alt="Profile"
+                                    className="w-full h-full object-cover rounded-3xl"
+                                />
                             ) : (
-                                <UserIcon className="w-10 h-10 text-gray-300 dark:text-white/20" />
+                                <UserIcon className="w-10 h-10 text-emerald-400 dark:text-emerald-500" />
                             )}
-                            {loading && <div className="absolute inset-0 bg-white/60 dark:bg-black/60 flex items-center justify-center"><div className="w-6 h-6 border-2 border-[#2d6a4f] border-t-transparent rounded-full animate-spin" /></div>}
+                            {photoLoading && (
+                                <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex items-center justify-center rounded-3xl">
+                                    <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                </div>
+                            )}
                         </div>
-                        <label className="absolute -bottom-2 -right-2 p-2 bg-gradient-to-br from-[#2d6a4f] to-[#1b4332] text-white rounded-xl shadow-lg border-2 border-white dark:border-[#081c15] cursor-pointer hover:scale-110 transition-all">
-                            <Camera className="w-4 h-4" />
-                            <input type="file" className="hidden" accept="image/*" onChange={handlePhotoUpload} disabled={loading} />
-                        </label>
+
+                        {/* Action Buttons */}
+                        <div className="absolute -bottom-2 -right-2 flex items-center gap-1.5">
+                            <label
+                                title="Upload new photo"
+                                className="p-2 bg-gradient-to-br from-[#2d6a4f] to-[#1b4332] text-white rounded-xl shadow-lg border-2 border-white dark:border-[#081c15] cursor-pointer hover:scale-110 active:scale-95 transition-all flex items-center justify-center"
+                            >
+                                <Camera className="w-4 h-4" />
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    className="hidden"
+                                    accept="image/jpeg,image/png,image/webp,image/gif"
+                                    onChange={handlePhotoUpload}
+                                    disabled={photoLoading || loading}
+                                />
+                            </label>
+
+                            {hasCustomPhoto && (
+                                <button
+                                    type="button"
+                                    onClick={handlePhotoDelete}
+                                    disabled={photoLoading || loading}
+                                    title="Remove custom photo"
+                                    className="p-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl shadow-lg border-2 border-white dark:border-[#081c15] cursor-pointer hover:scale-110 active:scale-95 transition-all flex items-center justify-center"
+                                >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                            )}
+                        </div>
                     </div>
                     <div>
                         <h1 className="page-title">My Health Profile</h1>
-                        <p className="page-subtitle">Enter your metrics to get personalized calorie and diet recommendations</p>
+                        <p className="page-subtitle">Personalize your avatar, metrics, calorie targets, and dietary preferences</p>
                     </div>
                 </div>
             </div>

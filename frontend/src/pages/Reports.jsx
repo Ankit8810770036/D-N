@@ -4,6 +4,7 @@ import api from '../services/api'
 import toast from 'react-hot-toast'
 import { FileText, Download, User, Activity, Flame, Scale, Dumbbell, CalendarCheck, TrendingUp, Trophy, RefreshCw } from 'lucide-react'
 import { getErrorMessage } from '../utils/errors'
+import UserAvatar from '../components/UserAvatar'
 
 // Helper: BMI category + colour
 function bmiMeta(bmi) {
@@ -119,9 +120,7 @@ export default function Reports() {
                     {/* ── User Card ── */}
                     <div className="card bg-gradient-to-br from-emerald-700 via-emerald-800 to-teal-900 text-white shadow-xl shadow-emerald-900/15">
                         <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 rounded-2xl bg-white/15 flex items-center justify-center text-3xl shrink-0 shadow-inner">
-                                👤
-                            </div>
+                            <UserAvatar user={summary.user} size="lg" className="w-14 h-14 rounded-2xl shadow-inner ring-2 ring-white/30" />
                             <div className="flex-1 min-w-0">
                                 <h2 className="text-xl font-bold truncate">{summary.user?.name}</h2>
                                 <p className="text-white/80 text-sm truncate">{summary.user?.email}</p>

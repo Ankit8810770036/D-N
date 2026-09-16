@@ -155,13 +155,13 @@ class AuthController extends Controller
     public function updatePhoto(Request $request)
     {
         $request->validate([
-            'photo' => 'required|image|max:2048',
+            'photo' => 'required|image|mimes:jpeg,png,jpg,webp,gif|max:2048',
         ]);
 
         $user = $request->user();
 
-        // Delete old photo if it exists
-        if ($user->profile_photo_path) {
+        // Delete old photo if it exists on disk
+        if ($user->profile_photo_path && Storage::disk('public')->exists($user->profile_photo_path)) {
             Storage::disk('public')->delete($user->profile_photo_path);
         }
 
@@ -171,9 +171,52 @@ class AuthController extends Controller
             'profile_photo_path' => $path,
         ]);
 
+        $user->refresh();
+
+        $tokens = app(\App\Services\TokenService::class);
+        $daysUntilExpiry = null;
+        if ($user->plan_type === 'premium' && $user->subscription_expires_at) {
+            $daysUntilExpiry = (int) now()->diffInDays($user->subscription_expires_at, false);
+        }
+
         return response()->json([
-            'message' => 'Profile photo updated successfully',
+            'message'           => 'Profile photo updated successfully',
             'profile_photo_url' => $user->profile_photo_url,
+            'user'              => array_merge($user->toArray(), [
+                'token_balance'     => $tokens->getBalance($user),
+                'days_until_expiry' => $daysUntilExpiry,
+            ]),
+        ]);
+    }
+
+    public function deletePhoto(Request $request)
+    {
+        $user = $request->user();
+
+        // Delete photo from disk if exists
+        if ($user->profile_photo_path && Storage::disk('public')->exists($user->profile_photo_path)) {
+            Storage::disk('public')->delete($user->profile_photo_path);
+        }
+
+        $user->update([
+            'profile_photo_path' => null,
+        ]);
+
+        $user->refresh();
+
+        $tokens = app(\App\Services\TokenService::class);
+        $daysUntilExpiry = null;
+        if ($user->plan_type === 'premium' && $user->subscription_expires_at) {
+            $daysUntilExpiry = (int) now()->diffInDays($user->subscription_expires_at, false);
+        }
+
+        return response()->json([
+            'message'           => 'Profile photo removed successfully',
+            'profile_photo_url' => $user->profile_photo_url,
+            'user'              => array_merge($user->toArray(), [
+                'token_balance'     => $tokens->getBalance($user),
+                'days_until_expiry' => $daysUntilExpiry,
+            ]),
         ]);
     }
 

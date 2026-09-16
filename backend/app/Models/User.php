@@ -100,14 +100,21 @@ class User extends Authenticatable implements MustVerifyEmail
     public function getProfilePhotoUrlAttribute(): string
     {
         if ($this->profile_photo_path) {
-            // Storage::disk('public')->url() correctly resolves the URL
-            // from the filesystem config — works in all environments
-            // regardless of what APP_URL is set to.
-            return Storage::disk('public')->url($this->profile_photo_path);
+            // Return immediately if it's already an absolute URL or data URI
+            if (str_starts_with($this->profile_photo_path, 'http://') || str_starts_with($this->profile_photo_path, 'https://') || str_starts_with($this->profile_photo_path, 'data:image')) {
+                return $this->profile_photo_path;
+            }
+
+            $url = Storage::disk('public')->url($this->profile_photo_path);
+            if (!str_starts_with($url, 'http://') && !str_starts_with($url, 'https://')) {
+                $appUrl = rtrim(config('app.url') ?: 'http://localhost:8000', '/');
+                return $appUrl . '/' . ltrim($url, '/');
+            }
+            return $url;
         }
 
-        // Fallback: auto-generated avatar using the user's name initials
-        return 'https://ui-avatars.com/api/?name=' . urlencode($this->name)
-            . '&color=7F9CF5&background=EBF4FF&size=128';
+        // High-resolution UI avatar fallback with brand colors
+        return 'https://ui-avatars.com/api/?name=' . urlencode($this->name ?: 'User')
+            . '&color=ffffff&background=059669&bold=true&size=128';
     }
 }

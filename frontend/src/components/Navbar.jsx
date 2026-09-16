@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { Menu, Crown, Shield, UserCircle, User, LogOut, ChevronDown, Sparkles, MessageSquare } from 'lucide-react'
 import toast from 'react-hot-toast'
+import FeedbackModal from './FeedbackModal'
+import UserAvatar from './UserAvatar'
 
 export default function Navbar({ onMenuClick }) {
     const { user, logout } = useAuth()
@@ -64,9 +66,7 @@ export default function Navbar({ onMenuClick }) {
                             className="flex items-center gap-2 p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 transition-all shadow-sm group"
                             title="User Profile & Settings"
                         >
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-600 to-teal-700 text-white flex items-center justify-center font-bold text-xs shadow-sm">
-                                {user.name ? user.name[0].toUpperCase() : <User className="w-4 h-4" />}
-                            </div>
+                            <UserAvatar user={user} size="sm" />
                             <div className="hidden sm:flex flex-col text-left">
                                 <span className="text-xs font-bold text-slate-800 dark:text-gray-200 group-hover:text-emerald-700 dark:group-hover:text-green-400 transition-colors">
                                     {user.name?.split(' ')[0]}
@@ -80,20 +80,23 @@ export default function Navbar({ onMenuClick }) {
 
                         {/* Dropdown Menu */}
                         {dropdownOpen && (
-                            <div className="absolute right-0 mt-2 w-60 bg-white dark:bg-[#0d2b1f] border border-slate-200/90 dark:border-white/10 rounded-2xl shadow-xl shadow-slate-900/10 py-2 z-50 animate-scaleIn font-outfit">
-                                <div className="px-4 py-3 border-b border-slate-100 dark:border-white/10">
-                                    <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{user.name}</p>
-                                    <p className="text-xs text-slate-500 dark:text-gray-400 truncate">{user.email}</p>
-                                    <div className="flex items-center gap-2 mt-2">
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 dark:bg-green-900/30 text-emerald-800 dark:text-green-400 capitalize border border-emerald-100 dark:border-transparent">
-                                            {user.role === 'admin' ? <Shield className="w-3 h-3" /> : <UserCircle className="w-3 h-3" />}
-                                            {user.role}
-                                        </span>
-                                        {user.plan_type === 'premium' && (
-                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400 border border-amber-200/80">
-                                                <Sparkles className="w-3 h-3" /> PRO
+                            <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-[#0d2b1f] border border-slate-200/90 dark:border-white/10 rounded-2xl shadow-xl shadow-slate-900/10 py-2 z-50 animate-scaleIn font-outfit">
+                                <div className="px-4 py-3 border-b border-slate-100 dark:border-white/10 flex items-center gap-3">
+                                    <UserAvatar user={user} size="md" />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{user.name}</p>
+                                        <p className="text-xs text-slate-500 dark:text-gray-400 truncate">{user.email}</p>
+                                        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 dark:bg-green-900/30 text-emerald-800 dark:text-green-400 capitalize border border-emerald-100 dark:border-transparent">
+                                                {user.role === 'admin' ? <Shield className="w-2.5 h-2.5" /> : <UserCircle className="w-2.5 h-2.5" />}
+                                                {user.role}
                                             </span>
-                                        )}
+                                            {user.plan_type === 'premium' && (
+                                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400 border border-amber-200/80">
+                                                    <Sparkles className="w-2.5 h-2.5" /> PRO
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
 

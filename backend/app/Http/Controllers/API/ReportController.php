@@ -161,7 +161,7 @@ class ReportController extends Controller
         });
 
         return response()->json([
-            'user'    => $user->only('name', 'email'),
+            'user'    => $user->only('name', 'email', 'profile_photo_url'),
             'profile' => $profile,
             'stats'   => [
                 'total_plans_generated' => $totalPlans,
