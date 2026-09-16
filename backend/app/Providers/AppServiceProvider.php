@@ -19,6 +19,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Prevent N+1 queries by disallowing lazy loading outside production
+        \Illuminate\Database\Eloquent\Model::preventLazyLoading(!app()->isProduction());
+        \Illuminate\Database\Eloquent\Model::preventSilentlyDiscardingAttributes(!app()->isProduction());
+
         \Illuminate\Support\Facades\Gate::define('admin', function ($user) {
             return $user->role === 'admin';
         });

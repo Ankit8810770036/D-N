@@ -41,12 +41,8 @@ class AuthController extends Controller
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        // Send email verification link safely (does not crash if SMTP is unconfigured)
-        try {
-            $user->sendEmailVerificationNotification();
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('Verification email could not be sent: ' . $e->getMessage());
-        }
+        // Offload email notification to background queue worker (high priority)
+        \App\Jobs\SendVerificationEmailJob::dispatch($user)->onQueue('high');
 
         return response()->json([
             'message'            => 'Registration successful.',
@@ -65,8 +61,8 @@ class AuthController extends Controller
 
         $user = User::where('email', $validated['email'])->first();
 
-        // Auto-initialize super admin if not yet seeded on fresh cloud deployment
-        if (!$user && $validated['email'] === 'admin@dietplanner.com' && $validated['password'] === 'password') {
+        // Auto-initialize super admin if not yet seeded (only permitted in local environment)
+        if (app()->environment('local', 'testing') && !$user && $validated['email'] === 'admin@dietplanner.com' && $validated['password'] === 'password') {
             $user = User::firstOrCreate(['email' => 'admin@dietplanner.com'], [
                 'name'              => 'Super Admin',
                 'password'          => Hash::make('password'),

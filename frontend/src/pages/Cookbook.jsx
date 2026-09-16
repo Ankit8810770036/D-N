@@ -66,8 +66,8 @@ const Cookbook = () => {
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/30 w-4 h-4" />
                     <input
                         type="text"
-                        placeholder="Search recipes..."
-                        className="input-field pl-11 py-3 w-full md:w-64"
+                        placeholder="Search recipes (e.g. Palak Paneer, Poha)..."
+                        className="input-field pl-11 py-3 w-full md:w-80"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />

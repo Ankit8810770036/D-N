@@ -80,6 +80,7 @@ export default function Profile() {
             await api.put('/profile/update', form)
             queryClient.invalidateQueries({ queryKey: ['profile'] })
             queryClient.invalidateQueries({ queryKey: ['summary'] })
+            queryClient.invalidateQueries({ queryKey: ['mealPlan'] })
 
             // Sync AuthContext so navbar/sidebar reflect any name or role changes immediately
             const { data: freshUser } = await api.get('/me')
@@ -166,7 +167,7 @@ export default function Profile() {
                             <div>
                                 <label className="input-label">Age</label>
                                 <input type="number" value={form.age} onChange={e => set('age', e.target.value)}
-                                    className="input-field" placeholder="25" min="1" max="120" required />
+                                    className="input-field" placeholder="e.g. 25" min="1" max="120" required />
                             </div>
                             <div>
                                 <label className="input-label">Gender</label>
@@ -177,9 +178,9 @@ export default function Profile() {
                                 </select>
                             </div>
                             <div>
-                                <label className="input-label">Sleep Hours</label>
+                                <label className="input-label">Sleep Hours (Daily)</label>
                                 <input type="number" value={form.sleep_hours} onChange={e => set('sleep_hours', e.target.value)}
-                                    className="input-field" placeholder="7" min="0" max="24" step="0.5" required />
+                                    className="input-field" placeholder="e.g. 7.5 hrs" min="0" max="24" step="0.5" required />
                             </div>
                         </div>
                     </div>
@@ -191,17 +192,17 @@ export default function Profile() {
                             <div>
                                 <label className="input-label">Height (cm)</label>
                                 <input type="number" value={form.height_cm} onChange={e => set('height_cm', e.target.value)}
-                                    className="input-field" placeholder="170" required />
+                                    className="input-field" placeholder="e.g. 175 cm" required />
                             </div>
                             <div>
                                 <label className="input-label">Weight (kg)</label>
                                 <input type="number" value={form.weight_kg} onChange={e => set('weight_kg', e.target.value)}
-                                    className="input-field" placeholder="70" required />
+                                    className="input-field" placeholder="e.g. 70 kg" required />
                             </div>
                             <div>
                                 <label className="input-label">Waist (cm)</label>
                                 <input type="number" value={form.waist_cm} onChange={e => set('waist_cm', e.target.value)}
-                                    className="input-field" placeholder="80" required />
+                                    className="input-field" placeholder="e.g. 82 cm" required />
                             </div>
                         </div>
                     </div>

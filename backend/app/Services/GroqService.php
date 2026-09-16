@@ -51,42 +51,45 @@ class GroqService
         }
 
         $systemContent = $customSystemInstruction ?? $this->systemPrompt;
+        $models = [
+            config('services.groq.model', 'openai/gpt-oss-120b'),
+            'qwen/qwen3.8-27b',
+            'openai/gpt-oss-20b',
+        ];
 
-        try {
-            $response = Http::withoutVerifying()
-                ->timeout(30)
-                ->withHeaders([
-                    'Authorization' => 'Bearer ' . $this->apiKey,
-                    'Content-Type'  => 'application/json',
-                ])
-                ->post('https://api.groq.com/openai/v1/chat/completions', [
-                    'model'       => 'llama-3.3-70b-versatile',
-                    'messages'    => [
-                        ['role' => 'system', 'content' => $systemContent],
-                        ['role' => 'user',   'content' => $userText],
-                    ],
-                    'temperature' => 0.7,
-                    'max_tokens'  => 512,
-                ]);
+        foreach ($models as $model) {
+            try {
+                $response = Http::withoutVerifying()
+                    ->timeout(25)
+                    ->withHeaders([
+                        'Authorization' => 'Bearer ' . $this->apiKey,
+                        'Content-Type'  => 'application/json',
+                    ])
+                    ->post('https://api.groq.com/openai/v1/chat/completions', [
+                        'model'       => $model,
+                        'messages'    => [
+                            ['role' => 'system', 'content' => $systemContent],
+                            ['role' => 'user',   'content' => $userText],
+                        ],
+                        'temperature' => 0.35,
+                        'max_tokens'  => 450,
+                    ]);
 
-            if ($response->successful()) {
-                $data = $response->json();
-                return $data['choices'][0]['message']['content'] ?? $this->getFallbackResponse($parts);
+                if ($response->successful()) {
+                    $data = $response->json();
+                    $reply = $data['choices'][0]['message']['content'] ?? null;
+                    if (!empty($reply)) {
+                        return $reply;
+                    }
+                }
+
+                Log::warning("Groq API model {$model} returned status " . $response->status() . ": " . $response->body());
+            } catch (Exception $e) {
+                Log::warning("Groq model {$model} Exception: " . $e->getMessage());
             }
-
-            // Rate-limited — use intelligent fallback
-            if ($response->status() === 429) {
-                Log::warning('Groq API rate limited — using fallback response.');
-                return $this->getFallbackResponse($parts);
-            }
-
-            Log::error('Groq API Error (' . $response->status() . '): ' . $response->body());
-            return $this->getFallbackResponse($parts);
-
-        } catch (Exception $e) {
-            Log::error('AI Service Exception: ' . $e->getMessage());
-            return $this->getFallbackResponse($parts);
         }
+
+        return $this->getFallbackResponse($parts);
     }
 
     /**

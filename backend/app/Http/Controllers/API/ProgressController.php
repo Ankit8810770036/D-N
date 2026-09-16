@@ -27,6 +27,15 @@ class ProgressController extends Controller
         ]);
 
         $date = $validated['date'] ?? Carbon::today()->toDateString();
+        $minDate = Carbon::today()->subDays(30)->toDateString();
+        $todayStr = Carbon::today()->toDateString();
+
+        if ($date < $minDate || $date > $todayStr) {
+            return response()->json([
+                'message' => 'Progress can only be logged for today or within the past 30 days.'
+            ], 422);
+        }
+
         $user = $request->user();
 
         $log = ProgressLog::updateOrCreate(

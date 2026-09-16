@@ -4,10 +4,16 @@ import { useAuth } from '../context/AuthContext'
 import Sidebar from './Sidebar'
 import Navbar from './Navbar'
 import ChatBot from './ChatBot'
+import FeedbackModal from './FeedbackModal'
+import { MessageSquarePlus } from 'lucide-react'
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 
 export default function AppLayout() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+    const [isFeedbackOpen, setIsFeedbackOpen] = useState(false)
     const { user, daysUntilExpiry } = useAuth()
+
+    useBodyScrollLock(isSidebarOpen)
 
     return (
         <div className="flex min-h-screen bg-[#f8fafc] dark:bg-none dark:bg-[#081c15] transition-colors duration-300">
@@ -52,6 +58,28 @@ export default function AppLayout() {
                     <Outlet />
                 </main>
             </div>
+
+            {/* Quick Floating Feedback Button */}
+            <button
+                onClick={() => setIsFeedbackOpen(true)}
+                className="fixed bottom-6 left-6 z-30 hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-full bg-white dark:bg-[#0d2b1f] border border-slate-200/90 dark:border-white/15 text-slate-700 dark:text-white font-bold text-xs shadow-lg hover:shadow-xl hover:border-emerald-500/50 hover:scale-105 active:scale-95 transition-all group backdrop-blur-md"
+                title="Give Feedback & Earn +10 HealthCoins"
+            >
+                <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                    <MessageSquarePlus className="w-3.5 h-3.5" />
+                </div>
+                <span>Feedback</span>
+                <span className="px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 text-[10px] font-black border border-amber-200/70 dark:border-transparent">
+                    +10 🪙
+                </span>
+            </button>
+
+            {/* Global Feedback Modal */}
+            <FeedbackModal
+                isOpen={isFeedbackOpen}
+                onClose={() => setIsFeedbackOpen(false)}
+            />
+
             <ChatBot />
         </div>
     )

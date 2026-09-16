@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { ArrowLeft, Clock, Flame, BookOpen, CheckCircle2, Plus, Scale, Crown } from 'lucide-react';
 
 import { useAuth } from '../context/AuthContext';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 const RecipeDetail = () => {
     const { id } = useParams();
@@ -20,7 +21,15 @@ const RecipeDetail = () => {
         }
     });
 
+    const todayStr = React.useMemo(() => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0], []);
+    const maxDate = React.useMemo(() => {
+        const d = new Date();
+        d.setDate(d.getDate() + 30);
+        return d.toISOString().split('T')[0];
+    }, []);
+
     const [isAdding, setIsAdding] = React.useState(false);
+    useBodyScrollLock(isAdding);
     const [addConfig, setAddConfig] = React.useState({
         date: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
         meal_type: 'breakfast'
@@ -245,9 +254,11 @@ const RecipeDetail = () => {
                         {/* Modal Body */}
                         <div className="px-7 py-6 space-y-4">
                             <div>
-                                <label className="input-label">Select Date</label>
+                                <label className="input-label">Select Date (Today up to 30 Days)</label>
                                 <input
                                     type="date"
+                                    min={todayStr}
+                                    max={maxDate}
                                     className="input-field"
                                     value={addConfig.date}
                                     onChange={(e) => setAddConfig({ ...addConfig, date: e.target.value })}

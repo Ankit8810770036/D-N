@@ -212,8 +212,21 @@ class FoodController extends Controller
                         }
                     }
 
+                    // Check if the product is edible / drinkable
+                    $edibleCheck = $this->isEdibleProduct($p, $nutriments);
+                    if (!$edibleCheck['is_edible']) {
+                        return response()->json([
+                            'found'     => false,
+                            'is_edible' => false,
+                            'error'     => $edibleCheck['reason'],
+                            'name'      => substr($name, 0, 100),
+                            'barcode'   => $cleaned,
+                        ], 422);
+                    }
+
                     $result = [
                         'found'        => true,
+                        'is_edible'    => true,
                         'name'         => substr($name, 0, 100),
                         'brand'        => $p['brands'] ?? '',
                         'calories'     => round($calories),
@@ -242,6 +255,7 @@ class FoodController extends Controller
         if ($localFood) {
             return response()->json([
                 'found'        => true,
+                'is_edible'    => true,
                 'name'         => $localFood->name,
                 'brand'        => '',
                 'calories'     => (float) $localFood->calories,
@@ -257,13 +271,86 @@ class FoodController extends Controller
             ]);
         }
 
-        // 4. If not found, return clean response with barcode so user can easily add details
+        // 4. If not found, return clean response with barcode
         return response()->json([
-            'found'   => false,
-            'barcode' => $cleaned,
-            'name'    => "Product #{$cleaned}",
-            'message' => 'Product not found in global database. You can enter the nutritional facts manually.',
-        ]);
+            'found'     => false,
+            'is_edible' => false,
+            'barcode'   => $cleaned,
+            'name'      => "Product #{$cleaned}",
+            'error'     => 'No food or beverage found for this barcode. Please ensure you are scanning edible food or drink items.',
+        ], 404);
+    }
+
+    /**
+     * Determine if a scanned OpenFoodFacts product is an edible food or drink item.
+     */
+    private function isEdibleProduct(array $p, array $nutriments): array
+    {
+        $name = strtolower($p['product_name'] ?? $p['product_name_en'] ?? $p['generic_name'] ?? $p['generic_name_en'] ?? '');
+        $categories = strtolower($p['categories'] ?? '');
+        $categoriesTags = array_map('strtolower', (array) ($p['categories_tags'] ?? []));
+        $foodGroups = strtolower(implode(' ', (array) ($p['food_groups_tags'] ?? [])));
+        $ingredientsText = strtolower($p['ingredients_text'] ?? $p['ingredients_text_en'] ?? '');
+
+        $combinedText = "{$name} {$categories} " . implode(' ', $categoriesTags) . " {$foodGroups} {$ingredientsText}";
+
+        // 1. Check for non-food / non-edible blacklist terms
+        $nonEdibleKeywords = [
+            'cosmetic', 'cosmetics', 'shampoo', 'conditioner', 'body wash', 'shower gel',
+            'soap', 'bar soap', 'hand soap', 'lotion', 'body lotion', 'face cream', 'skin care',
+            'skincare', 'hair care', 'haircare', 'hair dye', 'perfume', 'fragrance', 'cologne',
+            'deodorant', 'antiperspirant', 'toothpaste', 'mouthwash', 'toothbrush', 'floss',
+            'detergent', 'laundry', 'dishwash', 'dishwasher', 'disinfectant', 'bleach',
+            'cleaning', 'cleaner', 'air freshener', 'battery', 'batteries', 'electronics',
+            'charger', 'cable', 'apparel', 'clothing', 'shoes', 'footwear', 'shirt', 'pants',
+            't-shirt', 'sock', 'socks', 'underwear', 'toy', 'toys', 'stationery', 'pen', 'pencil',
+            'notebook', 'paper', 'book', 'books', 'hardware', 'tool', 'tools', 'pet food',
+            'dog food', 'cat food', 'bird food', 'automotive', 'motor oil', 'lubricant',
+            'household', 'candle', 'candles', 'insecticide', 'mosquito repellent'
+        ];
+
+        foreach ($nonEdibleKeywords as $kw) {
+            if (str_contains($combinedText, $kw)) {
+                return [
+                    'is_edible' => false,
+                    'reason'    => "Non-edible item detected (\"" . ($p['product_name'] ?? $kw) . "\"). Only edible food and drink items can be added."
+                ];
+            }
+        }
+
+        // 2. Check if it has positive nutritional calories/macros
+        $calories = (float) ($nutriments['energy-kcal_100g'] ?? $nutriments['energy-kcal'] ?? 0);
+        $protein  = (float) ($nutriments['proteins_100g'] ?? $nutriments['proteins'] ?? 0);
+        $carbs    = (float) ($nutriments['carbohydrates_100g'] ?? $nutriments['carbohydrates'] ?? 0);
+        $fat      = (float) ($nutriments['fat_100g'] ?? $nutriments['fat'] ?? 0);
+        $hasMacros = ($calories > 0 || $protein > 0 || $carbs > 0 || $fat > 0);
+
+        // 3. Check for edible food or beverage indicators
+        $edibleIndicators = [
+            'food', 'beverage', 'drink', 'water', 'tea', 'coffee', 'juice', 'snack', 'cereal',
+            'bread', 'dairy', 'milk', 'cheese', 'yogurt', 'curd', 'fruit', 'vegetable', 'meat',
+            'fish', 'poultry', 'egg', 'spice', 'herb', 'oil', 'flour', 'rice', 'dal', 'pulse',
+            'seed', 'nut', 'pasta', 'noodle', 'soup', 'sauce', 'condiment', 'sweet', 'biscuit',
+            'cookie', 'chocolate', 'groceries', 'plant-based'
+        ];
+
+        $hasEdibleTag = false;
+        foreach ($edibleIndicators as $indicator) {
+            if (str_contains($combinedText, $indicator)) {
+                $hasEdibleTag = true;
+                break;
+            }
+        }
+
+        // If it has neither nutritional data nor any food/drink category marker nor ingredients
+        if (!$hasMacros && !$hasEdibleTag && empty($ingredientsText)) {
+            return [
+                'is_edible' => false,
+                'reason'    => "This item is not identified as an edible food or drink product. Please scan food items or beverages only."
+            ];
+        }
+
+        return ['is_edible' => true, 'reason' => null];
     }
 
     private function clearFoodCache(): void

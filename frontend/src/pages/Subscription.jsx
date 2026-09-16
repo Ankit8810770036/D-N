@@ -3,6 +3,8 @@ import { useAuth } from '../context/AuthContext';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import { getErrorMessage } from '../utils/errors';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import {
     Check, X, Crown, Zap, Shield, Star, Sparkles,
     CreditCard, AlertTriangle, ChevronDown, ChevronUp,
@@ -281,6 +283,8 @@ const Subscription = () => {
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [payLoading, setPayLoading]           = useState(false);
 
+    useBodyScrollLock(showPayModal || showCancelModal);
+
     // Re-fetch /me and update AuthContext so UI reflects the new plan/role
     const refreshUser = async () => {
         try {
@@ -307,7 +311,7 @@ const Subscription = () => {
             setShowCancelModal(false);
         },
         onError: (err) => {
-            toast.error(err.response?.data?.message || 'Failed to cancel subscription');
+            toast.error(getErrorMessage(err, 'Failed to cancel subscription'));
             setShowCancelModal(false);
         }
     });
@@ -316,12 +320,12 @@ const Subscription = () => {
     const verifyMutation = useMutation({
         mutationFn: (payload) => api.post('/payment/verify', payload).then(r => r.data),
         onSuccess: async (data) => {
-            toast.success(data.message, { duration: 5000 });
+            toast.success(data.message, { duration: 2000 });
             await refreshUser();
             setShowPayModal(false);
         },
         onError: (err) => {
-            toast.error(err.response?.data?.message || 'Payment verification failed. Please contact support.');
+            toast.error(getErrorMessage(err, 'Payment verification failed. Please contact support.'));
         }
     });
 
@@ -378,7 +382,7 @@ const Subscription = () => {
             setShowPayModal(false);
 
         } catch (err) {
-            toast.error(err.response?.data?.message || 'Could not initiate payment. Please try again.');
+            toast.error(getErrorMessage(err, 'Could not initiate payment. Please try again.'));
             setPayLoading(false);
         }
     };
@@ -411,12 +415,12 @@ const Subscription = () => {
         setPayLoading(true);
         try {
             const { data } = await api.post('/tokens/redeem', { type: 'free' });
-            toast.success(data.message, { duration: 5000 });
+            toast.success(data.message, { duration: 2000 });
             await refreshUser();
             queryClient.invalidateQueries({ queryKey: ['tokens'] });
             setShowPayModal(false);
         } catch (err) {
-            toast.error(err.response?.data?.message || 'Redemption failed.');
+            toast.error(getErrorMessage(err, 'Redemption failed.'));
         } finally {
             setPayLoading(false);
         }
@@ -463,7 +467,7 @@ const Subscription = () => {
             rzp.open();
             setShowPayModal(false);
         } catch (err) {
-            toast.error(err.response?.data?.message || 'Could not apply discount.');
+            toast.error(getErrorMessage(err, 'Could not apply discount.'));
             setPayLoading(false);
         }
     };

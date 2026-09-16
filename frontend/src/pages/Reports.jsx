@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import toast from 'react-hot-toast'
-import { FileText, Download, User, Activity, Flame, Scale, Dumbbell, CalendarCheck, TrendingUp, Trophy } from 'lucide-react'
+import { FileText, Download, User, Activity, Flame, Scale, Dumbbell, CalendarCheck, TrendingUp, Trophy, RefreshCw } from 'lucide-react'
+import { getErrorMessage } from '../utils/errors'
 
 // Helper: BMI category + colour
 function bmiMeta(bmi) {
@@ -34,18 +35,43 @@ export default function Reports() {
     const [loading, setLoading]     = useState(true)
     const [downloading, setDownloading] = useState(false)
     const [date, setDate]           = useState(new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0])
+    
+    const minDate = useMemo(() => {
+        const d = new Date()
+        d.setDate(d.getDate() - 30)
+        return d.toISOString().split('T')[0]
+    }, [])
 
-    useEffect(() => {
+    const maxDate = useMemo(() => {
+        const d = new Date()
+        d.setDate(d.getDate() + 30)
+        return d.toISOString().split('T')[0]
+    }, [])
+
+    const fetchSummary = useCallback(() => {
+        setLoading(true)
         api.get('/report/summary')
             .then(({ data }) => setSummary(data))
-            .catch(() => toast.error('Failed to load report summary.'))
+            .catch((err) => toast.error(getErrorMessage(err, 'Failed to load report summary.')))
             .finally(() => setLoading(false))
     }, [])
+
+    useEffect(() => {
+        fetchSummary()
+    }, [fetchSummary])
 
     async function downloadPDF() {
         setDownloading(true)
         try {
             const response = await api.get(`/report/pdf?date=${date}`, { responseType: 'blob' })
+            
+            // Check if response is actually a JSON error hidden in blob
+            if (response.data && response.data.type === 'application/json') {
+                const text = await response.data.text()
+                const json = JSON.parse(text)
+                throw new Error(json.error || json.message || 'Failed to generate PDF.')
+            }
+
             const url  = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }))
             const link = document.createElement('a')
             link.href  = url
@@ -54,9 +80,18 @@ export default function Reports() {
             link.click()
             link.remove()
             window.URL.revokeObjectURL(url)
-            toast.success('PDF downloaded! 📄')
-        } catch {
-            toast.error('Failed to generate PDF. Generate a meal plan for this date first.')
+            toast.success('PDF report downloaded! 📄')
+        } catch (err) {
+            // If error has blob response, extract message
+            if (err.response?.data instanceof Blob) {
+                try {
+                    const text = await err.response.data.text()
+                    const json = JSON.parse(text)
+                    toast.error(json.error || json.message || 'Failed to generate PDF report.')
+                    return
+                } catch (_) {}
+            }
+            toast.error(getErrorMessage(err, 'Failed to generate PDF report. Please try again.'))
         } finally {
             setDownloading(false)
         }
@@ -220,13 +255,15 @@ export default function Reports() {
                 </p>
                 <div className="flex items-end gap-4 flex-wrap">
                     <div>
-                        <label className="input-label">Report Date</label>
+                        <label className="input-label">Report Date (Past 30 Days to 30 Days Ahead)</label>
                         <input
                             type="date"
+                            min={minDate}
+                            max={maxDate}
                             value={date}
                             onChange={e => setDate(e.target.value)}
                             className="input-field"
-                            style={{ maxWidth: 200 }}
+                            style={{ maxWidth: 240 }}
                         />
                     </div>
                     <button onClick={downloadPDF} disabled={downloading} className="btn-gold flex items-center gap-2">
@@ -247,8 +284,8 @@ export default function Reports() {
                     </h3>
                     <div className="flex flex-wrap gap-2">
                         {summary.badges.map(b => (
-                            <span key={b.id} className="inline-flex items-center gap-1.5 text-xs bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 text-amber-800 dark:text-amber-300 px-3 py-1.5 rounded-full font-semibold">
-                                🏅 {b.badge_name}
+                            <span key={b.id || b.badge_type} className="inline-flex items-center gap-1.5 text-xs bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 text-amber-800 dark:text-amber-300 px-3 py-1.5 rounded-full font-semibold">
+                                🏅 {b.badge_name || (b.badge_type ? b.badge_type.replace(/_/g, ' ') : 'Achievement')}
                             </span>
                         ))}
                     </div>

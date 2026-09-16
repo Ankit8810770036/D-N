@@ -1,21 +1,39 @@
 const BADGE_CONFIG = {
-    streak_7: {
-        label: '7-Day Streak',
-        icon: '🔥',
-        description: 'Logged consistently for 7 days!',
-        color: 'bg-amber-50 text-amber-800 border-amber-200/90 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800/50'
-    },
     starter: {
         label: 'Fresh Start',
         icon: '🌱',
         description: 'Completed your first health log!',
         color: 'bg-emerald-50 text-emerald-800 border-emerald-200/90 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800/50'
     },
+    streak_7: {
+        label: '7-Day Streak',
+        icon: '🔥',
+        description: 'Logged consistently for 7 days!',
+        color: 'bg-amber-50 text-amber-800 border-amber-200/90 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800/50'
+    },
+    streak_14: {
+        label: '14-Day Streak',
+        icon: '⚡',
+        description: 'Two weeks of unbroken consistency!',
+        color: 'bg-orange-50 text-orange-800 border-orange-200/90 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800/50'
+    },
+    streak_30: {
+        label: '30-Day Legend',
+        icon: '👑',
+        description: 'A full month of healthy logging!',
+        color: 'bg-yellow-50 text-yellow-800 border-yellow-200/90 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800/50'
+    },
     culinary_explorer: {
         label: 'Culinary Explorer',
         icon: '👨‍🍳',
         description: 'Generated 5 unique meal plans!',
         color: 'bg-sky-50 text-sky-800 border-sky-200/90 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800/50'
+    },
+    water_champion: {
+        label: 'Hydration Hero',
+        icon: '💧',
+        description: 'Hit 2L+ daily water target consistently!',
+        color: 'bg-blue-50 text-blue-800 border-blue-200/90 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800/50'
     },
     goal_reached: {
         label: 'Goal Crusher',

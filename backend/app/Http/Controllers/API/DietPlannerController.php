@@ -32,10 +32,17 @@ class DietPlannerController extends Controller
 
         $date  = $request->input('date', Carbon::today()->toDateString());
         $today = Carbon::today()->toDateString();
+        $maxAllowed = Carbon::today()->addDays(30)->toDateString();
 
         if ($date < $today) {
             return response()->json([
                 'message' => 'Meal plans cannot be generated for past dates. Please select today or an upcoming date.'
+            ], 422);
+        }
+
+        if ($date > $maxAllowed) {
+            return response()->json([
+                'message' => 'Meal plans can only be generated up to 30 days in advance.'
             ], 422);
         }
 
@@ -222,11 +229,29 @@ class DietPlannerController extends Controller
 
         $startDate = $request->input('start_date', Carbon::today()->toDateString());
         $today     = Carbon::today()->toDateString();
+        $maxStart  = Carbon::today()->addDays(30)->toDateString();
 
         if ($startDate < $today) {
             return response()->json([
                 'message' => 'Weekly meal plans can only start from today or an upcoming date.'
             ], 422);
+        }
+
+        if ($startDate > $maxStart) {
+            return response()->json([
+                'message' => 'Weekly meal plans can only be generated up to 30 days in advance.'
+            ], 422);
+        }
+
+        // If client requests async execution or background queue offloading
+        if ($request->boolean('async')) {
+            \App\Jobs\ProcessWeeklyAiMealPlan::dispatch($user, $startDate)->onQueue('high');
+
+            return response()->json([
+                'message'    => '7-Day AI Weekly Meal Plan generation queued in the background! 🥗',
+                'status'     => 'queued',
+                'start_date' => $startDate,
+            ], 202);
         }
 
         $targetCalories = (float) $profile->calories_target;
@@ -248,6 +273,25 @@ class DietPlannerController extends Controller
         $weeklyData = $this->nvidia->generateWeeklyMealPlan($profileData, $startDate);
 
         $createdPlans = DB::transaction(function () use ($user, $weeklyData, $targetCalories, $macros, $water) {
+            // ── Batch Pre-fetch Foods to eliminate N+1 queries (from ~80 queries down to 1) ──
+            $allFoodNames = [];
+            foreach ($weeklyData['days'] as $dayData) {
+                if (isset($dayData['meals']) && is_array($dayData['meals'])) {
+                    foreach ($dayData['meals'] as $mealType => $items) {
+                        if (!is_array($items)) continue;
+                        foreach ($items as $item) {
+                            $fName = trim($item['food_name'] ?? ($item['name'] ?? 'Healthy Meal'));
+                            if ($fName) $allFoodNames[$fName] = true;
+                        }
+                    }
+                }
+            }
+
+            $foodNamesList = array_keys($allFoodNames);
+            $existingFoods = Food::where(function ($q) use ($user) {
+                $q->whereNull('user_id')->orWhere('user_id', $user->id);
+            })->whereIn('name', $foodNamesList)->get()->keyBy(fn($f) => strtolower(trim($f->name)));
+
             $plansList = [];
 
             foreach ($weeklyData['days'] as $dayData) {
@@ -272,11 +316,10 @@ class DietPlannerController extends Controller
                         if (!is_array($items)) continue;
 
                         foreach ($items as $item) {
-                            $foodName = $item['food_name'] ?? ($item['name'] ?? 'Healthy Meal');
+                            $foodName = trim($item['food_name'] ?? ($item['name'] ?? 'Healthy Meal'));
+                            $foodKey  = strtolower($foodName);
 
-                            // Find or create food
-                            $food = Food::where('name', $foodName)->first()
-                                ?? Food::where('name', 'LIKE', "%{$foodName}%")->first();
+                            $food = $existingFoods->get($foodKey);
 
                             if (!$food) {
                                 $food = Food::create([
@@ -290,6 +333,7 @@ class DietPlannerController extends Controller
                                     'serving_unit' => $item['unit'] ?? 'g',
                                     'is_veg'       => true,
                                 ]);
+                                $existingFoods->put($foodKey, $food);
                             }
 
                             $qty = (float) ($item['quantity'] ?? $food->serving_size);
@@ -538,6 +582,15 @@ class DietPlannerController extends Controller
         $user = $request->user();
         $date = $request->input('date', Carbon::today()->toDateString());
 
+        $minAllowed = Carbon::today()->subDays(30)->toDateString();
+        $maxAllowed = Carbon::today()->addDays(30)->toDateString();
+
+        if ($date < $minAllowed || $date > $maxAllowed) {
+            return response()->json([
+                'message' => 'Meal plans can only be viewed from the past 30 days up to 30 days in advance.'
+            ], 422);
+        }
+
         $plan = MealPlan::where('user_id', $user->id)
             ->where('date', $date)
             ->with(['mealItems.food', 'mealItems.recipe'])
@@ -755,22 +808,34 @@ class DietPlannerController extends Controller
     {
         $user = $request->user();
 
-        // Only allow toggling items on own plans
-        $mealItem = MealItem::whereHas('mealPlan', function ($q) use ($user) {
+        // Only allow toggling items on own plans — eager load mealPlan to prevent lazy loading N+1
+        $mealItem = MealItem::with('mealPlan')->whereHas('mealPlan', function ($q) use ($user) {
             $q->where('user_id', $user->id);
         })->findOrFail($id);
 
-        // Toggle
+        // Toggle status
         $mealItem->update(['is_consumed' => !$mealItem->is_consumed]);
 
-        // Recalculate total consumed calories and macros for the plan's date from all checked items
+        // Recalculate total consumed calories, macros, and completion in 1 single fast query
         $planDate = $mealItem->mealPlan->date->toDateString();
-        $totals = MealItem::whereHas('mealPlan', function ($q) use ($user, $planDate) {
+        $stats = MealItem::whereHas('mealPlan', function ($q) use ($user, $planDate) {
             $q->where('user_id', $user->id)->where('date', $planDate);
-        })->where('is_consumed', true)
-          ->selectRaw('SUM(calories) as calories, SUM(protein) as protein, SUM(carbs) as carbs, SUM(fat) as fat')
-          ->first();
-  
+        })->selectRaw('
+            SUM(CASE WHEN is_consumed = 1 THEN calories ELSE 0 END) as calories,
+            SUM(CASE WHEN is_consumed = 1 THEN protein ELSE 0 END) as protein,
+            SUM(CASE WHEN is_consumed = 1 THEN carbs ELSE 0 END) as carbs,
+            SUM(CASE WHEN is_consumed = 1 THEN fat ELSE 0 END) as fat,
+            COUNT(*) as total_items,
+            SUM(CASE WHEN is_consumed = 1 THEN 1 ELSE 0 END) as consumed_items
+        ')->first();
+
+        $cals          = round((float) ($stats->calories ?? 0), 2);
+        $prot          = round((float) ($stats->protein ?? 0), 2);
+        $carbs         = round((float) ($stats->carbs ?? 0), 2);
+        $fat           = round((float) ($stats->fat ?? 0), 2);
+        $totalItems    = (int) ($stats->total_items ?? 0);
+        $consumedItems = (int) ($stats->consumed_items ?? 0);
+
         // Update (or create) the progress log for that specific date
         $log = ProgressLog::firstOrCreate(
             ['user_id' => $user->id, 'date' => $planDate],
@@ -778,22 +843,20 @@ class DietPlannerController extends Controller
         );
 
         $log->update([
-            'calories_consumed' => round($totals->calories ?? 0, 2),
-            'protein'           => round($totals->protein ?? 0, 2),
-            'carbs'             => round($totals->carbs ?? 0, 2),
-            'fat'               => round($totals->fat ?? 0, 2),
+            'calories_consumed' => $cals,
+            'protein'           => $prot,
+            'carbs'             => $carbs,
+            'fat'               => $fat,
         ]);
 
         // ── Award +10 coins if ALL meal items for this day are now consumed ──
-        $totalItems    = MealItem::whereHas('mealPlan', fn($q) => $q->where('user_id', $user->id)->where('date', $planDate))->count();
-        $consumedItems = MealItem::whereHas('mealPlan', fn($q) => $q->where('user_id', $user->id)->where('date', $planDate))->where('is_consumed', true)->count();
         if ($totalItems > 0 && $consumedItems === $totalItems) {
             app(TokenService::class)->award($user, 'meals_consumed', null, ['date' => $planDate]);
         }
         // ───────────────────────────────────────────────────────────────
         return response()->json([
             'is_consumed'       => $mealItem->is_consumed,
-            'calories_consumed' => round($totals->calories ?? 0, 2),
+            'calories_consumed' => $cals,
             'date'              => $planDate,
             'message'           => $mealItem->is_consumed ? 'Meal marked as consumed ✅' : 'Meal unmarked',
         ]);

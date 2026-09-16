@@ -3,6 +3,7 @@
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\ChatbotController;
 use App\Http\Controllers\API\DietPlannerController;
+use App\Http\Controllers\API\FeedbackController;
 use App\Http\Controllers\API\FoodController;
 use App\Http\Controllers\API\HealthProfileController;
 use App\Http\Controllers\API\ProgressController;
@@ -49,6 +50,11 @@ Route::get('/health-check', function () {
 });
 
 Route::get('/setup-db', function (Request $request) {
+    // Security check: Only allow in local/testing environment or with explicit local app key
+    if (!app()->environment('local', 'testing')) {
+        return response()->json(['error' => 'Database setup endpoint is disabled in non-local environments for security.'], 403);
+    }
+
     try {
         $command = $request->query('fresh') ? 'migrate:fresh' : 'migrate';
         \Illuminate\Support\Facades\Artisan::call($command, ['--force' => true]);
@@ -127,7 +133,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/tokens/daily-login',  [\App\Http\Controllers\API\TokenController::class, 'dailyLogin']);
 
     // Chatbot
-    Route::post('/chat', [ChatbotController::class, 'ask'])->middleware('throttle:30,1');
+    Route::post('/chat',          [ChatbotController::class, 'ask'])->middleware('throttle:30,1');
+    Route::post('/chat/log-food', [ChatbotController::class, 'logFood']);
 
     // Foods & Custom Foods
     Route::post('/foods',          [FoodController::class, 'store']);
@@ -144,6 +151,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Cookbook & Recipes
     Route::apiResource('recipes', \App\Http\Controllers\API\RecipeController::class);
 
+    // Feedback
+    Route::post('/feedback', [FeedbackController::class, 'store']);
+
     // Admin-only Data Management
     Route::middleware('can:admin')->group(function () {
         Route::get   ('/admin/stats',        [\App\Http\Controllers\API\AdminController::class, 'getStats']);
@@ -152,6 +162,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put   ('/admin/users/{user}', [\App\Http\Controllers\API\AdminController::class, 'updateUser']);
         Route::delete('/admin/users/{user}', [\App\Http\Controllers\API\AdminController::class, 'destroy']);
         Route::post  ('/admin/refresh-cache', [\App\Http\Controllers\API\AdminController::class, 'refreshCache']);
+
+        // Admin Feedback Triage
+        Route::get   ('/admin/feedbacks',            [FeedbackController::class, 'index']);
+        Route::put   ('/admin/feedbacks/{feedback}', [FeedbackController::class, 'update']);
+        Route::delete('/admin/feedbacks/{feedback}', [FeedbackController::class, 'destroy']);
 
         Route::put   ('/foods/{food}',  [\App\Http\Controllers\API\FoodController::class, 'update']);
         Route::delete('/foods/{food}',  [\App\Http\Controllers\API\FoodController::class, 'destroy']);

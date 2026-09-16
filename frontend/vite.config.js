@@ -11,5 +11,22 @@ export default defineConfig({
         changeOrigin: true,
       }
     }
+  },
+  build: {
+    target: 'es2020',
+    cssCodeSplit: true,
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-query': ['@tanstack/react-query'],
+          'vendor-charts': ['recharts'],
+          'vendor-icons': ['lucide-react'],
+          'vendor-ui': ['@headlessui/react', 'react-hot-toast'],
+        }
+      }
+    }
   }
 })
+

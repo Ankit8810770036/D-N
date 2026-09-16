@@ -13,19 +13,30 @@ export function AuthProvider({ children }) {
     const queryClient = useQueryClient()
 
     useEffect(() => {
-        const token = localStorage.getItem('token')
-        
         const fetchMe = () => {
+            const token = localStorage.getItem('token')
             if (token) {
                 api.get('/me')
                     .then(({ data }) => {
                         setUser(data)
                         localStorage.setItem('user', JSON.stringify(data))
                     })
-                    .catch(() => {
-                        localStorage.removeItem('token')
-                        localStorage.removeItem('user')
-                        setUser(null)
+                    .catch((err) => {
+                        // Only log out on explicit 401 Unauthorized (invalid/expired token)
+                        // If offline or network drop, preserve the cached user so they stay logged in
+                        if (err.response?.status === 401) {
+                            localStorage.removeItem('token')
+                            localStorage.removeItem('user')
+                            setUser(null)
+                        } else {
+                            // Offline or network error: load cached user from localStorage
+                            const cached = localStorage.getItem('user')
+                            if (cached) {
+                                try {
+                                    setUser(JSON.parse(cached))
+                                } catch (_) {}
+                            }
+                        }
                     })
                     .finally(() => setLoading(false))
             } else {
@@ -35,11 +46,25 @@ export function AuthProvider({ children }) {
 
         fetchMe()
 
-        // Periodically refresh session (every 30 mins) to catch mid-session auto-downgrades
-        // e.g. if their subscription expires while they are actively using the app
-        const interval = setInterval(fetchMe, 30 * 60 * 1000)
-        return () => clearInterval(interval)
+        // When device comes back online, quietly refresh session
+        const handleOnline = () => {
+            if (navigator.onLine && localStorage.getItem('token')) {
+                fetchMe()
+            }
+        }
+        window.addEventListener('online', handleOnline)
 
+        // Periodically refresh session (every 30 mins) to catch mid-session auto-downgrades
+        const interval = setInterval(() => {
+            if (navigator.onLine) {
+                fetchMe()
+            }
+        }, 30 * 60 * 1000)
+
+        return () => {
+            clearInterval(interval)
+            window.removeEventListener('online', handleOnline)
+        }
     }, [])
 
     async function login(email, password) {

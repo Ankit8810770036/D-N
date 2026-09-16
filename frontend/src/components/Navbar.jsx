@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
-import { Menu, Crown, Shield, UserCircle, User, LogOut, ChevronDown, Sparkles } from 'lucide-react'
+import { Menu, Crown, Shield, UserCircle, User, LogOut, ChevronDown, Sparkles, MessageSquare } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function Navbar({ onMenuClick }) {
@@ -30,7 +30,7 @@ export default function Navbar({ onMenuClick }) {
     }
 
     return (
-        <header className="fixed top-0 left-0 lg:left-64 right-0 h-[76px] bg-white/85 dark:bg-[#081c15]/85 backdrop-blur-md border-b border-slate-200/80 dark:border-white/10 z-20 flex items-center justify-between px-4 sm:px-6 transition-all duration-300">
+        <header className="fixed top-0 left-0 lg:left-64 right-0 h-[76px] bg-white dark:bg-[#081c15] border-b border-slate-200/80 dark:border-white/10 z-20 flex items-center justify-between px-4 sm:px-6 transition-all duration-300 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
             <div className="flex items-center gap-3 min-w-0">
                 {/* Hamburger Menu Toggle */}
                 <button 
@@ -118,6 +118,17 @@ export default function Navbar({ onMenuClick }) {
                                     >
                                         <Crown className="w-4 h-4 text-amber-500" />
                                         <span>Subscription &amp; Plans</span>
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            setDropdownOpen(false)
+                                            navigate('/feedback')
+                                        }}
+                                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-gray-200 hover:bg-emerald-50/70 hover:text-emerald-900 dark:hover:bg-white/5 rounded-xl transition-colors text-left"
+                                    >
+                                        <MessageSquare className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                        <span>Give Feedback (+10 🪙)</span>
                                     </button>
                                 </div>
 

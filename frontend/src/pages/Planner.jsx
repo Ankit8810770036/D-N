@@ -4,8 +4,9 @@ import api from '../services/api'
 import toast from 'react-hot-toast'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import BarcodeScanner from '../components/BarcodeScanner'
-import { Scan, Lock, Sparkles, Calendar, Zap, RefreshCw, ChevronLeft, ChevronRight, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Scan, Lock, Sparkles, Calendar, Zap, RefreshCw, ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, Check } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 
 const mealIcons = { breakfast: '🌅', lunch: '☀️', snack: '🫐', dinner: '🌙' }
 const mealLabels = { breakfast: 'Breakfast', lunch: 'Lunch', snack: 'Snack', dinner: 'Dinner' }
@@ -27,12 +28,28 @@ export default function Planner() {
     const [date, setDate] = useState(new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0])
     const [isScannerOpen, setIsScannerOpen] = useState(false)
     const [showCustomFoodModal, setShowCustomFoodModal] = useState(false)
+    
+    useBodyScrollLock(showAiWeeklyModal || showCustomFoodModal)
     const [customFoodForm, setCustomFoodForm] = useState({
         name: '', calories: '', protein: '', carbs: '', fat: '',
         is_veg: true, is_vegan: false, is_jain: false
     })
 
     const todayStr = useMemo(() => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0], [])
+    
+    // Limits: Past 30 days and Future 30 days (1 month)
+    const minDate = useMemo(() => {
+        const d = new Date()
+        d.setDate(d.getDate() - 30)
+        return d.toISOString().split('T')[0]
+    }, [])
+
+    const maxDate = useMemo(() => {
+        const d = new Date()
+        d.setDate(d.getDate() + 30)
+        return d.toISOString().split('T')[0]
+    }, [])
+
     const isPastDate = date < todayStr
 
     const { data: profileData } = useQuery({
@@ -45,7 +62,7 @@ export default function Planner() {
         queryFn: () => api.get(`/meal-plan?date=${date}`).then(res => res.data).catch(() => null),
     })
 
-    // Compute 7-day strip around currently selected date
+    // Compute 7-day strip around currently selected date (bounded to [minDate, maxDate])
     const weekDays = useMemo(() => {
         const list = []
         const base = new Date(date)
@@ -57,10 +74,11 @@ export default function Planner() {
             const dayNum = d.getDate()
             const isToday = dateStr === todayStr
             const isPast = dateStr < todayStr
-            list.push({ dateStr, dayName, dayNum, isToday, isPast })
+            const isOutOfRange = dateStr < minDate || dateStr > maxDate
+            list.push({ dateStr, dayName, dayNum, isToday, isPast, isOutOfRange })
         }
         return list
-    }, [date, todayStr])
+    }, [date, todayStr, minDate, maxDate])
 
     async function generatePlan() {
         if (isPastDate) {
@@ -118,31 +136,44 @@ export default function Planner() {
         await queryClient.cancelQueries({ queryKey: ['mealPlan', date] });
         const previousPlan = queryClient.getQueryData(['mealPlan', date]);
 
-        if (previousPlan) {
+        let willBeConsumed = true;
+        let itemName = 'Meal';
+
+        if (previousPlan && previousPlan.meals) {
             queryClient.setQueryData(['mealPlan', date], old => {
                 if (!old || !old.meals) return old;
-                const newMeals = { ...old.meals };
-                for (const type in newMeals) {
-                    newMeals[type] = newMeals[type].map(item =>
-                        item.id === itemId ? { ...item, is_consumed: !item.is_consumed } : item
-                    );
+                const newMeals = {};
+                for (const type in old.meals) {
+                    newMeals[type] = old.meals[type].map(item => {
+                        if (String(item.id) === String(itemId)) {
+                            willBeConsumed = !item.is_consumed;
+                            itemName = item.recipe?.name || item.food?.name || item.name || 'Meal';
+                            return { ...item, is_consumed: !item.is_consumed };
+                        }
+                        return item;
+                    });
                 }
                 return { ...old, meals: newMeals };
             });
         }
 
+        // Instant responsive toast without network round-trip delay
+        const toastId = `meal-${itemId}`;
+        toast.success(willBeConsumed ? `Marked ${itemName} as consumed ✅` : `Unmarked ${itemName}`, {
+            id: toastId,
+            duration: 2000,
+        });
+
         try {
-            const res = await api.put(`/meal-item/${itemId}/consume`);
+            await api.put(`/meal-item/${itemId}/consume`);
             queryClient.invalidateQueries({ queryKey: ['mealPlan'] });
             queryClient.invalidateQueries({ queryKey: ['summary'] });
             queryClient.invalidateQueries({ queryKey: ['profile'] });
-            const label = res.data.date === new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0] ? 'today' : res.data.date;
-            toast.success(`${res.data.message} — ${res.data.calories_consumed} kcal consumed on ${label}`, { duration: 2500 });
         } catch (err) {
             if (previousPlan) {
                 queryClient.setQueryData(['mealPlan', date], previousPlan);
             }
-            toast.error(err.response?.data?.message || 'Failed to update.');
+            toast.error(err.response?.data?.message || 'Failed to update.', { id: toastId, duration: 2000 });
         }
     }
 
@@ -150,7 +181,7 @@ export default function Planner() {
         e.preventDefault()
         // Guard on the frontend too — saves a round-trip for free users
         if (!isPremium) {
-            toast.error('Upgrade to Premium to add custom foods! ⭐', { duration: 4000 })
+            toast.error('Upgrade to Premium to add custom foods! ⭐', { duration: 2000 })
             setShowCustomFoodModal(false)
             navigate('/subscription')
             return
@@ -158,26 +189,32 @@ export default function Planner() {
         setLoading(true)
         try {
             await api.post('/foods', customFoodForm)
-            toast.success('Custom food added to database! 🍎')
+            toast.success('Custom food added! 🎉', { duration: 2000 })
             setShowCustomFoodModal(false)
-            setCustomFoodForm({
-                name: '', calories: '', protein: '', carbs: '', fat: '',
-                is_veg: true, is_vegan: false, is_jain: false
-            })
+            setCustomFoodForm({ name: '', calories: '', protein: '', carbs: '', fat: '', is_veg: true, is_vegan: false, is_jain: false })
+            queryClient.invalidateQueries({ queryKey: ['foods'] })
         } catch (err) {
             if (err.response?.status === 403 && err.response?.data?.premium_required) {
-                toast.error('This feature requires a Premium subscription. Upgrade now! ⭐', { duration: 4000 })
+                toast.error('This feature requires a Premium subscription. Upgrade now! ⭐', { duration: 2000 })
                 setShowCustomFoodModal(false)
                 navigate('/subscription')
             } else {
-                toast.error(err.response?.data?.message || err.response?.data?.error || 'Failed to add food.')
+                toast.error(err.response?.data?.message || 'Failed to add custom food.', { duration: 2000 })
             }
         } finally {
             setLoading(false)
         }
     }
 
-    const handleScannerDetected = (productData) => {
+    const handleScannerDetected = (productData, wasLogged = false) => {
+        if (wasLogged) {
+            // Already logged and compensated via the scanner confirmation card
+            queryClient.invalidateQueries({ queryKey: ['mealPlan'] })
+            queryClient.invalidateQueries({ queryKey: ['progress'] })
+            queryClient.invalidateQueries({ queryKey: ['summary'] })
+            return
+        }
+
         setCustomFoodForm({
             name: productData.name || '',
             calories: productData.calories !== undefined ? String(Math.round(productData.calories)) : '',
@@ -242,12 +279,18 @@ export default function Planner() {
                     <div className="flex items-center gap-1">
                         <button
                             onClick={() => {
+                                if (date <= minDate) return
                                 const prev = new Date(date)
                                 prev.setDate(prev.getDate() - 1)
                                 setDate(prev.toISOString().split('T')[0])
                             }}
-                            className="p-1.5 rounded-xl text-slate-500 hover:bg-slate-100 dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-white transition-colors"
-                            title="Previous Day"
+                            disabled={date <= minDate}
+                            className={`p-1.5 rounded-xl transition-colors ${
+                                date <= minDate
+                                    ? 'text-slate-300 dark:text-white/20 cursor-not-allowed'
+                                    : 'text-slate-500 hover:bg-slate-100 dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-white'
+                            }`}
+                            title={date <= minDate ? 'Limited to past 30 days' : 'Previous Day'}
                         >
                             <ChevronLeft className="w-4 h-4" />
                         </button>
@@ -259,12 +302,18 @@ export default function Planner() {
                         </button>
                         <button
                             onClick={() => {
+                                if (date >= maxDate) return
                                 const next = new Date(date)
                                 next.setDate(next.getDate() + 1)
                                 setDate(next.toISOString().split('T')[0])
                             }}
-                            className="p-1.5 rounded-xl text-slate-500 hover:bg-slate-100 dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-white transition-colors"
-                            title="Next Day"
+                            disabled={date >= maxDate}
+                            className={`p-1.5 rounded-xl transition-colors ${
+                                date >= maxDate
+                                    ? 'text-slate-300 dark:text-white/20 cursor-not-allowed'
+                                    : 'text-slate-500 hover:bg-slate-100 dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-white'
+                            }`}
+                            title={date >= maxDate ? 'Limited to 30 days in advance' : 'Next Day'}
                         >
                             <ChevronRight className="w-4 h-4" />
                         </button>
@@ -277,11 +326,15 @@ export default function Planner() {
                         return (
                             <button
                                 key={d.dateStr}
-                                onClick={() => setDate(d.dateStr)}
-                                className={`py-2.5 px-1.5 rounded-2xl text-center transition-all duration-200 flex flex-col items-center justify-center border ${isSelected
+                                onClick={() => !d.isOutOfRange && setDate(d.dateStr)}
+                                disabled={d.isOutOfRange}
+                                className={`py-2.5 px-1.5 rounded-2xl text-center transition-all duration-200 flex flex-col items-center justify-center border ${
+                                    d.isOutOfRange
+                                        ? 'opacity-30 cursor-not-allowed bg-slate-100 dark:bg-white/5 border-transparent text-slate-400'
+                                        : isSelected
                                         ? 'bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-lg shadow-emerald-700/25 dark:shadow-[0_0_20px_rgba(16,185,129,0.3)] font-bold scale-[1.03] border-emerald-500/50 dark:border-emerald-400'
                                         : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200/60 hover:border-slate-300 dark:bg-white/5 dark:hover:bg-white/10 dark:text-white/80 dark:border-white/10 dark:hover:border-white/20'
-                                    }`}
+                                }`}
                             >
                                 <span className={`text-[11px] uppercase tracking-wider font-semibold ${isSelected ? 'text-emerald-100' : 'text-slate-400 dark:text-white/40'}`}>
                                     {d.dayName}
@@ -312,6 +365,8 @@ export default function Planner() {
                         </div>
                         <input
                             type="date"
+                            min={minDate}
+                            max={maxDate}
                             value={date}
                             onChange={e => setDate(e.target.value)}
                             className="input-field py-1.5 text-sm"
@@ -391,29 +446,49 @@ export default function Planner() {
                                     </div>
                                     {items.length > 0 ? (
                                         <div className="space-y-2.5">
-                                            {items.map((item, idx) => (
-                                                <div key={idx} className={`flex items-center justify-between p-3 rounded-2xl group hover:shadow-sm transition-all border ${item.is_consumed ? 'bg-emerald-50/80 border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800/50' : 'bg-slate-50/80 border-slate-200/60 hover:border-slate-300 dark:bg-white/5 dark:border-white/10 dark:hover:border-white/20'}`}>
-                                                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={!!item.is_consumed}
-                                                            onChange={() => toggleConsumed(item.id)}
-                                                            className="w-4 h-4 accent-emerald-600 cursor-pointer rounded shrink-0"
-                                                            title={item.is_consumed ? 'Mark as not consumed' : 'Mark as consumed'}
-                                                        />
-                                                        <div className="min-w-0">
-                                                            <div className="flex items-center gap-1.5 flex-wrap">
-                                                                <p className={`text-sm font-semibold ${item.is_consumed ? 'line-through text-slate-400 dark:text-white/40' : 'text-slate-800 dark:text-white/90'}`}>
-                                                                    {item.recipe ? item.recipe.name : item.food?.name}
+                                            {items.map((item, idx) => {
+                                                const isConsumed = Boolean(item.is_consumed);
+                                                return (
+                                                    <div 
+                                                        key={item.id || idx} 
+                                                        onClick={() => toggleConsumed(item.id)}
+                                                        className={`flex items-center justify-between p-3 rounded-2xl group hover:shadow-sm transition-all border cursor-pointer select-none ${
+                                                            isConsumed 
+                                                                ? 'bg-emerald-50/90 border-emerald-300 dark:bg-emerald-950/40 dark:border-emerald-700/60 shadow-xs' 
+                                                                : 'bg-slate-50/80 border-slate-200/60 hover:border-emerald-300 dark:bg-white/5 dark:border-white/10 dark:hover:border-white/20'
+                                                        }`}
+                                                    >
+                                                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    toggleConsumed(item.id);
+                                                                }}
+                                                                aria-checked={isConsumed}
+                                                                role="checkbox"
+                                                                className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all shrink-0 border ${
+                                                                    isConsumed
+                                                                        ? 'bg-emerald-600 border-emerald-600 text-white shadow-xs shadow-emerald-700/30'
+                                                                        : 'border-slate-300 dark:border-white/20 bg-white dark:bg-white/5 hover:border-emerald-500'
+                                                                }`}
+                                                                title={isConsumed ? 'Mark as not consumed' : 'Mark as consumed'}
+                                                            >
+                                                                {isConsumed && <Check className="w-4 h-4 stroke-[3] text-white" />}
+                                                            </button>
+                                                            <div className="min-w-0">
+                                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                                    <p className={`text-sm font-semibold transition-all ${isConsumed ? 'line-through text-slate-400 dark:text-white/40' : 'text-slate-800 dark:text-white/90'}`}>
+                                                                        {item.recipe ? item.recipe.name : item.food?.name}
+                                                                    </p>
+                                                                    {item.recipe && <span className="text-[10px] bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 px-1.5 py-0.5 rounded-md font-bold uppercase tracking-tighter">Recipe</span>}
+                                                                </div>
+                                                                <p className="text-xs text-slate-400 dark:text-white/40 mt-0.5 font-medium">
+                                                                    {item.recipe ? '1 serving' : `${item.quantity}${item.unit}`} &nbsp;·&nbsp;
+                                                                    P:{Math.round(item.protein)}g C:{Math.round(item.carbs)}g F:{Math.round(item.fat)}g
                                                                 </p>
-                                                                {item.recipe && <span className="text-[10px] bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 px-1.5 py-0.5 rounded-md font-bold uppercase tracking-tighter">Recipe</span>}
                                                             </div>
-                                                            <p className="text-xs text-slate-400 dark:text-white/40 mt-0.5 font-medium">
-                                                                {item.recipe ? '1 serving' : `${item.quantity}${item.unit}`} &nbsp;·&nbsp;
-                                                                P:{Math.round(item.protein)}g C:{Math.round(item.carbs)}g F:{Math.round(item.fat)}g
-                                                            </p>
                                                         </div>
-                                                    </div>
                                                     <div className="flex items-center gap-2.5 shrink-0">
                                                         {!item.is_consumed && !isPastDate && (
                                                             <button
@@ -427,7 +502,8 @@ export default function Planner() {
                                                         <span className={`text-sm font-bold ${item.is_consumed ? 'text-emerald-600' : 'text-emerald-700 dark:text-emerald-400'}`}>{item.calories} kcal</span>
                                                     </div>
                                                 </div>
-                                            ))}
+                                            );
+                                        })}
                                         </div>
                                     ) : (
                                         <p className="text-sm text-slate-400 dark:text-white/40 italic py-4 text-center">No items added to this meal slot</p>
@@ -520,6 +596,7 @@ export default function Planner() {
                                 <input
                                     type="date"
                                     min={todayStr}
+                                    max={maxDate}
                                     value={date < todayStr ? todayStr : date}
                                     onChange={e => setDate(e.target.value)}
                                     className="input-field"
@@ -591,28 +668,28 @@ export default function Planner() {
                                 <div>
                                     <label className="input-label">Food Name</label>
                                     <input type="text" value={customFoodForm.name} onChange={e => setCustomFoodForm({ ...customFoodForm, name: e.target.value })}
-                                        className="input-field" placeholder="e.g. Grandma's Special Pasta" required />
+                                        className="input-field" placeholder="e.g. Paneer Bhurji / Oats Smoothie (200g)" required />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="input-label">Calories (kcal)</label>
                                         <input type="number" value={customFoodForm.calories} onChange={e => setCustomFoodForm({ ...customFoodForm, calories: e.target.value })}
-                                            className="input-field" placeholder="250" required />
+                                            className="input-field" placeholder="e.g. 250 kcal" required />
                                     </div>
                                     <div>
                                         <label className="input-label">Protein (g)</label>
                                         <input type="number" value={customFoodForm.protein} onChange={e => setCustomFoodForm({ ...customFoodForm, protein: e.target.value })}
-                                            className="input-field" placeholder="10" required />
+                                            className="input-field" placeholder="e.g. 18g" required />
                                     </div>
                                     <div>
                                         <label className="input-label">Carbs (g)</label>
                                         <input type="number" value={customFoodForm.carbs} onChange={e => setCustomFoodForm({ ...customFoodForm, carbs: e.target.value })}
-                                            className="input-field" placeholder="30" required />
+                                            className="input-field" placeholder="e.g. 30g" required />
                                     </div>
                                     <div>
                                         <label className="input-label">Fat (g)</label>
                                         <input type="number" value={customFoodForm.fat} onChange={e => setCustomFoodForm({ ...customFoodForm, fat: e.target.value })}
-                                            className="input-field" placeholder="8" required />
+                                            className="input-field" placeholder="e.g. 8g" required />
                                     </div>
                                 </div>
                                 <div className="flex gap-4 pt-2">

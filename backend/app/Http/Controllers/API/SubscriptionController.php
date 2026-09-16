@@ -31,12 +31,23 @@ class SubscriptionController extends Controller
             return response()->json(['message' => 'You are already a Premium member.'], 422);
         }
 
-        $request->validate([
-            'final_paise' => 'sometimes|integer|min:2500', // minimum ₹25
-        ]);
+        // Server-side price calculation: Default to full price (₹499 = 49900 paise)
+        $amountInPaise = 49900;
 
-        // If a discounted amount is passed from /tokens/redeem, use it; else full price
-        $amountInPaise = $request->input('final_paise', 49900);
+        // Check if the user has an active pending coin discount in the last 30 minutes
+        $pendingDiscount = \App\Models\TokenTransaction::where('user_id', $user->id)
+            ->where('reason', 'discount_redeem')
+            ->where('created_at', '>=', now()->subMinutes(30))
+            ->latest('id')
+            ->first();
+
+        if ($pendingDiscount && !empty($pendingDiscount->meta['final_inr'])) {
+            $allowedDiscountedPaise = ((int) $pendingDiscount->meta['final_inr']) * 100;
+            // Only accept valid tier amounts (₹399 = 39900 or ₹249 = 24900)
+            if (in_array($allowedDiscountedPaise, [39900, 24900])) {
+                $amountInPaise = $allowedDiscountedPaise;
+            }
+        }
 
         try {
             $response = Http::withBasicAuth($this->keyId, $this->keySecret)

@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react'
 import confetti from 'canvas-confetti'
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 
 export default function CelebrationOverlay({ newBadges = [], onComplete }) {
     const [currentBadgeIndex, setCurrentBadgeIndex] = useState(0)
+    const isShowing = newBadges.length > 0 && currentBadgeIndex < newBadges.length
+
+    useBodyScrollLock(isShowing)
 
     useEffect(() => {
         if (newBadges.length > 0) {
@@ -15,7 +19,7 @@ export default function CelebrationOverlay({ newBadges = [], onComplete }) {
         }
     }, [currentBadgeIndex, newBadges.length])
 
-    if (newBadges.length === 0 || currentBadgeIndex >= newBadges.length) return null
+    if (!isShowing) return null
 
     const badge = newBadges[currentBadgeIndex]
 
@@ -30,22 +34,22 @@ export default function CelebrationOverlay({ newBadges = [], onComplete }) {
     const config = BADGE_CONFIG[badge.badge_type] || { label: badge.badge_type, icon: '🎖️', text: 'New Achievement Unlocked!' }
 
     return (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/40 backdrop-blur-md animate-in fade-in duration-500">
-            <div className="bg-white rounded-[40px] shadow-2xl p-8 max-w-sm w-full text-center space-y-6 animate-in zoom-in-95 duration-500">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-500 font-outfit">
+            <div className="bg-white dark:bg-[#0c241a] dark:border dark:border-white/15 rounded-3xl sm:rounded-[40px] shadow-2xl p-6 sm:p-8 max-w-sm w-full text-center space-y-5 sm:space-y-6 animate-in zoom-in-95 duration-500">
                 <div className="relative">
-                    <div className="absolute inset-0 animate-ping bg-orange-200 rounded-full opacity-20" />
-                    <div className="w-24 h-24 bg-gradient-to-br from-orange-400 to-red-500 rounded-full mx-auto flex items-center justify-center text-5xl shadow-xl relative z-10">
+                    <div className="absolute inset-0 animate-ping bg-orange-200 dark:bg-orange-500/20 rounded-full opacity-20" />
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-orange-400 to-red-500 rounded-full mx-auto flex items-center justify-center text-4xl sm:text-5xl shadow-xl relative z-10">
                         {config.icon}
                     </div>
                 </div>
 
-                <div className="space-y-2">
-                    <h2 className="text-2xl font-black text-gray-800 uppercase tracking-tight">New Badge!</h2>
-                    <p className="text-sm text-gray-500 font-medium">{config.text}</p>
+                <div className="space-y-1.5">
+                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight">New Badge!</h2>
+                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">{config.text}</p>
                 </div>
 
-                <div className="bg-gray-50 rounded-3xl p-4 border-2 border-gray-100">
-                    <p className="text-xl font-bold text-gray-800">{config.label}</p>
+                <div className="bg-slate-50 dark:bg-white/5 rounded-2xl p-3.5 border border-slate-200/80 dark:border-white/10">
+                    <p className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">{config.label}</p>
                 </div>
 
                 <button
@@ -56,9 +60,9 @@ export default function CelebrationOverlay({ newBadges = [], onComplete }) {
                             onComplete()
                         }
                     }}
-                    className="w-full py-4 bg-[#2d6a4f] text-white rounded-2xl font-bold hover:bg-[#1b4332] active:scale-95 transition-all shadow-lg"
+                    className="w-full py-3.5 sm:py-4 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white rounded-2xl font-bold active:scale-95 transition-all shadow-lg shadow-emerald-700/20 text-sm sm:text-base"
                 >
-                    {currentBadgeIndex + 1 < newBadges.length ? 'Next Badge! →' : 'Awesome!'}
+                    {currentBadgeIndex + 1 < newBadges.length ? 'Next Badge! →' : 'Awesome! 🎉'}
                 </button>
             </div>
         </div>

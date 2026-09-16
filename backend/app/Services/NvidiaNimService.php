@@ -13,9 +13,11 @@ class NvidiaNimService
     private string $defaultModel;
     private string $visionModel;
     private string $systemPrompt;
+    private GroqService $groq;
 
-    public function __construct()
+    public function __construct(GroqService $groq)
     {
+        $this->groq         = $groq;
         $this->apiKey       = config('services.nvidia.key', env('NVIDIA_NIM_API_KEY', env('NVIDIA_API_KEY', '')));
         $this->baseUrl      = config('services.nvidia.base_url', 'https://integrate.api.nvidia.com/v1/chat/completions');
         $this->defaultModel = config('services.nvidia.model', 'meta/llama-3.2-11b-vision-instruct');
@@ -32,11 +34,11 @@ class NvidiaNimService
 
     public function isConfigured(): bool
     {
-        return !empty($this->apiKey);
+        return !empty($this->apiKey) || $this->groq->isConfigured();
     }
 
     /**
-     * Generate chat content using NVIDIA NIM LLM.
+     * Generate chat content using NVIDIA NIM LLM with automatic Groq AI fallback.
      * Automatically routes to vision model if an image is provided.
      *
      * @param array $parts Array containing text and/or inline_data (base64 image)
@@ -45,10 +47,6 @@ class NvidiaNimService
      */
     public function generateContent(array $parts, ?string $customSystemInstruction = null): ?string
     {
-        if (empty($this->apiKey)) {
-            return $this->getFallbackResponse($parts);
-        }
-
         $userText   = '';
         $imageData  = null;
         $mimeType   = 'image/jpeg';
@@ -66,69 +64,73 @@ class NvidiaNimService
 
         $systemContent = $customSystemInstruction ?? $this->systemPrompt;
 
-        // Select model and format message content
-        if ($imageData) {
-            $model = $this->visionModel;
-            if (empty($userText)) {
-                $userText = 'Please estimate the calories, macronutrients, and health quality of this Indian meal.';
-            }
-
-            $userMessageContent = [
-                ['type' => 'text', 'text' => $userText],
-                [
-                    'type' => 'image_url',
-                    'image_url' => [
-                        'url' => "data:{$mimeType};base64,{$imageData}"
-                    ]
-                ]
-            ];
-        } else {
-            $model = $this->defaultModel;
-            if (empty($userText)) {
-                $userText = 'Namaste! What are healthy dietary recommendations for today?';
-            }
-            $userMessageContent = $userText;
-        }
-
-        try {
-            $response = Http::withoutVerifying()
-                ->timeout(35)
-                ->withHeaders([
-                    'Authorization' => 'Bearer ' . $this->apiKey,
-                    'Content-Type'  => 'application/json',
-                    'Accept'        => 'application/json',
-                ])
-                ->post($this->baseUrl, [
-                    'model'       => $model,
-                    'messages'    => [
-                        ['role' => 'system', 'content' => $systemContent],
-                        ['role' => 'user',   'content' => $userMessageContent],
-                    ],
-                    'temperature' => 0.6,
-                    'top_p'       => 0.9,
-                    'max_tokens'  => 1024,
-                ]);
-
-            if ($response->successful()) {
-                $data = $response->json();
-                $reply = $data['choices'][0]['message']['content'] ?? null;
-                if (!empty($reply)) {
-                    return $reply;
+        if (!empty($this->apiKey)) {
+            // Select model and format message content
+            if ($imageData) {
+                $model = $this->visionModel;
+                if (empty($userText)) {
+                    $userText = 'Please estimate the calories, macronutrients, and health quality of this Indian meal.';
                 }
+
+                $userMessageContent = [
+                    ['type' => 'text', 'text' => $userText],
+                    [
+                        'type' => 'image_url',
+                        'image_url' => [
+                            'url' => "data:{$mimeType};base64,{$imageData}"
+                        ]
+                    ]
+                ];
+            } else {
+                $model = $this->defaultModel;
+                if (empty($userText)) {
+                    $userText = 'Namaste! What are healthy dietary recommendations for today?';
+                }
+                $userMessageContent = $userText;
             }
 
-            if ($response->status() === 429) {
-                Log::warning('NVIDIA NIM API rate limited — serving intelligent fallback.');
-                return $this->getFallbackResponse($parts);
+            try {
+                $response = Http::withoutVerifying()
+                    ->timeout(35)
+                    ->withHeaders([
+                        'Authorization' => 'Bearer ' . $this->apiKey,
+                        'Content-Type'  => 'application/json',
+                        'Accept'        => 'application/json',
+                    ])
+                    ->post($this->baseUrl, [
+                        'model'       => $model,
+                        'messages'    => [
+                            ['role' => 'system', 'content' => $systemContent],
+                            ['role' => 'user',   'content' => $userMessageContent],
+                        ],
+                        'temperature' => 0.35,
+                        'top_p'       => 0.85,
+                        'max_tokens'  => 450,
+                    ]);
+
+                if ($response->successful()) {
+                    $data = $response->json();
+                    $reply = $data['choices'][0]['message']['content'] ?? null;
+                    if (!empty($reply)) {
+                        return $reply;
+                    }
+                }
+
+                Log::warning('NVIDIA NIM API response non-200 (' . $response->status() . '), falling back to Groq AI.');
+            } catch (Exception $e) {
+                Log::warning('NVIDIA NIM Service Exception: ' . $e->getMessage() . ', falling back to Groq AI.');
             }
-
-            Log::error('NVIDIA NIM API Error (' . $response->status() . '): ' . $response->body());
-            return $this->getFallbackResponse($parts);
-
-        } catch (Exception $e) {
-            Log::error('NVIDIA NIM Service Exception: ' . $e->getMessage());
-            return $this->getFallbackResponse($parts);
         }
+
+        // ── Secondary LLM Fallback: Groq AI ──
+        if ($this->groq->isConfigured()) {
+            $groqReply = $this->groq->generateContent($parts, $systemContent);
+            if (!empty($groqReply)) {
+                return $groqReply;
+            }
+        }
+
+        return $this->getFallbackResponse($parts);
     }
 
     /**

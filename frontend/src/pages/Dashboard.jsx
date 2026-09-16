@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, Link } from 'react-router-dom'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { useQuery } from '@tanstack/react-query'
@@ -8,6 +8,8 @@ import OnboardingWizard from '../components/OnboardingWizard'
 import BadgeSection from '../components/BadgeSection'
 import CelebrationOverlay from '../components/CelebrationOverlay'
 import { DailyChallengesCard } from '../components/TokenWallet'
+import TodayMealSection from '../components/TodayMealSection'
+import { MessageSquarePlus } from 'lucide-react'
 
 const COLORS = ['#059669', '#10b981', '#f59e0b']
 
@@ -208,49 +210,12 @@ export default function Dashboard() {
                     </div>
                 )}
 
-                {/* Today's Meal Summary */}
-                <div className="card w-full min-w-0 flex flex-col justify-between">
-                    <h2 className="font-bold text-slate-900 dark:text-white mb-4">Today's Meal Plan</h2>
-                    {plan ? (
-                        <div className="space-y-3">
-                            {['breakfast', 'lunch', 'snack', 'dinner'].map(type => {
-                                const items = plan.meals?.[type] ?? []
-                                const icons = { breakfast: '🌅', lunch: '☀️', snack: '🫐', dinner: '🌙' }
-                                const allConsumed = items.length > 0 && items.every(i => i.is_consumed);
-                                return (
-                                    <div key={type} className={`flex items-start gap-3 p-3.5 rounded-2xl border transition-all ${allConsumed ? 'bg-emerald-50/80 border-emerald-200 dark:bg-green-900/20 dark:border-green-800/50' : 'bg-slate-50/80 border-slate-200/60 hover:border-slate-300 dark:bg-gray-800/50 dark:border-gray-700'}`}>
-                                        <span className="text-xl mt-0.5">{icons[type]}</span>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-bold text-slate-800 dark:text-gray-300 capitalize flex items-center gap-2">
-                                                {type}
-                                                {allConsumed && <span className="text-[10px] bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Done</span>}
-                                            </p>
-                                            {items.length > 0
-                                                ? <p className="text-xs text-slate-500 dark:text-gray-400 truncate mt-0.5">
-                                                    {items.map((i, idx) => {
-                                                        const name = i.recipe ? i.recipe.name : i.food?.name;
-                                                        return (
-                                                            <span key={idx} className={i.is_consumed ? 'line-through opacity-60' : ''}>
-                                                                {name}{idx < items.length - 1 ? ', ' : ''}
-                                                            </span>
-                                                        );
-                                                    })}
-                                                  </p>
-                                                : <p className="text-xs text-slate-400 italic mt-0.5">No items</p>
-                                            }
-                                        </div>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                    ) : (
-                        <div className="flex flex-col items-center py-6 gap-3">
-                            <span className="text-4xl">🍽️</span>
-                            <p className="text-sm text-slate-500">No meal plan generated for today</p>
-                            <a href="/planner" className="btn-primary btn-sm">Generate Plan →</a>
-                        </div>
-                    )}
-                </div>
+                {/* Today's Meal Summary - Smart Time-based */}
+                <TodayMealSection
+                    plan={plan}
+                    localToday={localToday}
+                    profile={profile}
+                />
             </div>
 
             {/* Stats Row */}
@@ -276,6 +241,27 @@ export default function Dashboard() {
 
             {/* Daily Challenges */}
             <DailyChallengesCard date={localToday} />
+
+            {/* Quick Feedback Banner */}
+            <div className="card p-5 sm:p-6 bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-emerald-500/5 border border-emerald-500/20 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-4 text-center sm:text-left">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-700/20">
+                        <MessageSquarePlus className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <h3 className="font-black text-slate-900 dark:text-white text-base">Got feedback or ideas for NutriPlan?</h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            Tell us what you love or want improved and earn <strong className="text-amber-600 dark:text-amber-400 font-bold">+10 HealthCoins</strong>!
+                        </p>
+                    </div>
+                </div>
+                <Link
+                    to="/feedback"
+                    className="whitespace-nowrap px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-bold text-xs shadow-md shadow-emerald-700/20 hover:scale-105 active:scale-95 transition-all"
+                >
+                    Give Feedback (+10 🪙)
+                </Link>
+            </div>
 
             <CelebrationOverlay
                 newBadges={celebratingBadges}

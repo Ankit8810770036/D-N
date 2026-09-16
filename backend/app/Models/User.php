@@ -94,38 +94,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function getCurrentStreak(): int
     {
-        $logs = $this->progressLogs()
-            ->where('calories_consumed', '>', 0)
-            ->orderBy('date', 'desc')
-            ->pluck('date')
-            ->map(function ($date) {
-                return \Carbon\Carbon::parse($date)->toDateString();
-            })->toArray();
-
-        if (empty($logs)) return 0;
-
-        $streak = 0;
-        $currentDate = \Carbon\Carbon::today();
-        
-        $todayStr = $currentDate->toDateString();
-        $yesterdayStr = $currentDate->copy()->subDay()->toDateString();
-
-        if (in_array($todayStr, $logs)) {
-            $streak = 1;
-            $checkDate = $currentDate->copy()->subDay();
-        } elseif (in_array($yesterdayStr, $logs)) {
-            $streak = 1;
-            $checkDate = $currentDate->copy()->subDays(2);
-        } else {
-            return 0;
-        }
-
-        while (in_array($checkDate->toDateString(), $logs)) {
-            $streak++;
-            $checkDate->subDay();
-        }
-
-        return $streak;
+        return app(\App\Services\AchievementService::class)->calculateStreak($this);
     }
 
     public function getProfilePhotoUrlAttribute(): string

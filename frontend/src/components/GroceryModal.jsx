@@ -2,8 +2,10 @@ import { useState } from 'react'
 import api from '../services/api'
 import toast from 'react-hot-toast'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 
 export default function GroceryModal({ isOpen, onClose }) {
+    useBodyScrollLock(isOpen)
     const queryClient = useQueryClient()
 
     const { data, isLoading } = useQuery({

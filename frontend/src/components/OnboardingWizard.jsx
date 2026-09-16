@@ -2,6 +2,7 @@ import { useState } from 'react'
 import api from '../services/api'
 import toast from 'react-hot-toast'
 import { useQueryClient } from '@tanstack/react-query'
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 
 const activityLevels = [
     { value: 'sedentary', label: '🪑 Sedentary', desc: 'Little/no exercise' },
@@ -12,6 +13,7 @@ const activityLevels = [
 ]
 
 export default function OnboardingWizard({ isOpen, onComplete, initialData = {} }) {
+    useBodyScrollLock(isOpen)
     const queryClient = useQueryClient()
     const [step, setStep] = useState(1)
     const [loading, setLoading] = useState(false)
@@ -42,6 +44,7 @@ export default function OnboardingWizard({ isOpen, onComplete, initialData = {} 
             await api.put('/profile/update', form)
             queryClient.invalidateQueries({ queryKey: ['profile'] })
             queryClient.invalidateQueries({ queryKey: ['summary'] })
+            queryClient.invalidateQueries({ queryKey: ['mealPlan'] })
             toast.success('Awesome! Your profile is all set. 🚀')
             onComplete()
         } catch (err) {

@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { X, BookOpen, Trash2, Save, Search, Crown } from 'lucide-react';
 import api from '../services/api';
 import { useQuery } from '@tanstack/react-query';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 const AdminRecipeModal = ({ isOpen, onClose, onSave, recipe = null, loading = false }) => {
+    useBodyScrollLock(isOpen);
     const [form, setForm] = useState({
         name: '',
         description: '',

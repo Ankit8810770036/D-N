@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { X, Flame, Activity, Save, Utensils } from 'lucide-react';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 const AdminFoodModal = ({ isOpen, onClose, onSave, food = null, loading = false }) => {
+    useBodyScrollLock(isOpen);
     const [form, setForm] = useState({
         name: '',
         brand: '',

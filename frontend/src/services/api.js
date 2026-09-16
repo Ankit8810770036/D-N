@@ -17,14 +17,19 @@ api.interceptors.request.use((config) => {
     return config
 })
 
-// Handle 401 globally
+// Handle 401 globally only for authenticated endpoints
 api.interceptors.response.use(
     (res) => res,
     (err) => {
-        if (err.response?.status === 401) {
+        const isAuthEndpoint = err.config?.url?.includes('/login') || err.config?.url?.includes('/register')
+        const isPublicRoute = ['/login', '/register', '/forgot-password', '/reset-password'].includes(window.location.pathname)
+
+        if (err.response?.status === 401 && !isAuthEndpoint) {
             localStorage.removeItem('token')
             localStorage.removeItem('user')
-            window.location.href = '/login'
+            if (!isPublicRoute) {
+                window.location.href = '/login'
+            }
         }
         return Promise.reject(err)
     }

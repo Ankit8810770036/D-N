@@ -7,10 +7,12 @@ const navItems = [
     { to: '/dashboard', icon: '🏠', label: 'Dashboard' },
     { to: '/profile', icon: '👤', label: 'My Profile' },
     { to: '/planner', icon: '🍽️', label: 'Diet Planner' },
+    { to: '/workouts', icon: '🏋️', label: 'Workouts', badge: 'SOON' },
     { to: '/shopping-list', icon: '🛒', label: 'Shopping List' },
     { to: '/cookbook', icon: '📖', label: 'Cookbook' },
     { to: '/progress', icon: '📈', label: 'Progress' },
     { to: '/reports', icon: '📄', label: 'Reports' },
+    { to: '/feedback', icon: '💬', label: 'Feedback' },
     { to: '/subscription', icon: '💎', label: 'Subscription' },
     { to: '/admin', icon: '🛡️', label: 'Admin Panel', adminOnly: true },
 ]
@@ -23,7 +25,7 @@ export default function Sidebar({ isOpen, onClose }) {
     }
 
     return (
-        <aside className={`fixed top-0 left-0 h-full w-64 bg-white/95 backdrop-blur-md dark:bg-[#081c15] border-r border-slate-200/80 dark:border-white/10 shadow-[2px_0_12px_rgba(15,23,42,0.03)] z-40 flex flex-col transition-all duration-300 ease-in-out transform lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <aside className={`fixed top-0 left-0 h-full w-64 bg-white dark:bg-[#081c15] border-r border-slate-200/80 dark:border-white/10 shadow-[2px_0_12px_rgba(15,23,42,0.03)] z-40 flex flex-col transition-all duration-300 ease-in-out transform lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
             {/* Logo */}
             <div className="h-[76px] px-6 border-b border-slate-100 dark:border-white/10 flex items-center justify-between flex-shrink-0">
                 <div className="flex items-center gap-3">
@@ -50,17 +52,24 @@ export default function Sidebar({ isOpen, onClose }) {
                     if (item.adminOnly && !isAdmin) return false;
                     if (item.to === '/subscription' && isAdmin) return false;
                     return true;
-                }).map(({ to, icon, label }) => (
+                }).map(({ to, icon, label, badge }) => (
                     <NavLink
                         key={to}
                         to={to}
                         onClick={handleLinkClick}
                         className={({ isActive }) =>
-                            `sidebar-link ${isActive ? 'active' : ''}`
+                            `sidebar-link flex items-center justify-between ${isActive ? 'active' : ''}`
                         }
                     >
-                        <span className="text-lg">{icon}</span>
-                        <span className="text-sm">{label}</span>
+                        <div className="flex items-center gap-3">
+                            <span className="text-lg">{icon}</span>
+                            <span className="text-sm">{label}</span>
+                        </div>
+                        {badge && (
+                            <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-300/80">
+                                {badge}
+                            </span>
+                        )}
                     </NavLink>
                 ))}
             </nav>

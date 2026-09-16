@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useLocation } from 'react-router-dom'
 import api from '../services/api'
 import toast from 'react-hot-toast'
+import { getErrorMessage } from '../utils/errors'
 import { useAuth } from '../context/AuthContext'
 import { useQueryClient } from '@tanstack/react-query'
 import {
@@ -20,6 +21,7 @@ import {
     TrendingUp, 
     Loader2 
 } from 'lucide-react'
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 
 export default function Progress() {
     const { user, isAdmin } = useAuth()
@@ -32,6 +34,15 @@ export default function Progress() {
     const [recalibrating, setRecalibrating] = useState(false)
     const [recalibrationModal, setRecalibrationModal] = useState(null)
     const [dismissedBanner, setDismissedBanner] = useState(false)
+
+    useBodyScrollLock(!!recalibrationModal)
+
+    const todayStr = useMemo(() => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0], [])
+    const minDate = useMemo(() => {
+        const d = new Date()
+        d.setDate(d.getDate() - 30)
+        return d.toISOString().split('T')[0]
+    }, [])
 
     const [form, setForm] = useState({
         date: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
@@ -84,6 +95,9 @@ export default function Progress() {
             const { data } = await api.post('/log-progress', form)
             queryClient.invalidateQueries({ queryKey: ['summary'] })
             queryClient.invalidateQueries({ queryKey: ['profile'] })
+            queryClient.invalidateQueries({ queryKey: ['mealPlan'] })
+            queryClient.invalidateQueries({ queryKey: ['tokens'] })
+            queryClient.invalidateQueries({ queryKey: ['userTokens'] })
             toast.success('Progress logged! 📊')
             
             // Check if weight difference warrants recalibration prompt
@@ -93,7 +107,7 @@ export default function Progress() {
 
             await fetchAnalytics();
         } catch (err) {
-            toast.error(err.response?.data?.message || 'Failed to log progress.')
+            toast.error(getErrorMessage(err, 'Failed to log progress.'))
         } finally {
             setLoading(false)
         }
@@ -106,13 +120,16 @@ export default function Progress() {
             toast.success(data.message || 'Targets successfully recalibrated! 🎯')
             queryClient.invalidateQueries({ queryKey: ['profile'] })
             queryClient.invalidateQueries({ queryKey: ['summary'] })
+            queryClient.invalidateQueries({ queryKey: ['groceryList'] })
             queryClient.invalidateQueries({ queryKey: ['grocery-list'] })
+            queryClient.invalidateQueries({ queryKey: ['mealPlan'] })
             queryClient.invalidateQueries({ queryKey: ['meal-plan'] })
+            queryClient.invalidateQueries({ queryKey: ['tokens'] })
             setRecalibrationModal(null)
             setDismissedBanner(true)
             await fetchAnalytics()
         } catch (err) {
-            toast.error(err.response?.data?.message || 'Failed to recalibrate targets.')
+            toast.error(getErrorMessage(err, 'Failed to recalibrate targets.'))
         } finally {
             setRecalibrating(false)
         }
@@ -324,48 +341,56 @@ export default function Progress() {
                 <form onSubmit={handleLog} className="space-y-4">
                     <div className="grid md:grid-cols-3 gap-4">
                         <div>
-                            <label className="input-label">Date</label>
-                            <input type="date" value={form.date} onChange={e => set('date', e.target.value)} className="input-field" required />
+                            <label className="input-label">Date (Past 30 Days to Today)</label>
+                            <input
+                                type="date"
+                                min={minDate}
+                                max={todayStr}
+                                value={form.date}
+                                onChange={e => set('date', e.target.value)}
+                                className="input-field"
+                                required
+                            />
                         </div>
                         <div>
                             <label className="input-label">Weight (kg)</label>
                             <input type="number" value={form.weight} onChange={e => set('weight', e.target.value)}
-                                className="input-field" placeholder="70.5" step="0.1" required />
+                                className="input-field" placeholder="e.g. 70.5" step="0.1" required />
                         </div>
                         <div>
                             <label className="input-label">Calories Consumed</label>
                             <input type="number" value={form.calories_consumed} onChange={e => set('calories_consumed', e.target.value)}
-                                className="input-field" placeholder="2000" required />
+                                className="input-field" placeholder="e.g. 1850 kcal" required />
                         </div>
                         <div>
                             <label className="input-label">Protein (g)</label>
                             <input type="number" value={form.protein} onChange={e => set('protein', e.target.value)}
-                                className="input-field" placeholder="150" />
+                                className="input-field" placeholder="e.g. 120g" />
                         </div>
                         <div>
                             <label className="input-label">Carbs (g)</label>
                             <input type="number" value={form.carbs} onChange={e => set('carbs', e.target.value)}
-                                className="input-field" placeholder="250" />
+                                className="input-field" placeholder="e.g. 210g" />
                         </div>
                         <div>
                             <label className="input-label">Fat (g)</label>
                             <input type="number" value={form.fat} onChange={e => set('fat', e.target.value)}
-                                className="input-field" placeholder="70" />
+                                className="input-field" placeholder="e.g. 55g" />
                         </div>
                         <div>
                             <label className="input-label">Water Intake (L)</label>
                             <input type="number" value={form.water_intake_liters} onChange={e => set('water_intake_liters', e.target.value)}
-                                className="input-field" placeholder="2.5" step="0.1" />
+                                className="input-field" placeholder="e.g. 3.0 L" step="0.1" />
                         </div>
                         <div>
-                            <label className="input-label">Steps</label>
+                            <label className="input-label">Steps (Daily)</label>
                             <input type="number" value={form.steps} onChange={e => set('steps', e.target.value)}
-                                className="input-field" placeholder="8000" />
+                                className="input-field" placeholder="e.g. 8500 steps" />
                         </div>
                         <div>
                             <label className="input-label">Sleep Hours</label>
                             <input type="number" value={form.sleep_hours} onChange={e => set('sleep_hours', e.target.value)}
-                                className="input-field" placeholder="7" step="0.5" />
+                                className="input-field" placeholder="e.g. 7.5 hrs" step="0.5" />
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -375,9 +400,9 @@ export default function Progress() {
                         <label htmlFor="workout" className="text-sm font-medium text-gray-700 dark:text-gray-300">💪 Workout Done Today</label>
                     </div>
                     <div>
-                        <label className="input-label">Notes <span className="text-gray-400 font-normal">(optional)</span></label>
+                        <label className="input-label">Notes &amp; Reflections <span className="text-gray-400 font-normal">(optional)</span></label>
                         <textarea value={form.notes} onChange={e => set('notes', e.target.value)}
-                            className="input-field" placeholder="How did you feel today?" rows={2} />
+                            className="input-field" placeholder="e.g. Felt energetic throughout the day, hit water target easily..." rows={2} />
                     </div>
                     <button type="submit" disabled={loading} className="btn-primary">
                         {loading ? 'Saving...' : 'Log Progress ✅'}

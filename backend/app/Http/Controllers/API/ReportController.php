@@ -5,98 +5,114 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\MealPlan;
 use App\Models\ProgressLog;
+use App\Models\UserBadge;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Exception;
 
 class ReportController extends Controller
 {
     public function downloadPDF(Request $request)
     {
-        $user    = $request->user()->load('profile');
-        $date    = $request->input('date', Carbon::today()->toDateString());
+        try {
+            $user    = $request->user()->load('profile');
+            $date    = $request->input('date', Carbon::today()->toDateString());
 
-        $plan = MealPlan::where('user_id', $user->id)
-            ->where('date', $date)
-            ->with('mealItems.food')
-            ->first();
+            $plan = MealPlan::where('user_id', $user->id)
+                ->where('date', $date)
+                ->with(['mealItems.food', 'mealItems.recipe'])
+                ->first();
 
-        $recentLogs = ProgressLog::where('user_id', $user->id)
-            ->orderBy('date', 'desc')
-            ->take(7)
-            ->get();
+            $recentLogs = ProgressLog::where('user_id', $user->id)
+                ->orderBy('date', 'desc')
+                ->take(7)
+                ->get();
 
-        $pdf = Pdf::loadView('reports.diet_report', compact('user', 'plan', 'date', 'recentLogs'));
+            $pdf = Pdf::loadView('reports.diet_report', compact('user', 'plan', 'date', 'recentLogs'));
+            $pdf->setPaper('a4', 'portrait');
 
-        return $pdf->download("diet_report_{$date}.pdf");
+            return $pdf->download("diet_report_{$date}.pdf");
+        } catch (Exception $e) {
+            return response()->json([
+                'error' => 'Failed to generate PDF report: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function downloadGroceryPDF(Request $request)
     {
-        $user     = $request->user()->load('profile');
-        $todayStr = $request->input('date', Carbon::today()->toDateString());
-        
-        $today = Carbon::parse($todayStr)->toDateString();
-        $end   = Carbon::parse($todayStr)->addDays(7)->toDateString();
+        try {
+            $user     = $request->user()->load('profile');
+            $todayStr = $request->input('date', Carbon::today()->toDateString());
+            
+            $today = Carbon::parse($todayStr)->toDateString();
+            $end   = Carbon::parse($todayStr)->addDays(7)->toDateString();
 
-        $plans = MealPlan::where('user_id', $user->id)
-            ->whereBetween('date', [$today, $end])
-            ->orderBy('date')
-            ->with(['mealItems.food', 'mealItems.recipe.ingredients.food'])
-            ->get();
+            $plans = MealPlan::where('user_id', $user->id)
+                ->whereBetween('date', [$today, $end])
+                ->orderBy('date')
+                ->with(['mealItems.food', 'mealItems.recipe.ingredients.food'])
+                ->get();
 
-        $groceries = [];
-        foreach ($plans as $plan) {
-            foreach ($plan->mealItems as $item) {
-                if ($item->recipe) {
-                    foreach ($item->recipe->ingredients as $ri) {
-                        $foodId = $ri->food_id;
+            $groceries = [];
+            foreach ($plans as $plan) {
+                foreach ($plan->mealItems as $item) {
+                    if ($item->recipe) {
+                        foreach ($item->recipe->ingredients as $ri) {
+                            $foodId = $ri->food_id;
+                            if (!isset($groceries[$foodId])) {
+                                $groceries[$foodId] = [
+                                    'name'           => $ri->food->name ?? $ri->name ?? 'Ingredient',
+                                    'category'       => $ri->food->category ?? 'other',
+                                    'unit'           => $ri->unit,
+                                    'total_quantity' => 0,
+                                    'is_bought'      => (bool) $item->is_bought,
+                                ];
+                            }
+                            $groceries[$foodId]['total_quantity'] += (float) $ri->quantity;
+                        }
+                    } elseif ($item->food_id || $item->food) {
+                        $foodId = $item->food_id ?? $item->id;
                         if (!isset($groceries[$foodId])) {
                             $groceries[$foodId] = [
-                                'name'           => $ri->food->name ?? 'Unknown',
-                                'category'       => $ri->food->category ?? 'other',
-                                'unit'           => $ri->unit,
+                                'name'           => $item->food->name ?? $item->name ?? 'Food Item',
+                                'category'       => $item->food->category ?? 'other',
+                                'unit'           => $item->unit,
                                 'total_quantity' => 0,
                                 'is_bought'      => (bool) $item->is_bought,
                             ];
                         }
-                        $groceries[$foodId]['total_quantity'] += (float) $ri->quantity;
+                        $groceries[$foodId]['total_quantity'] += (float) $item->quantity;
                     }
-                } elseif ($item->food_id) {
-                    $foodId = $item->food_id;
-                    if (!isset($groceries[$foodId])) {
-                        $groceries[$foodId] = [
-                            'name'           => $item->food->name ?? 'Unknown',
-                            'category'       => $item->food->category ?? 'other',
-                            'unit'           => $item->unit,
-                            'total_quantity' => 0,
-                            'is_bought'      => (bool) $item->is_bought,
-                        ];
-                    }
-                    $groceries[$foodId]['total_quantity'] += (float) $item->quantity;
                 }
             }
+
+            $list = array_values($groceries);
+            usort($list, fn($a, $b) => strcmp($a['name'], $b['name']));
+
+            // Group by category
+            $grouped = [];
+            foreach ($list as $item) {
+                $cat = ucfirst(strtolower($item['category'] ?? 'Other'));
+                $grouped[$cat][] = $item;
+            }
+
+            $dateRange = $plans->count() > 0
+                ? Carbon::parse($plans->first()->date)->format('M j') . ' – ' . Carbon::parse($plans->last()->date)->format('M j, Y')
+                : Carbon::parse($today)->format('M j, Y');
+
+            $daysFound = $plans->count();
+
+            $pdf = Pdf::loadView('reports.grocery_report', compact('user', 'grouped', 'list', 'plans', 'dateRange', 'daysFound', 'todayStr'));
+            $pdf->setPaper('a4', 'portrait');
+
+            return $pdf->download("grocery_shopping_list_{$todayStr}.pdf");
+        } catch (Exception $e) {
+            return response()->json([
+                'error' => 'Failed to generate Grocery PDF: ' . $e->getMessage()
+            ], 500);
         }
-
-        $list = array_values($groceries);
-        usort($list, fn($a, $b) => strcmp($a['name'], $b['name']));
-
-        // Group by category
-        $grouped = [];
-        foreach ($list as $item) {
-            $cat = ucfirst(strtolower($item['category'] ?? 'Other'));
-            $grouped[$cat][] = $item;
-        }
-
-        $dateRange = $plans->count() > 0
-            ? Carbon::parse($plans->first()->date)->format('M j') . ' – ' . Carbon::parse($plans->last()->date)->format('M j, Y')
-            : Carbon::parse($today)->format('M j, Y');
-
-        $daysFound = $plans->count();
-
-        $pdf = Pdf::loadView('reports.grocery_report', compact('user', 'grouped', 'list', 'plans', 'dateRange', 'daysFound', 'todayStr'));
-
-        return $pdf->download("grocery_shopping_list_{$todayStr}.pdf");
     }
 
     public function summary(Request $request, \App\Services\AchievementService $achievementService)
@@ -121,9 +137,28 @@ class ReportController extends Controller
             ->first(['date', 'weight']);
 
         $streak = $achievementService->calculateStreak($user);
-        $badges = \App\Models\UserBadge::where('user_id', $user->id)
+        $badges = UserBadge::where('user_id', $user->id)
             ->orderBy('earned_at', 'desc')
             ->get();
+
+        $badgeNameMap = [
+            'streak_7'          => '7-Day Streak Warrior',
+            'streak_14'         => '14-Day Consistency Master',
+            'streak_30'         => '30-Day Nutrition Legend',
+            'starter'           => 'First Step Starter',
+            'culinary_explorer' => 'Culinary Explorer',
+            'water_champion'    => 'Hydration Hero',
+            'goal_reached'      => 'Goal Crusher',
+        ];
+
+        $formattedBadges = $badges->map(function ($b) use ($badgeNameMap) {
+            return [
+                'id'         => $b->id,
+                'badge_type' => $b->badge_type,
+                'badge_name' => $badgeNameMap[$b->badge_type] ?? ucwords(str_replace('_', ' ', $b->badge_type)),
+                'earned_at'  => $b->earned_at,
+            ];
+        });
 
         return response()->json([
             'user'    => $user->only('name', 'email'),
@@ -139,7 +174,7 @@ class ReportController extends Controller
                 'avg_weight'            => $progressStats->avg_weight   ? round((float)$progressStats->avg_weight,   1) : null,
             ],
             'has_profile' => (bool) $profile,
-            'badges'      => $badges,
+            'badges'      => $formattedBadges,
         ]);
     }
 }
