@@ -150,9 +150,9 @@
         <tr>
             <td><strong>{{ $log->date }}</strong></td>
             <td>{{ $log->weight ?? '—' }}</td>
-            <td>{{ $log->calories_consumed ? round($log->calories_consumed) . ' kcal' : '—' }}</td>
+            <td>{{ $log->calories_consumed ? round((float)$log->calories_consumed) . ' kcal' : '—' }}</td>
             <td>{{ $log->water_intake_liters ? $log->water_intake_liters . ' L' : '—' }}</td>
-            <td>{{ $log->steps ? number_format($log->steps) : '—' }}</td>
+            <td>{{ $log->steps ? number_format((int)$log->steps) : '—' }}</td>
             <td>
                 @if($log->workout_done)
                     <span class="badge badge-success">Completed</span>

@@ -41,3 +41,5 @@ frontend/build/
 socket-server/.env
 socket-server/node_modules/
 socket-server/*.log
+
+.vercel

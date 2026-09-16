@@ -65,7 +65,7 @@ class ReportController extends Controller
                                 $groceries[$foodId] = [
                                     'name'           => $ri->food->name ?? $ri->name ?? 'Ingredient',
                                     'category'       => $ri->food->category ?? 'other',
-                                    'unit'           => $ri->unit,
+                                    'unit'           => $ri->unit ?? 'g',
                                     'total_quantity' => 0,
                                     'is_bought'      => (bool) $item->is_bought,
                                 ];
@@ -78,7 +78,7 @@ class ReportController extends Controller
                             $groceries[$foodId] = [
                                 'name'           => $item->food->name ?? $item->name ?? 'Food Item',
                                 'category'       => $item->food->category ?? 'other',
-                                'unit'           => $item->unit,
+                                'unit'           => $item->unit ?? 'g',
                                 'total_quantity' => 0,
                                 'is_bought'      => (bool) $item->is_bought,
                             ];
@@ -122,11 +122,11 @@ class ReportController extends Controller
 
         $totalPlans = MealPlan::where('user_id', $user->id)->count();
 
-        // Consolidated single query for progress log metrics
+        // Consolidated single query for progress log metrics (cross-database safe for Postgres, MySQL & SQLite)
         $progressStats = ProgressLog::where('user_id', $user->id)
             ->selectRaw('
                 COUNT(*) as total_logs,
-                SUM(CASE WHEN workout_done = 1 THEN 1 ELSE 0 END) as workout_days,
+                SUM(CASE WHEN workout_done THEN 1 ELSE 0 END) as workout_days,
                 AVG(calories_consumed) as avg_calories,
                 AVG(weight) as avg_weight
             ')

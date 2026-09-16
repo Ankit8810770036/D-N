@@ -241,7 +241,10 @@ export default function Reports() {
                 <div className="card flex flex-col items-center py-12 gap-3 text-center">
                     <span className="text-5xl">📊</span>
                     <p className="font-semibold text-gray-700 dark:text-white/80">Could not load report data</p>
-                    <p className="text-sm text-gray-400">Please try refreshing the page.</p>
+                    <p className="text-sm text-gray-400">Check your connection or try fetching again.</p>
+                    <button onClick={fetchSummary} className="btn-primary mt-2 flex items-center gap-2">
+                        <RefreshCw className="w-4 h-4" /> Try Again
+                    </button>
                 </div>
             )}
 

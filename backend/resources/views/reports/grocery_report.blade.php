@@ -201,7 +201,7 @@
                                     </span>
                                 </td>
                                 <td style="text-align: right;">
-                                    <span class="qty-badge">{{ $item['total_quantity'] }} {{ strtoupper($item['unit']) }}</span>
+                                    <span class="qty-badge">{{ $item['total_quantity'] }} {{ strtoupper($item['unit'] ?? 'g') }}</span>
                                 </td>
                                 <td style="text-align: right; color: {{ !empty($item['is_bought']) ? '#059669' : '#64748b' }}; font-size: 9.5px; font-weight: bold;">
                                     {{ !empty($item['is_bought']) ? 'Purchased' : 'Pending' }}
