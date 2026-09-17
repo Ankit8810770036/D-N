@@ -152,6 +152,7 @@ class ReportController extends Controller
             ->latest('date')
             ->first(['date', 'weight']);
 
+        $achievementService->checkAchievements($user);
         $streak = $achievementService->calculateStreak($user);
         $badges = UserBadge::where('user_id', $user->id)
             ->orderBy('earned_at', 'desc')

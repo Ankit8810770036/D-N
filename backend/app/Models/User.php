@@ -105,14 +105,9 @@ class User extends Authenticatable implements MustVerifyEmail
                 return $this->profile_photo_path;
             }
 
-            $root = request()?->root();
-            if ($root && !str_contains($root, 'localhost') && !str_contains($root, '127.0.0.1')) {
-                return rtrim($root, '/') . '/storage/' . ltrim($this->profile_photo_path, '/');
-            }
-
             $url = Storage::disk('public')->url($this->profile_photo_path);
             if (!str_starts_with($url, 'http://') && !str_starts_with($url, 'https://')) {
-                $appUrl = rtrim(config('app.url') ?: ($root ?: 'http://localhost:8000'), '/');
+                $appUrl = rtrim(config('app.url') ?: (app()->runningInConsole() ? 'http://localhost:8000' : (request()?->root() ?: 'http://localhost:8000')), '/');
                 return $appUrl . '/' . ltrim($url, '/');
             }
             return $url;

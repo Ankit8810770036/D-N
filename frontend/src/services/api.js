@@ -17,18 +17,19 @@ api.interceptors.request.use((config) => {
     return config
 })
 
-// Handle 401 globally with safety checks (prevent spurious logouts on background requests)
+// Handle 401 globally with safety checks
 let isLoggingOut = false
 api.interceptors.response.use(
     (res) => res,
     (err) => {
         const url = err.config?.url || ''
         const status = err.response?.status
-        const isAuthCheck = url.includes('/me')
+        const isAuthEndpoint = url.includes('/login') || url.includes('/register')
+        const isAdminEndpoint = url.includes('/admin/')
         const isPublicRoute = ['/login', '/register', '/forgot-password', '/reset-password'].includes(window.location.pathname)
 
-        // Only log out if the core session verification endpoint (/me) explicitly fails with 401
-        if (status === 401 && isAuthCheck && !isLoggingOut) {
+        // Only handle true token invalidation (ignore admin permission 403/401 and auth endpoints)
+        if (status === 401 && !isAuthEndpoint && !isAdminEndpoint && !isLoggingOut) {
             const token = localStorage.getItem('token')
             if (token) {
                 isLoggingOut = true

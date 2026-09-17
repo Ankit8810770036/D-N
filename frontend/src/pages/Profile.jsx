@@ -6,7 +6,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
 import { Camera, Trash2, User as UserIcon } from 'lucide-react'
 import CustomSelect from '../components/CustomSelect'
-import UserAvatar, { resolvePhotoUrl } from '../components/UserAvatar'
 
 const activityLevels = [
     { value: 'sedentary', label: '🪑 Sedentary', desc: 'Little or no exercise' },
@@ -42,11 +41,11 @@ export default function Profile() {
         staleTime: 60 * 1000,
     })
 
-    const { data: metrics } = useQuery({
+    const { data: summary } = useQuery({
         queryKey: ['summary'],
         queryFn: async () => {
             const { data } = await api.get('/report/summary')
-            return data.stats
+            return data
         },
         staleTime: 60 * 1000,
     })
@@ -160,7 +159,15 @@ export default function Profile() {
                 <div className="flex items-center gap-6">
                     <div className="relative group">
                         <div className="w-24 h-24 rounded-3xl overflow-hidden shadow-lg border-2 border-white dark:border-white/10 ring-4 ring-green-50 dark:ring-green-900/20 bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center relative">
-                            <UserAvatar user={authUser} size="2xl" className="w-full h-full rounded-3xl object-cover text-2xl" />
+                            {authUser?.profile_photo_url ? (
+                                <img
+                                    src={authUser.profile_photo_url}
+                                    alt="Profile"
+                                    className="w-full h-full object-cover rounded-3xl"
+                                />
+                            ) : (
+                                <UserIcon className="w-10 h-10 text-emerald-400 dark:text-emerald-500" />
+                            )}
                             {photoLoading && (
                                 <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex items-center justify-center rounded-3xl">
                                     <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -206,35 +213,38 @@ export default function Profile() {
             </div>
 
             {/* Gamification Badges */}
-            {metrics && (
-                <div className="card">
-                    <h2 className="font-semibold text-gray-800 dark:text-white/90 mb-4 flex items-center justify-between">
-                        <span>🏆 Achievements & Badges</span>
-                        <div className="flex items-center gap-2 bg-orange-50 px-3 py-1.5 rounded-full border border-orange-200">
-                            <span className="text-xl">🔥</span>
-                            <span className="font-bold text-orange-600">{metrics.streak || 0} Day Streak</span>
-                        </div>
-                    </h2>
-                    <div className="grid grid-cols-3 gap-4">
-                        {[
-                            { name: 'Starter Streak', days: 7, icon: '🥉', desc: '7 consecutive days logged' },
-                            { name: 'Consistency Master', days: 30, icon: '🥈', desc: '1 month of dedicated logging' },
-                            { name: 'Health Champion', days: 100, icon: '🥇', desc: '100 days of perfection!' },
-                        ].map(b => {
-                            const achieved = (metrics.streak || 0) >= b.days;
-                            return (
-                                <div key={b.days} className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all ${achieved ? 'border-yellow-400 bg-yellow-50 shadow-sm' : 'border-gray-100 bg-gray-50 opacity-60 grayscale'}`}>
-                                    <span className="text-4xl mb-2 filter drop-shadow-md">{b.icon}</span>
-                                    <h4 className={`text-sm font-bold text-center ${achieved ? 'text-gray-900' : 'text-gray-500'}`}>{b.name}</h4>
-                                    <p className="text-xs text-center text-gray-400 mt-1">{b.desc}</p>
-                                    {!achieved && <span className="text-[10px] font-semibold text-gray-400 mt-2 bg-gray-200 px-2 py-0.5 rounded-full">{b.days - (metrics.streak || 0)} days left</span>}
-                                    {achieved && <span className="text-[10px] font-bold text-yellow-700 mt-2 bg-yellow-200 px-2 py-0.5 rounded-full">UNLOCKED</span>}
-                                </div>
-                            )
-                        })}
+            <div className="card">
+                <h2 className="font-semibold text-slate-800 dark:text-white/90 mb-4 flex items-center justify-between">
+                    <span className="font-black text-slate-900 dark:text-white text-base">🏆 Achievements & Badges</span>
+                    <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-950/40 px-3.5 py-1.5 rounded-full border border-amber-200 dark:border-amber-800/60 shadow-xs">
+                        <span className="text-xl">🔥</span>
+                        <span className="font-black text-amber-700 dark:text-amber-300 text-sm">
+                            {summary?.stats?.streak ?? profile?.metrics?.streak ?? 1} Day Streak
+                        </span>
                     </div>
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                    {[
+                        { name: 'Starter Streak', days: 7, icon: '🥉', desc: '7 consecutive days active' },
+                        { name: 'Consistency Master', days: 14, icon: '🥈', desc: '14 days of dedicated tracking' },
+                        { name: 'Nutrition Legend', days: 30, icon: '🥇', desc: '30 days streak perfection!' },
+                    ].map(b => {
+                        const currentStreak = Number(summary?.stats?.streak ?? profile?.metrics?.streak ?? 1);
+                        const earnedBadges = summary?.badges || [];
+                        const achieved = currentStreak >= b.days || earnedBadges.some(eb => eb.badge_type === `streak_${b.days}`);
+                        const daysLeft = Math.max(0, b.days - currentStreak);
+                        return (
+                            <div key={b.days} className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all ${achieved ? 'border-amber-400 bg-amber-50/70 dark:bg-amber-950/30 shadow-sm' : 'border-slate-100 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/40 opacity-75'}`}>
+                                <span className="text-3xl mb-2 filter drop-shadow-md">{b.icon}</span>
+                                <h4 className={`text-xs sm:text-sm font-bold text-center ${achieved ? 'text-amber-900 dark:text-amber-200' : 'text-slate-700 dark:text-gray-300'}`}>{b.name}</h4>
+                                <p className="text-[11px] text-center text-slate-500 dark:text-gray-400 mt-0.5">{b.desc}</p>
+                                {!achieved && <span className="text-[10px] font-semibold text-slate-500 dark:text-gray-400 mt-2 bg-slate-200 dark:bg-gray-700 px-2 py-0.5 rounded-full">{daysLeft} days left</span>}
+                                {achieved && <span className="text-[10px] font-bold text-amber-800 dark:text-amber-300 mt-2 bg-amber-200/80 dark:bg-amber-900/60 px-2.5 py-0.5 rounded-full">UNLOCKED 🎉</span>}
+                            </div>
+                        )
+                    })}
                 </div>
-            )}
+            </div>
 
             {/* Form */}
             <div className="card">
@@ -301,8 +311,8 @@ export default function Profile() {
                                         <button type="button" key={v} onClick={() => set('goal', v)}
                                             className={`flex-1 py-2.5 text-xs font-bold rounded-xl border-2 transition-all
                         ${form.goal === v
-                            ? 'border-emerald-600 bg-emerald-600 text-white shadow-md shadow-emerald-700/20'
-                            : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/50 hover:border-emerald-500/40 dark:hover:border-white/20'}`}>
+                                                    ? 'border-emerald-600 bg-emerald-600 text-white shadow-md shadow-emerald-700/20'
+                                                    : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/50 hover:border-emerald-500/40 dark:hover:border-white/20'}`}>
                                             {l}
                                         </button>
                                     ))}
@@ -341,8 +351,8 @@ export default function Profile() {
                                     <button type="button" key={al.value} onClick={() => set('activity_level', al.value)}
                                         className={`p-3 rounded-xl border-2 text-center transition-all
                       ${form.activity_level === al.value
-                          ? 'border-emerald-600 bg-emerald-600 shadow-md shadow-emerald-700/20 text-white'
-                          : 'border-slate-200 dark:border-white/10 hover:border-emerald-500/40 dark:hover:border-white/20'}`}>
+                                                ? 'border-emerald-600 bg-emerald-600 shadow-md shadow-emerald-700/20 text-white'
+                                                : 'border-slate-200 dark:border-white/10 hover:border-emerald-500/40 dark:hover:border-white/20'}`}>
                                         <p className={`text-sm font-bold ${form.activity_level === al.value ? 'text-white' : 'text-slate-800 dark:text-white/80'}`}>{al.label}</p>
                                         <p className={`text-xs mt-0.5 ${form.activity_level === al.value ? 'text-white/80' : 'text-slate-400 dark:text-white/40'}`}>{al.desc}</p>
                                     </button>
@@ -359,8 +369,8 @@ export default function Profile() {
                                 <button type="button" key={d} onClick={() => toggle('diseases', d)}
                                     className={`px-4 py-2 rounded-2xl text-xs font-bold border-2 capitalize transition-all
                     ${form.diseases.includes(d)
-                        ? 'bg-rose-500 border-rose-500 text-white shadow-md shadow-rose-500/20'
-                        : 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/50 hover:border-rose-300 dark:hover:border-rose-800 hover:text-rose-600 dark:hover:text-rose-400'}`}>
+                                            ? 'bg-rose-500 border-rose-500 text-white shadow-md shadow-rose-500/20'
+                                            : 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/50 hover:border-rose-300 dark:hover:border-rose-800 hover:text-rose-600 dark:hover:text-rose-400'}`}>
                                     {d.replace('_', ' ')}
                                 </button>
                             ))}
@@ -375,8 +385,8 @@ export default function Profile() {
                                 <button type="button" key={a} onClick={() => toggle('allergies', a)}
                                     className={`px-4 py-2 rounded-2xl text-xs font-bold border-2 capitalize transition-all
                     ${form.allergies.includes(a)
-                        ? 'bg-amber-500 border-amber-500 text-white shadow-md shadow-amber-500/20'
-                        : 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/50 hover:border-amber-300 dark:hover:border-amber-800 hover:text-amber-600 dark:hover:text-amber-400'}`}>
+                                            ? 'bg-amber-500 border-amber-500 text-white shadow-md shadow-amber-500/20'
+                                            : 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/50 hover:border-amber-300 dark:hover:border-amber-800 hover:text-amber-600 dark:hover:text-amber-400'}`}>
                                     {a}
                                 </button>
                             ))}

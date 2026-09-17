@@ -8,7 +8,7 @@ import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import {
     Check, X, Crown, Zap, Shield, Star, Sparkles,
     CreditCard, AlertTriangle, ChevronDown, ChevronUp,
-    Infinity, Brain, BarChart3, Flame, Lock, Coins
+    Brain, BarChart3, Flame, Lock, Coins
 } from 'lucide-react';
 
 // ─── Load Razorpay script dynamically ───────────────────────────────────────
@@ -83,13 +83,14 @@ function CancelModal({ onConfirm, onClose, isLoading }) {
 }
 
 // ─── Payment / Coin Redemption Modal ─────────────────────────────────────────
-function PaymentModal({ user, tokenBalance, onPay, onRedeemFree, onRedeemDiscount, onClose, isLoading }) {
+function PaymentModal({ user, tokenBalance = 0, onPay, onRedeemFree, onRedeemDiscount, onClose, isLoading }) {
     const [tab, setTab]               = useState('pay');   // 'pay' | 'coins'
     const [discountCoins, setDiscountCoins] = useState(200); // 200 or 400
     const discountINR  = discountCoins === 200 ? 100 : 250;
     const finalINR     = 499 - discountINR;
-    const canFree      = tokenBalance >= 500;
-    const canDiscount  = tokenBalance >= discountCoins;
+    const numericBalance = Number(tokenBalance) || 0;
+    const canFree      = numericBalance >= 500;
+    const canDiscount  = numericBalance >= discountCoins;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backdropFilter: 'blur(12px)', backgroundColor: 'rgba(0,0,0,0.7)' }}>
@@ -103,7 +104,7 @@ function PaymentModal({ user, tokenBalance, onPay, onRedeemFree, onRedeemDiscoun
                     <p className="text-white/80 text-sm mt-1">Unlock your full health potential</p>
                     {/* Coin balance badge */}
                     <div className="mt-3 inline-flex items-center gap-1.5 bg-white/15 px-3 py-1.5 rounded-full text-sm font-bold">
-                        🪙 {tokenBalance.toLocaleString()} HealthCoins
+                        🪙 {numericBalance.toLocaleString()} HealthCoins
                     </div>
                 </div>
 
@@ -532,12 +533,26 @@ const Subscription = () => {
                                         <>
                                             {user?.subscribed_at && (
                                                 <p className="text-amber-700/80 dark:text-amber-400/70 text-xs font-medium">
-                                                    Active since {new Date(user.subscribed_at).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                                    Active since {(() => {
+                                                        try {
+                                                            const d = new Date(user.subscribed_at);
+                                                            return isNaN(d.getTime()) ? user.subscribed_at : d.toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
+                                                        } catch (_) {
+                                                            return user.subscribed_at;
+                                                        }
+                                                    })()}
                                                 </p>
                                             )}
                                             {user?.subscription_expires_at && (
                                                 <p className="text-amber-700/80 dark:text-amber-400/70 text-xs font-medium">
-                                                    Renews on {new Date(user.subscription_expires_at).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                                    Renews on {(() => {
+                                                        try {
+                                                             const d = new Date(user.subscription_expires_at);
+                                                             return isNaN(d.getTime()) ? user.subscription_expires_at : d.toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
+                                                        } catch (_) {
+                                                             return user.subscription_expires_at;
+                                                        }
+                                                    })()}
                                                 </p>
                                             )}
                                         </>

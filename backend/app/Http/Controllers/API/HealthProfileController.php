@@ -35,6 +35,11 @@ class HealthProfileController extends Controller
             ->first();
             
         $extra['calories_consumed'] = $todayLog ? $todayLog->calories_consumed : 0;
+        
+        try {
+            app(\App\Services\AchievementService::class)->checkAchievements($user);
+        } catch (\Throwable $e) {}
+
         $extra['streak'] = $user->getCurrentStreak();
 
         return response()->json([

@@ -104,54 +104,57 @@ function PublicRoute({ children }) {
 }
 
 function AppRoutes() {
+    const location = useLocation()
     return (
-        <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="animate-spin w-10 h-10 border-4 border-[#2d6a4f] border-t-transparent rounded-full" />
-            </div>
-        }>
-            <Routes>
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                <Route path="/login"          element={<PublicRoute><Login /></PublicRoute>} />
-                <Route path="/register"       element={<PublicRoute><Register /></PublicRoute>} />
-                <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
-                <Route path="/reset-password"  element={<ResetPassword />} />
+        <ErrorBoundary locationKey={location.key}>
+            <Suspense fallback={
+                <div className="min-h-screen flex items-center justify-center">
+                    <div className="animate-spin w-10 h-10 border-4 border-[#2d6a4f] border-t-transparent rounded-full" />
+                </div>
+            }>
+                <Routes>
+                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                    <Route path="/login"          element={<PublicRoute><Login /></PublicRoute>} />
+                    <Route path="/register"       element={<PublicRoute><Register /></PublicRoute>} />
+                    <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+                    <Route path="/reset-password"  element={<ResetPassword />} />
 
-                <Route element={<PrivateRoute><AppLayout /></PrivateRoute>}>
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/profile" element={<Profile />} />
-                    <Route path="/planner" element={<Planner />} />
-                    <Route path="/workouts" element={<Workouts />} />
-                    <Route path="/progress" element={<Progress />} />
-                    <Route path="/reports" element={<Reports />} />
-                    <Route path="/shopping-list" element={<GroceryList />} />
-                    <Route path="/feedback" element={<FeedbackPage />} />
-                    <Route path="/subscription" element={<Subscription />} />
-                    <Route path="/cookbook" element={<Cookbook />} />
-                    <Route path="/cookbook/:id" element={<RecipeDetail />} />
+                    <Route element={<PrivateRoute><AppLayout /></PrivateRoute>}>
+                        <Route path="/dashboard" element={<Dashboard />} />
+                        <Route path="/profile" element={<Profile />} />
+                        <Route path="/planner" element={<Planner />} />
+                        <Route path="/workouts" element={<Workouts />} />
+                        <Route path="/progress" element={<Progress />} />
+                        <Route path="/reports" element={<Reports />} />
+                        <Route path="/shopping-list" element={<GroceryList />} />
+                        <Route path="/feedback" element={<FeedbackPage />} />
+                        <Route path="/subscription" element={<Subscription />} />
+                        <Route path="/cookbook" element={<Cookbook />} />
+                        <Route path="/cookbook/:id" element={<RecipeDetail />} />
 
-                    {/* Friendly Route Aliases to prevent 404s */}
-                    <Route path="/recipes" element={<Navigate to="/cookbook" replace />} />
-                    <Route path="/recipes/:id" element={<Navigate to="/cookbook" replace />} />
-                    <Route path="/grocery" element={<Navigate to="/shopping-list" replace />} />
-                    <Route path="/groceries" element={<Navigate to="/shopping-list" replace />} />
-                    <Route path="/shopping" element={<Navigate to="/shopping-list" replace />} />
-                    <Route path="/plans" element={<Navigate to="/planner" replace />} />
-                    <Route path="/diet-planner" element={<Navigate to="/planner" replace />} />
-                    <Route path="/workout" element={<Navigate to="/workouts" replace />} />
-                    <Route path="/settings" element={<Navigate to="/profile" replace />} />
-                    
-                    {/* Admin Routes */}
-                    <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-                    <Route path="/admin/users" element={<AdminRoute><AdminUserList /></AdminRoute>} />
-                    <Route path="/admin/foods" element={<AdminRoute><AdminFoodList /></AdminRoute>} />
-                    <Route path="/admin/recipes" element={<AdminRoute><AdminRecipeList /></AdminRoute>} />
-                    <Route path="/admin/feedbacks" element={<AdminRoute><AdminFeedbackList /></AdminRoute>} />
-                </Route>
+                        {/* Friendly Route Aliases to prevent 404s */}
+                        <Route path="/recipes" element={<Navigate to="/cookbook" replace />} />
+                        <Route path="/recipes/:id" element={<Navigate to="/cookbook" replace />} />
+                        <Route path="/grocery" element={<Navigate to="/shopping-list" replace />} />
+                        <Route path="/groceries" element={<Navigate to="/shopping-list" replace />} />
+                        <Route path="/shopping" element={<Navigate to="/shopping-list" replace />} />
+                        <Route path="/plans" element={<Navigate to="/planner" replace />} />
+                        <Route path="/diet-planner" element={<Navigate to="/planner" replace />} />
+                        <Route path="/workout" element={<Navigate to="/workouts" replace />} />
+                        <Route path="/settings" element={<Navigate to="/profile" replace />} />
+                        
+                        {/* Admin Routes */}
+                        <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+                        <Route path="/admin/users" element={<AdminRoute><AdminUserList /></AdminRoute>} />
+                        <Route path="/admin/foods" element={<AdminRoute><AdminFoodList /></AdminRoute>} />
+                        <Route path="/admin/recipes" element={<AdminRoute><AdminRecipeList /></AdminRoute>} />
+                        <Route path="/admin/feedbacks" element={<AdminRoute><AdminFeedbackList /></AdminRoute>} />
+                    </Route>
 
-                <Route path="*" element={<NotFound />} />
-            </Routes>
-        </Suspense>
+                    <Route path="*" element={<NotFound />} />
+                </Routes>
+            </Suspense>
+        </ErrorBoundary>
     )
 }
 
@@ -162,9 +165,7 @@ export default function App() {
                 <AuthProvider>
                     <BrowserRouter>
                         <ScrollToTop />
-                        <ErrorBoundary>
-                            <AppRoutes />
-                        </ErrorBoundary>
+                        <AppRoutes />
                         <InstallPrompt />
                         <Toaster
                             position="top-right"

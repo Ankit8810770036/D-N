@@ -3,31 +3,31 @@ import { Link } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../services/api'
 import toast from 'react-hot-toast'
-import { Clock, Utensils, ChevronRight, ArrowRight, Zap, Flame, Sparkles } from 'lucide-react'
+import { Clock, Utensils, ChevronRight, ArrowRight, Zap, Flame, Sparkles, Check, CheckCircle2 } from 'lucide-react'
 
 const MEAL_SCHEDULE = {
     breakfast: {
         label: 'Breakfast',
         icon: '🌅',
-        timeWindow: '6:00 AM – 10:30 AM',
-        tagline: 'Morning fuel to start your day',
+        timeWindow: '5:00 AM – 11:30 AM',
+        tagline: 'Morning energizing nutrition',
     },
     lunch: {
         label: 'Lunch',
         icon: '☀️',
-        timeWindow: '10:30 AM – 3:30 PM',
+        timeWindow: '11:30 AM – 4:30 PM',
         tagline: 'Midday balanced nutrition',
     },
     snack: {
         label: 'Evening Snack',
         icon: '🫐',
-        timeWindow: '3:30 PM – 7:00 PM',
+        timeWindow: '4:30 PM – 7:30 PM',
         tagline: 'Afternoon healthy refreshment',
     },
     dinner: {
         label: 'Dinner',
         icon: '🌙',
-        timeWindow: '7:00 PM – 11:00 PM',
+        timeWindow: '7:30 PM – 5:00 AM',
         tagline: 'Nutritious dinner to end your day',
     },
 }
@@ -36,27 +36,28 @@ function getActiveMealKey() {
     const now = new Date()
     const decimalHour = now.getHours() + now.getMinutes() / 60
 
-    if (decimalHour >= 6.0 && decimalHour < 10.5) return 'breakfast'
-    if (decimalHour >= 10.5 && decimalHour < 15.5) return 'lunch'
-    if (decimalHour >= 15.5 && decimalHour < 19.0) return 'snack'
-    if (decimalHour >= 19.0 && decimalHour < 23.0) return 'dinner'
-    // Late night / early morning before 6 AM defaults to upcoming breakfast
-    return 'breakfast'
+    if (decimalHour >= 5.0 && decimalHour < 11.5) return 'breakfast'
+    if (decimalHour >= 11.5 && decimalHour < 16.5) return 'lunch'
+    if (decimalHour >= 16.5 && decimalHour < 19.5) return 'snack'
+    // 7:30 PM to 4:59 AM is Dinner / Late evening
+    return 'dinner'
 }
 
 export default function TodayMealSection({ plan, localToday, profile }) {
     const queryClient = useQueryClient()
     const [currentTime, setCurrentTime] = useState(new Date())
+    const [selectedSlot, setSelectedSlot] = useState(null)
 
-    // Update live clock every minute
+    // Update live clock every 30 seconds
     useEffect(() => {
-        const timer = setInterval(() => setCurrentTime(new Date()), 60000)
+        const timer = setInterval(() => setCurrentTime(new Date()), 30000)
         return () => clearInterval(timer)
     }, [])
 
-    const activeKey = useMemo(() => getActiveMealKey(), [currentTime])
-    const activeMeal = MEAL_SCHEDULE[activeKey] || MEAL_SCHEDULE.breakfast
-    const items = plan?.meals?.[activeKey] ?? []
+    const liveActiveKey = useMemo(() => getActiveMealKey(), [currentTime])
+    const currentViewKey = selectedSlot || liveActiveKey
+    const activeMeal = MEAL_SCHEDULE[currentViewKey] || MEAL_SCHEDULE.breakfast
+    const items = plan?.meals?.[currentViewKey] ?? []
 
     // Calculate calories & macros for the current active meal
     const totalCalories = useMemo(() => {
@@ -64,6 +65,24 @@ export default function TodayMealSection({ plan, localToday, profile }) {
             return sum + Number(item.calories || item.food?.calories || item.recipe?.calories || 0)
         }, 0)
     }, [items])
+
+    // Toggle consumption directly from Dashboard
+    const toggleMutation = useMutation({
+        mutationFn: async (itemId) => {
+            const res = await api.put(`/meal-item/${itemId}/consume`)
+            return res.data
+        },
+        onSuccess: (data) => {
+            toast.success(data.message || 'Meal updated! ✅')
+            queryClient.invalidateQueries({ queryKey: ['mealPlan', localToday] })
+            queryClient.invalidateQueries({ queryKey: ['summary'] })
+            queryClient.invalidateQueries({ queryKey: ['profile'] })
+            queryClient.invalidateQueries({ queryKey: ['tokens'] })
+        },
+        onError: (err) => {
+            toast.error(err.response?.data?.message || 'Failed to update meal consumption status.')
+        }
+    })
 
     // 1-Click meal plan generation if missing
     const generateMutation = useMutation({
@@ -162,10 +181,12 @@ export default function TodayMealSection({ plan, localToday, profile }) {
                             <h2 className="font-black text-slate-900 dark:text-white text-base leading-tight">
                                 Current Meal
                             </h2>
-                            <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-500 text-white font-black px-2 py-0.5 rounded-full shadow-xs">
-                                <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
-                                ACTIVE NOW
-                            </span>
+                            {currentViewKey === liveActiveKey && (
+                                <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-500 text-white font-black px-2 py-0.5 rounded-full shadow-xs">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+                                    ACTIVE NOW
+                                </span>
+                            )}
                         </div>
                         <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
                             Live time-based meal tracker
@@ -177,6 +198,32 @@ export default function TodayMealSection({ plan, localToday, profile }) {
                     <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                     {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
+            </div>
+
+            {/* Meal Slot Switcher Tabs */}
+            <div className="grid grid-cols-4 gap-1.5 p-1 bg-slate-100 dark:bg-gray-800/80 rounded-2xl mb-3">
+                {Object.entries(MEAL_SCHEDULE).map(([key, config]) => {
+                    const isSelected = key === currentViewKey
+                    const isLive = key === liveActiveKey
+                    return (
+                        <button
+                            key={key}
+                            type="button"
+                            onClick={() => setSelectedSlot(key)}
+                            className={`py-2 px-1 rounded-xl text-xs font-bold transition-all flex flex-col sm:flex-row items-center justify-center gap-1 relative ${
+                                isSelected
+                                    ? 'bg-white dark:bg-[#0c241a] text-emerald-700 dark:text-emerald-300 shadow-sm border border-emerald-500/30'
+                                    : 'text-slate-500 dark:text-gray-400 hover:text-slate-800 dark:hover:text-gray-200'
+                            }`}
+                        >
+                            <span>{config.icon}</span>
+                            <span className="truncate text-[11px] sm:text-xs">{config.label.split(' ')[0]}</span>
+                            {isLive && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 absolute top-1 right-1" title="Active meal time" />
+                            )}
+                        </button>
+                    )
+                })}
             </div>
 
             {/* Current Ongoing Meal Spotlight Card */}
@@ -214,17 +261,34 @@ export default function TodayMealSection({ plan, localToday, profile }) {
                         {items.map((item, idx) => {
                             const name = item.recipe ? item.recipe.name : item.food?.name
                             const calories = item.calories || item.food?.calories || item.recipe?.calories || 0
-                            const serving = item.serving_size_g ? `${item.serving_size_g}g` : (item.quantity ? `${item.quantity} serving` : '')
+                            const serving = item.serving_size_g ? `${item.serving_size_g}g` : (item.quantity ? `${item.quantity} ${item.unit || 'serving'}` : '')
+                            const isConsumed = !!item.is_consumed
 
                             return (
                                 <div
                                     key={item.id || idx}
-                                    className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-white/80 dark:bg-[#081c15]/80 border border-slate-200/70 dark:border-white/10 hover:border-emerald-500/40 transition-all shadow-2xs"
+                                    className={`flex items-center justify-between gap-3 p-3 rounded-2xl border transition-all shadow-2xs ${
+                                        isConsumed
+                                            ? 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-200/80 dark:border-emerald-800/40 opacity-80'
+                                            : 'bg-white/90 dark:bg-[#081c15]/90 border-slate-200/70 dark:border-white/10 hover:border-emerald-500/40'
+                                    }`}
                                 >
                                     <div className="flex items-center gap-3 min-w-0">
-                                        <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                                        <button
+                                            type="button"
+                                            onClick={() => item.id && toggleMutation.mutate(item.id)}
+                                            disabled={toggleMutation.isPending || !item.id}
+                                            title={isConsumed ? 'Mark as not eaten' : 'Mark as eaten'}
+                                            className={`w-5 h-5 rounded-lg flex items-center justify-center transition-all ${
+                                                isConsumed
+                                                    ? 'bg-emerald-600 text-white shadow-xs'
+                                                    : 'border-2 border-slate-300 dark:border-gray-600 hover:border-emerald-500 bg-transparent'
+                                            }`}
+                                        >
+                                            {isConsumed && <Check className="w-3.5 h-3.5" />}
+                                        </button>
                                         <div className="min-w-0">
-                                            <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                                            <p className={`text-xs sm:text-sm font-bold truncate ${isConsumed ? 'line-through text-slate-500 dark:text-slate-400' : 'text-slate-900 dark:text-white'}`}>
                                                 {name}
                                             </p>
                                             {serving && (
@@ -235,7 +299,11 @@ export default function TodayMealSection({ plan, localToday, profile }) {
                                         </div>
                                     </div>
 
-                                    <span className="text-xs font-bold text-emerald-700 dark:text-green-400 shrink-0 px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/50">
+                                    <span className={`text-xs font-bold shrink-0 px-2.5 py-1 rounded-xl ${
+                                        isConsumed
+                                            ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300'
+                                            : 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-green-400'
+                                    }`}>
                                         {calories} kcal
                                     </span>
                                 </div>

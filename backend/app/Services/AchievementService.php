@@ -136,9 +136,25 @@ class AchievementService
             })
             ->toArray();
 
+        // 4. Dates from Meal Plans Created
+        $planCreatedDates = MealPlan::where('user_id', $userId)
+            ->pluck('created_at')
+            ->map(function ($dt) {
+                return Carbon::parse($dt)->setTimezone('Asia/Kolkata')->toDateString();
+            })
+            ->toArray();
+
+        // 5. Date of User Registration (first active day)
+        $userCreatedAt = \App\Models\User::where('id', $userId)
+            ->pluck('created_at')
+            ->map(function ($dt) {
+                return Carbon::parse($dt)->setTimezone('Asia/Kolkata')->toDateString();
+            })
+            ->toArray();
+
         // Merge, clean, and deduplicate all active dates
         $allActiveDates = array_values(array_unique(array_filter(
-            array_merge($progressDates, $mealDates, $tokenDates)
+            array_merge($progressDates, $mealDates, $tokenDates, $planCreatedDates, $userCreatedAt)
         )));
 
         if (empty($allActiveDates)) {

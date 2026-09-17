@@ -10,9 +10,9 @@ import UserAvatar from '../components/UserAvatar'
 function bmiMeta(bmi) {
     if (!bmi) return { label: '—', color: 'text-gray-400' }
     if (bmi < 18.5) return { label: 'Underweight', color: 'text-blue-500' }
-    if (bmi < 25)   return { label: 'Normal',       color: 'text-emerald-600' }
-    if (bmi < 30)   return { label: 'Overweight',   color: 'text-amber-500' }
-    return              { label: 'Obese',            color: 'text-red-500' }
+    if (bmi < 25) return { label: 'Normal', color: 'text-emerald-600' }
+    if (bmi < 30) return { label: 'Overweight', color: 'text-amber-500' }
+    return { label: 'Obese', color: 'text-red-500' }
 }
 
 function StatCard({ icon: Icon, iconBg, val, lbl, sub, subColor }) {
@@ -32,11 +32,11 @@ function StatCard({ icon: Icon, iconBg, val, lbl, sub, subColor }) {
 
 export default function Reports() {
     const navigate = useNavigate()
-    const [summary, setSummary]     = useState(null)
-    const [loading, setLoading]     = useState(true)
+    const [summary, setSummary] = useState(null)
+    const [loading, setLoading] = useState(true)
     const [downloading, setDownloading] = useState(false)
-    const [date, setDate]           = useState(new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0])
-    
+    const [date, setDate] = useState(new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0])
+
     const minDate = useMemo(() => {
         const d = new Date()
         d.setDate(d.getDate() - 30)
@@ -65,7 +65,7 @@ export default function Reports() {
         setDownloading(true)
         try {
             const response = await api.get(`/report/pdf?date=${date}`, { responseType: 'blob' })
-            
+
             // Check if response is actually a JSON error hidden in blob
             if (response.data && response.data.type === 'application/json') {
                 const text = await response.data.text()
@@ -73,20 +73,14 @@ export default function Reports() {
                 throw new Error(json.error || json.message || 'Failed to generate PDF.')
             }
 
-            const blob = new Blob([response.data], { type: 'application/pdf' })
-            const url  = window.URL.createObjectURL(blob)
+            const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }))
             const link = document.createElement('a')
-            link.href  = url
+            link.href = url
             link.setAttribute('download', `diet_report_${date}.pdf`)
-            link.setAttribute('target', '_blank')
             document.body.appendChild(link)
             link.click()
-            setTimeout(() => {
-                try {
-                    document.body.removeChild(link)
-                    window.URL.revokeObjectURL(url)
-                } catch (_) {}
-            }, 6000)
+            link.remove()
+            window.URL.revokeObjectURL(url)
             toast.success('PDF report downloaded! 📄')
         } catch (err) {
             // If error has blob response, extract message
@@ -96,7 +90,7 @@ export default function Reports() {
                     const json = JSON.parse(text)
                     toast.error(json.error || json.message || 'Failed to generate PDF report.')
                     return
-                } catch (_) {}
+                } catch (_) { }
             }
             toast.error(getErrorMessage(err, 'Failed to generate PDF report. Please try again.'))
         } finally {
@@ -105,9 +99,9 @@ export default function Reports() {
     }
 
     const profile = summary?.profile
-    const stats   = summary?.stats
-    const bmi     = profile?.bmi ? parseFloat(profile.bmi) : null
-    const meta    = bmiMeta(bmi)
+    const stats = summary?.stats
+    const bmi = profile?.bmi ? parseFloat(profile.bmi) : null
+    const meta = bmiMeta(bmi)
 
     return (
         <div className="space-y-6 w-full pb-10 animate-fade-in">

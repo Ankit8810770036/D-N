@@ -41,6 +41,11 @@ class AuthController extends Controller
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
+        // Award first day login coins (idempotent)
+        try {
+            app(\App\Services\TokenService::class)->award($user, 'daily_login');
+        } catch (\Throwable $e) {}
+
         // Offload email notification to background queue worker (high priority)
         \App\Jobs\SendVerificationEmailJob::dispatch($user)->onQueue('high');
 
@@ -96,6 +101,12 @@ class AuthController extends Controller
 
         $user->load('profile');
         $tokens = app(\App\Services\TokenService::class);
+        
+        // Award daily login coins (idempotent — once per day)
+        try {
+            $tokens->award($user, 'daily_login');
+        } catch (\Throwable $e) {}
+
         $daysUntilExpiry = null;
         if ($user->plan_type === 'premium' && $user->subscription_expires_at) {
             $daysUntilExpiry = (int) now()->diffInDays($user->subscription_expires_at, false);
