@@ -99,14 +99,22 @@ class ChatbotController extends Controller
 
         $hasImage = $request->filled('image') && $request->filled('mime_type');
         if ($hasImage) {
-            $contextPrompt .= "\nFOOD PHOTO ANALYSIS INSTRUCTIONS:\n" .
-                "The user has uploaded a photo of their food.\n" .
-                "1. Identify the dish/items shown and estimate portion size (e.g. 1 bowl, 150g, 2 pieces).\n" .
-                "2. State estimated calories (kcal), protein (g), carbs (g), and fat (g).\n" .
-                "3. Provide a concise 2-sentence nutritional verdict.\n" .
-                "4. At the end, ask: 'Did you eat this food today?'\n" .
-                "5. CRITICAL: On the very last line of your response, output this machine tag formatted exactly like this:\n" .
-                "[FOOD_METRICS: name=Dish Name, calories=280, protein=9.5, carbs=32, fat=12, portion=1 bowl (150g)]";
+            $contextPrompt .= "\nFOOD & BEVERAGE PHOTO ANALYSIS INSTRUCTIONS:\n" .
+                "The user has uploaded an image.\n" .
+                "1. FIRST: Check if the image contains edible food, a meal, ingredient, snack, or drink.\n" .
+                "2. IF NOT EDIBLE / NOT FOOD OR DRINK (e.g. human face/selfie, clothes, scenery, electronics, pets/animals, medicine, furniture, or random non-food objects):\n" .
+                "   - Politely tell the user what object/subject is shown and explain that you can only analyze edible food and drink items.\n" .
+                "   - DO NOT estimate calories or macronutrients.\n" .
+                "   - DO NOT ask if they ate this food.\n" .
+                "   - CRITICAL: On the very last line of your response, output exactly:\n" .
+                "     [FOOD_METRICS: none]\n" .
+                "3. IF IT IS EDIBLE FOOD OR DRINK:\n" .
+                "   - Identify the dish/items shown and estimate realistic portion size (e.g. 1 bowl, 150g, 2 pieces).\n" .
+                "   - State estimated calories (kcal), protein (g), carbs (g), and fat (g).\n" .
+                "   - Provide a concise 2-sentence nutritional verdict.\n" .
+                "   - At the end, ask: 'Did you eat this food today?'\n" .
+                "   - CRITICAL: On the very last line of your response, output this machine tag formatted exactly like this:\n" .
+                "     [FOOD_METRICS: name=Dish Name, calories=280, protein=9.5, carbs=32, fat=12, portion=1 bowl (150g)]";
         }
 
         $reply = $this->nvidia->generateContent($parts, $contextPrompt);
@@ -114,7 +122,11 @@ class ChatbotController extends Controller
         if ($reply !== null) {
             $detectedFood = null;
 
-            if (preg_match('/\[FOOD_METRICS:\s*name=([^,]+),\s*calories=([0-9.]+),\s*protein=([0-9.]+),\s*carbs=([0-9.]+),\s*fat=([0-9.]+),\s*portion=([^\]]+)\]/i', $reply, $matches)) {
+            if (preg_match('/\[FOOD_METRICS:\s*none\]/i', $reply, $noneMatches)) {
+                // Non-edible / non-food image: ensure detectedFood is explicitly null
+                $detectedFood = null;
+                $reply = trim(str_replace($noneMatches[0], '', $reply));
+            } elseif (preg_match('/\[FOOD_METRICS:\s*name=([^,]+),\s*calories=([0-9.]+),\s*protein=([0-9.]+),\s*carbs=([0-9.]+),\s*fat=([0-9.]+),\s*portion=([^\]]+)\]/i', $reply, $matches)) {
                 $detectedFood = [
                     'name'     => trim($matches[1], ' "\''),
                     'calories' => (float) $matches[2],
@@ -126,19 +138,23 @@ class ChatbotController extends Controller
                 // Strip the machine tag from user visible reply text
                 $reply = trim(str_replace($matches[0], '', $reply));
             } elseif ($hasImage) {
-                // Fallback regex if vision model formatted slightly differently
-                preg_match('/(\d+)\s*(?:kcal|calories)/i', $reply, $calMatch);
-                preg_match('/(\d+(?:\.\d+)?)\s*g\s*protein/i', $reply, $protMatch);
-                $cal = isset($calMatch[1]) ? (float)$calMatch[1] : 250;
-                $prot = isset($protMatch[1]) ? (float)$protMatch[1] : 8.0;
-                $detectedFood = [
-                    'name'     => 'Analyzed Food Plate',
-                    'calories' => $cal,
-                    'protein'  => $prot,
-                    'carbs'    => round($cal * 0.55 / 4, 1),
-                    'fat'      => round($cal * 0.25 / 9, 1),
-                    'portion'  => '1 serving',
-                ];
+                // If model did not output tag, only extract if response explicitly discusses edible calories and does not mention non-food
+                $isNonFoodText = preg_match('/\b(not (?:an? )?(?:edible|food|drink|beverage|meal)|cannot identify any food|no food|non-food)\b/i', $reply);
+                if (!$isNonFoodText && preg_match('/(\d+)\s*(?:kcal|calories)/i', $reply, $calMatch)) {
+                    preg_match('/(\d+(?:\.\d+)?)\s*g\s*protein/i', $reply, $protMatch);
+                    $cal = (float)$calMatch[1];
+                    $prot = isset($protMatch[1]) ? (float)$protMatch[1] : round($cal * 0.08, 1);
+                    $detectedFood = [
+                        'name'     => 'Analyzed Food Plate',
+                        'calories' => $cal,
+                        'protein'  => $prot,
+                        'carbs'    => round($cal * 0.55 / 4, 1),
+                        'fat'      => round($cal * 0.25 / 9, 1),
+                        'portion'  => '1 serving',
+                    ];
+                } else {
+                    $detectedFood = null;
+                }
             }
 
             return response()->json([

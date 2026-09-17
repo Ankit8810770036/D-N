@@ -73,14 +73,20 @@ export default function Reports() {
                 throw new Error(json.error || json.message || 'Failed to generate PDF.')
             }
 
-            const url  = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }))
+            const blob = new Blob([response.data], { type: 'application/pdf' })
+            const url  = window.URL.createObjectURL(blob)
             const link = document.createElement('a')
             link.href  = url
             link.setAttribute('download', `diet_report_${date}.pdf`)
+            link.setAttribute('target', '_blank')
             document.body.appendChild(link)
             link.click()
-            link.remove()
-            window.URL.revokeObjectURL(url)
+            setTimeout(() => {
+                try {
+                    document.body.removeChild(link)
+                    window.URL.revokeObjectURL(url)
+                } catch (_) {}
+            }, 6000)
             toast.success('PDF report downloaded! 📄')
         } catch (err) {
             // If error has blob response, extract message

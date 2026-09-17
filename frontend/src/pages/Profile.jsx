@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
 import { Camera, Trash2, User as UserIcon } from 'lucide-react'
 import CustomSelect from '../components/CustomSelect'
+import UserAvatar, { resolvePhotoUrl } from '../components/UserAvatar'
 
 const activityLevels = [
     { value: 'sedentary', label: '🪑 Sedentary', desc: 'Little or no exercise' },
@@ -159,15 +160,7 @@ export default function Profile() {
                 <div className="flex items-center gap-6">
                     <div className="relative group">
                         <div className="w-24 h-24 rounded-3xl overflow-hidden shadow-lg border-2 border-white dark:border-white/10 ring-4 ring-green-50 dark:ring-green-900/20 bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center relative">
-                            {authUser?.profile_photo_url ? (
-                                <img
-                                    src={authUser.profile_photo_url}
-                                    alt="Profile"
-                                    className="w-full h-full object-cover rounded-3xl"
-                                />
-                            ) : (
-                                <UserIcon className="w-10 h-10 text-emerald-400 dark:text-emerald-500" />
-                            )}
+                            <UserAvatar user={authUser} size="2xl" className="w-full h-full rounded-3xl object-cover text-2xl" />
                             {photoLoading && (
                                 <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex items-center justify-center rounded-3xl">
                                     <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
