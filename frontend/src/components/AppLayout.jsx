@@ -3,6 +3,7 @@ import { Outlet, Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import Sidebar from './Sidebar'
 import Navbar from './Navbar'
+import BottomNav from './BottomNav'
 import ChatBot from './ChatBot'
 import FeedbackModal from './FeedbackModal'
 import ErrorBoundary from './ErrorBoundary'
@@ -52,7 +53,7 @@ export default function AppLayout() {
                     </div>
                 )}
 
-                <main className={`flex-1 px-3.5 sm:px-8 lg:px-10 pb-8 w-full max-w-[96rem] mx-auto min-w-0 ${
+                <main className={`flex-1 px-3.5 sm:px-8 lg:px-10 pb-24 lg:pb-10 w-full max-w-[96rem] mx-auto min-w-0 ${
                     user?.plan_type === 'premium' && daysUntilExpiry !== null && daysUntilExpiry <= 3 
                         ? 'pt-4 sm:pt-6' 
                         : 'pt-24 sm:pt-28'
@@ -66,7 +67,7 @@ export default function AppLayout() {
             {/* Quick Floating Feedback Button */}
             <button
                 onClick={() => setIsFeedbackOpen(true)}
-                className="fixed bottom-6 left-6 z-30 hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-full bg-white dark:bg-[#0d2b1f] border border-slate-200/90 dark:border-white/15 text-slate-700 dark:text-white font-bold text-xs shadow-lg hover:shadow-xl hover:border-emerald-500/50 hover:scale-105 active:scale-95 transition-all group backdrop-blur-md"
+                className="fixed bottom-20 sm:bottom-6 left-6 z-30 hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-full bg-white dark:bg-[#0d2b1f] border border-slate-200/90 dark:border-white/15 text-slate-700 dark:text-white font-bold text-xs shadow-lg hover:shadow-xl hover:border-emerald-500/50 hover:scale-105 active:scale-95 transition-all group backdrop-blur-md"
                 title="Give Feedback & Earn +10 HealthCoins"
             >
                 <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs group-hover:bg-emerald-600 group-hover:text-white transition-colors">
@@ -84,6 +85,10 @@ export default function AppLayout() {
                 onClose={() => setIsFeedbackOpen(false)}
             />
 
+            {/* Mobile Bottom Navigation Bar */}
+            <BottomNav />
+
+            {/* AI Assistant Chatbot */}
             <ChatBot />
         </div>
     )
