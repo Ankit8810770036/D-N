@@ -19,7 +19,33 @@ export default function UserAvatar({
 }) {
     const [imgError, setImgError] = useState(false)
     const sizeClasses = SIZES[size] || SIZES.md
-    const photoUrl = user?.profile_photo_url
+    
+    // Resolve full image URL across mobile, local, and deployed endpoints
+    const resolvePhotoUrl = (rawUrl) => {
+        if (!rawUrl) return null
+        if (rawUrl.startsWith('data:image') || rawUrl.includes('ui-avatars.com')) return rawUrl
+        
+        // If pointing to localhost/127.0.0.1 on a deployed site or mobile device, point to the live API host
+        if (rawUrl.startsWith('http://localhost') || rawUrl.startsWith('http://127.0.0.1')) {
+            const apiBase = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? 'https://diet-planner-api-njyc.onrender.com/api' : '')
+            if (apiBase) {
+                const hostOrigin = apiBase.replace(/\/api\/?$/, '')
+                const relativePath = rawUrl.replace(/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?/, '')
+                return `${hostOrigin}${relativePath}`
+            }
+        }
+
+        // If relative /storage path
+        if (rawUrl.startsWith('/storage')) {
+            const apiBase = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? 'https://diet-planner-api-njyc.onrender.com/api' : '')
+            const hostOrigin = apiBase ? apiBase.replace(/\/api\/?$/, '') : ''
+            return `${hostOrigin}${rawUrl}`
+        }
+
+        return rawUrl
+    }
+
+    const photoUrl = resolvePhotoUrl(user?.profile_photo_url || user?.profile_photo_path)
 
     const name = user?.name || ''
     const initial = name ? name.charAt(0).toUpperCase() : 'U'

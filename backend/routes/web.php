@@ -35,3 +35,18 @@ Route::get('/email/verify/{id}/{hash}', function (Request $request) {
     return redirect(env('FRONTEND_URL', 'http://localhost:5173') . '/dashboard?verified=success');
 
 })->middleware(['signed'])->name('verification.verify');
+
+/*
+|--------------------------------------------------------------------------
+| Public Storage File Server Fallback
+|--------------------------------------------------------------------------
+| Ensures profile photos & uploaded files are accessible even on cloud
+| environments where `php artisan storage:link` is not available.
+*/
+Route::get('/storage/{path}', function ($path) {
+    if (! \Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
+        abort(404);
+    }
+    return \Illuminate\Support\Facades\Storage::disk('public')->response($path);
+})->where('path', '.*');
+

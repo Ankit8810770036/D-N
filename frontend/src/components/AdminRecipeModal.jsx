@@ -206,7 +206,7 @@ const AdminRecipeModal = ({ isOpen, onClose, onSave, recipe = null, loading = fa
                                     <select
                                         value={ing.unit}
                                         onChange={e => updateIngredient(ing.food_id, 'unit', e.target.value)}
-                                        className="w-16 px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl text-xs outline-none focus:ring-2 focus:ring-emerald-500/20 text-slate-800 dark:text-white/90 font-medium"
+                                        className="select-sm w-20 text-xs font-semibold"
                                     >
                                         <option value="g">g</option>
                                         <option value="ml">ml</option>

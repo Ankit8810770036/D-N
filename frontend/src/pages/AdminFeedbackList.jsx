@@ -128,12 +128,12 @@ export default function AdminFeedbackList() {
                     <select
                         value={selectedStatus}
                         onChange={(e) => setSelectedStatus(e.target.value)}
-                        className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-xs font-bold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        className="select-sm"
                     >
-                        <option value="all">All Statuses</option>
-                        <option value="pending">Pending</option>
-                        <option value="reviewed">Reviewed</option>
-                        <option value="resolved">Resolved</option>
+                        <option value="all">⚡ All Statuses</option>
+                        <option value="pending">⏳ Pending</option>
+                        <option value="reviewed">👀 Reviewed</option>
+                        <option value="resolved">✅ Resolved</option>
                     </select>
                 </div>
             </div>
@@ -250,7 +250,7 @@ export default function AdminFeedbackList() {
                                             value={item.status}
                                             onChange={(e) => statusMutation.mutate({ id: item.id, status: e.target.value })}
                                             disabled={statusMutation.isPending}
-                                            className={`px-3 py-1.5 rounded-xl border text-xs font-bold focus:outline-none transition-all ${
+                                            className={`select-sm border text-xs font-bold transition-all ${
                                                 item.status === 'resolved'
                                                     ? 'bg-emerald-50 border-emerald-300 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300'
                                                     : item.status === 'reviewed'

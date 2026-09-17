@@ -808,57 +808,88 @@ class DietPlannerController extends Controller
     {
         $user = $request->user();
 
-        // Only allow toggling items on own plans — eager load mealPlan to prevent lazy loading N+1
-        $mealItem = MealItem::with('mealPlan')->whereHas('mealPlan', function ($q) use ($user) {
+        // Only allow toggling items on own plans — eager load mealPlan with all sibling items
+        $mealItem = MealItem::with('mealPlan.mealItems')->whereHas('mealPlan', function ($q) use ($user) {
             $q->where('user_id', $user->id);
         })->findOrFail($id);
 
-        // Toggle status
-        $mealItem->update(['is_consumed' => !$mealItem->is_consumed]);
+        $mealPlan = $mealItem->mealPlan;
+        $planDate = $mealPlan->date instanceof Carbon 
+            ? $mealPlan->date->toDateString() 
+            : substr((string)$mealPlan->date, 0, 10);
 
-        // Recalculate total consumed calories, macros, and completion in 1 single fast query
-        $planDate = $mealItem->mealPlan->date->toDateString();
-        $stats = MealItem::whereHas('mealPlan', function ($q) use ($user, $planDate) {
-            $q->where('user_id', $user->id)->where('date', $planDate);
-        })->selectRaw('
-            SUM(CASE WHEN is_consumed THEN calories ELSE 0 END) as calories,
-            SUM(CASE WHEN is_consumed THEN protein ELSE 0 END) as protein,
-            SUM(CASE WHEN is_consumed THEN carbs ELSE 0 END) as carbs,
-            SUM(CASE WHEN is_consumed THEN fat ELSE 0 END) as fat,
-            COUNT(*) as total_items,
-            SUM(CASE WHEN is_consumed THEN 1 ELSE 0 END) as consumed_items
-        ')->first();
+        $today = Carbon::now('Asia/Kolkata')->toDateString();
+        if ($planDate < $today) {
+            return response()->json([
+                'message' => 'Past meals cannot be modified. Past meal records are preserved as read-only history.',
+                'is_consumed' => (bool) $mealItem->is_consumed,
+            ], 422);
+        }
 
-        $cals          = round((float) ($stats->calories ?? 0), 2);
-        $prot          = round((float) ($stats->protein ?? 0), 2);
-        $carbs         = round((float) ($stats->carbs ?? 0), 2);
-        $fat           = round((float) ($stats->fat ?? 0), 2);
-        $totalItems    = (int) ($stats->total_items ?? 0);
-        $consumedItems = (int) ($stats->consumed_items ?? 0);
+        // Toggle consumption status
+        $newStatus = !$mealItem->is_consumed;
+        $mealItem->update(['is_consumed' => $newStatus]);
+        $mealItem->is_consumed = $newStatus;
 
-        // Update (or create) the progress log for that specific date
-        $log = ProgressLog::firstOrCreate(
-            ['user_id' => $user->id, 'date' => $planDate],
-            ['date' => $planDate]
-        );
+        // Calculate totals across this meal plan in memory (cross-database safe: MySQL, Postgres, SQLite)
+        $siblingItems = $mealPlan->mealItems;
+        $cals = 0.0;
+        $prot = 0.0;
+        $carbs = 0.0;
+        $fat = 0.0;
+        $totalItems = $siblingItems->count();
+        $consumedCount = 0;
 
-        $log->update([
+        foreach ($siblingItems as $item) {
+            $isItemConsumed = ($item->id === $mealItem->id) ? $newStatus : (bool) $item->is_consumed;
+            if ($isItemConsumed) {
+                $cals  += (float) ($item->calories ?? 0);
+                $prot  += (float) ($item->protein ?? 0);
+                $carbs += (float) ($item->carbs ?? 0);
+                $fat   += (float) ($item->fat ?? 0);
+                $consumedCount++;
+            }
+        }
+
+        $cals  = round($cals, 2);
+        $prot  = round($prot, 2);
+        $carbs = round($carbs, 2);
+        $fat   = round($fat, 2);
+
+        // Update or create the daily progress log
+        try {
+            $log = ProgressLog::firstOrCreate(
+                ['user_id' => $user->id, 'date' => $planDate],
+                ['date' => $planDate]
+            );
+
+            $log->update([
+                'calories_consumed' => $cals,
+                'protein'           => $prot,
+                'carbs'             => $carbs,
+                'fat'               => $fat,
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning("Failed to update progress log for user {$user->id}: " . $e->getMessage());
+        }
+
+        // Award +10 HealthCoins if all items for this plan date are consumed
+        if ($totalItems > 0 && $consumedCount === $totalItems) {
+            try {
+                app(TokenService::class)->award($user, 'meals_consumed', null, ['date' => $planDate]);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning("Token award error on meal consume: " . $e->getMessage());
+            }
+        }
+
+        return response()->json([
+            'is_consumed'       => $newStatus,
             'calories_consumed' => $cals,
             'protein'           => $prot,
             'carbs'             => $carbs,
             'fat'               => $fat,
-        ]);
-
-        // ── Award +10 coins if ALL meal items for this day are now consumed ──
-        if ($totalItems > 0 && $consumedItems === $totalItems) {
-            app(TokenService::class)->award($user, 'meals_consumed', null, ['date' => $planDate]);
-        }
-        // ───────────────────────────────────────────────────────────────
-        return response()->json([
-            'is_consumed'       => $mealItem->is_consumed,
-            'calories_consumed' => $cals,
             'date'              => $planDate,
-            'message'           => $mealItem->is_consumed ? 'Meal marked as consumed ✅' : 'Meal unmarked',
+            'message'           => $newStatus ? 'Meal marked as consumed ✅' : 'Meal unmarked',
         ]);
     }
 }

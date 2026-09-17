@@ -1,14 +1,16 @@
 import { useState } from 'react'
-import { Outlet, Link } from 'react-router-dom'
+import { Outlet, Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import Sidebar from './Sidebar'
 import Navbar from './Navbar'
 import ChatBot from './ChatBot'
 import FeedbackModal from './FeedbackModal'
+import ErrorBoundary from './ErrorBoundary'
 import { MessageSquarePlus } from 'lucide-react'
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 
 export default function AppLayout() {
+    const location = useLocation()
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
     const [isFeedbackOpen, setIsFeedbackOpen] = useState(false)
     const { user, daysUntilExpiry } = useAuth()
@@ -55,7 +57,9 @@ export default function AppLayout() {
                         ? 'pt-4 sm:pt-6' 
                         : 'pt-24 sm:pt-28'
                 }`}>
-                    <Outlet />
+                    <ErrorBoundary locationKey={location.pathname}>
+                        <Outlet />
+                    </ErrorBoundary>
                 </main>
             </div>
 

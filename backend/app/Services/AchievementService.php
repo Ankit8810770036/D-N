@@ -103,50 +103,68 @@ class AchievementService
 
     /**
      * Calculate consecutive logging streak (in days) using local IST calendar dates.
+     * Considers Progress Logs, Consumed Meals, and Token Actions (Logins, Tracking, Workouts).
      */
     public function calculateStreak($user): int
     {
-        // Get all distinct logged dates normalized as YYYY-MM-DD strings
-        $rawDates = ProgressLog::where('user_id', $user->id)
-            ->where(function ($q) {
-                $q->where('calories_consumed', '>', 0)
-                  ->orWhereNotNull('weight')
-                  ->orWhere('workout_done', true)
-                  ->orWhere('water_intake_liters', '>', 0);
-            })
-            ->orderBy('date', 'desc')
-            ->pluck('date');
+        $userId = is_numeric($user) ? $user : $user->id;
 
-        if ($rawDates->isEmpty()) {
+        // 1. Dates from Progress Logs
+        $progressDates = ProgressLog::where('user_id', $userId)
+            ->pluck('date')
+            ->map(function ($d) {
+                return $d instanceof Carbon ? $d->toDateString() : substr((string) $d, 0, 10);
+            })
+            ->toArray();
+
+        // 2. Dates from Consumed Meals in Meal Plans
+        $mealDates = MealPlan::where('user_id', $userId)
+            ->whereHas('mealItems', function ($q) {
+                $q->where('is_consumed', true);
+            })
+            ->pluck('date')
+            ->map(function ($d) {
+                return $d instanceof Carbon ? $d->toDateString() : substr((string) $d, 0, 10);
+            })
+            ->toArray();
+
+        // 3. Dates from Token Transactions (Daily Login, Workouts, Meals, Tracking)
+        $tokenDates = \App\Models\TokenTransaction::where('user_id', $userId)
+            ->pluck('created_at')
+            ->map(function ($dt) {
+                return Carbon::parse($dt)->setTimezone('Asia/Kolkata')->toDateString();
+            })
+            ->toArray();
+
+        // Merge, clean, and deduplicate all active dates
+        $allActiveDates = array_values(array_unique(array_filter(
+            array_merge($progressDates, $mealDates, $tokenDates)
+        )));
+
+        if (empty($allActiveDates)) {
             return 0;
         }
-
-        $loggedDates = $rawDates->map(function ($d) {
-            return Carbon::parse($d)->toDateString();
-        })->unique()->values()->toArray();
 
         $nowIST       = Carbon::now('Asia/Kolkata');
         $todayStr     = $nowIST->toDateString();
         $yesterdayStr = $nowIST->copy()->subDay()->toDateString();
 
-        // Check if streak is alive (logged today OR logged yesterday)
-        $streak = 0;
-        $checkDate = null;
+        $activeDateSet = array_flip($allActiveDates);
 
-        if (in_array($todayStr, $loggedDates, true)) {
-            $streak = 1;
-            $checkDate = $nowIST->copy()->subDay();
-        } elseif (in_array($yesterdayStr, $loggedDates, true)) {
-            $streak = 1;
-            $checkDate = $nowIST->copy()->subDays(2);
-        } else {
-            return 0; // Streak broken
+        // If neither today nor yesterday has any activity, the streak has lapsed
+        $hasToday     = isset($activeDateSet[$todayStr]);
+        $hasYesterday = isset($activeDateSet[$yesterdayStr]);
+
+        if (!$hasToday && !$hasYesterday) {
+            return 0;
         }
 
-        // Count consecutive days backward
-        while (in_array($checkDate->toDateString(), $loggedDates, true)) {
+        $streak = 0;
+        $cursor = $hasToday ? $nowIST->copy() : $nowIST->copy()->subDay();
+
+        while (isset($activeDateSet[$cursor->toDateString()])) {
             $streak++;
-            $checkDate->subDay();
+            $cursor->subDay();
         }
 
         return $streak;

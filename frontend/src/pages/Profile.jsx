@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
 import { Camera, Trash2, User as UserIcon } from 'lucide-react'
+import CustomSelect from '../components/CustomSelect'
 
 const activityLevels = [
     { value: 'sedentary', label: '🪑 Sedentary', desc: 'Little or no exercise' },
@@ -255,12 +256,16 @@ export default function Profile() {
                                     className="input-field" placeholder="e.g. 25" min="1" max="120" required />
                             </div>
                             <div>
-                                <label className="input-label">Gender</label>
-                                <select value={form.gender} onChange={e => set('gender', e.target.value)} className="input-field">
-                                    <option value="male">Male</option>
-                                    <option value="female">Female</option>
-                                    <option value="other">Other</option>
-                                </select>
+                                <CustomSelect
+                                    label="Gender"
+                                    value={form.gender}
+                                    onChange={val => set('gender', val)}
+                                    options={[
+                                        { value: 'male', label: 'Male', icon: '👨' },
+                                        { value: 'female', label: 'Female', icon: '👩' },
+                                        { value: 'other', label: 'Other', icon: '⚧' },
+                                    ]}
+                                />
                             </div>
                             <div>
                                 <label className="input-label">Sleep Hours (Daily)</label>

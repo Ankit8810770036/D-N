@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import api from '../services/api'
 import { getErrorMessage } from '../utils/errors'
-import { Sparkles, ArrowRight, CheckCircle2, XCircle, Utensils, Flame, Scale, Check, X, RefreshCw } from 'lucide-react'
+import { Sparkles, ArrowRight, CheckCircle2, XCircle, Utensils, Flame, Scale, Check, X, RefreshCw, Camera, Image as ImageIcon, RotateCw, AlertTriangle } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 
@@ -54,6 +54,15 @@ export default function ChatBot() {
     const [loggingFoodId, setLoggingFoodId] = useState(null)
     const endOfMessagesRef = useRef(null)
     const fileInputRef = useRef(null)
+    const cameraFallbackInputRef = useRef(null)
+
+    // Camera viewfinder state
+    const [isCameraOpen, setIsCameraOpen] = useState(false)
+    const [cameraStream, setCameraStream] = useState(null)
+    const [facingMode, setFacingMode] = useState('environment') // 'environment' (back) or 'user' (front)
+    const [capturedPhoto, setCapturedPhoto] = useState(null)
+    const [cameraError, setCameraError] = useState(null)
+    const videoRef = useRef(null)
 
     const scrollToBottom = () => {
         endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -62,8 +71,97 @@ export default function ChatBot() {
     useEffect(() => {
         if (isOpen) {
             scrollToBottom()
+        } else {
+            // Clean up camera stream if chatbot is closed
+            stopCamera()
         }
     }, [messages, isOpen])
+
+    // Manage camera stream attachment to video element
+    useEffect(() => {
+        if (isCameraOpen && cameraStream && videoRef.current) {
+            videoRef.current.srcObject = cameraStream
+            videoRef.current.play().catch(e => console.warn('Video play interrupted:', e))
+        }
+    }, [isCameraOpen, cameraStream, capturedPhoto])
+
+    const startCamera = async (mode = facingMode) => {
+        setCameraError(null)
+        setCapturedPhoto(null)
+        setIsCameraOpen(true)
+
+        // Stop any active stream first
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(track => track.stop())
+            setCameraStream(null)
+        }
+
+        try {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                throw new Error('Camera API not supported on this browser.')
+            }
+
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: { ideal: mode },
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                },
+                audio: false,
+            })
+
+            setCameraStream(stream)
+        } catch (err) {
+            console.warn('Live camera access failed:', err)
+            setCameraError(err.name === 'NotAllowedError' ? 'Camera permission was denied.' : (err.message || 'Camera is unavailable.'))
+        }
+    }
+
+    const stopCamera = () => {
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(track => track.stop())
+            setCameraStream(null)
+        }
+        setIsCameraOpen(false)
+        setCapturedPhoto(null)
+        setCameraError(null)
+    }
+
+    const capturePhoto = () => {
+        if (!videoRef.current) return
+        const video = videoRef.current
+        const canvas = document.createElement('canvas')
+        canvas.width = video.videoWidth || 640
+        canvas.height = video.videoHeight || 480
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.88)
+        const base64 = dataUrl.split(',')[1]
+        setCapturedPhoto({
+            data: base64,
+            mimeType: 'image/jpeg',
+            previewUrl: dataUrl,
+        })
+    }
+
+    const confirmPhoto = () => {
+        if (capturedPhoto) {
+            setSelectedImage(capturedPhoto)
+            toast.success('Food photo attached! 📸')
+        }
+        stopCamera()
+    }
+
+    const retakePhoto = () => {
+        setCapturedPhoto(null)
+    }
+
+    const toggleFacingMode = () => {
+        const nextMode = facingMode === 'environment' ? 'user' : 'environment'
+        setFacingMode(nextMode)
+        startCamera(nextMode)
+    }
 
     const handleImageChange = (e) => {
         const file = e.target.files[0]
@@ -416,16 +514,174 @@ export default function ChatBot() {
                         <div className="px-3.5 py-2 bg-slate-50 dark:bg-gray-800 border-t border-slate-100 dark:border-gray-700 flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <img src={selectedImage.previewUrl} alt="preview" className="h-10 w-10 object-cover rounded-lg shadow-sm border border-slate-200 dark:border-gray-600" />
-                                <span className="text-xs text-slate-600 dark:text-gray-400 font-semibold">Food photo attached</span>
+                                <div>
+                                    <span className="text-xs text-slate-700 dark:text-gray-300 font-bold block">Food photo attached</span>
+                                    <span className="text-[10px] text-slate-400 dark:text-gray-400">Tap send to estimate nutrition &amp; calories</span>
+                                </div>
                             </div>
-                            <button type="button" onClick={() => { setSelectedImage(null); if (fileInputRef.current) fileInputRef.current.value = ''; }} className="text-slate-400 dark:text-gray-500 hover:text-rose-500 transition-colors p-1">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            <button type="button" onClick={() => { setSelectedImage(null); if (fileInputRef.current) fileInputRef.current.value = ''; if (cameraFallbackInputRef.current) cameraFallbackInputRef.current.value = ''; }} className="text-slate-400 dark:text-gray-500 hover:text-rose-500 transition-colors p-1" title="Remove image">
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
                     )}
 
+                    {/* Camera Viewfinder Overlay */}
+                    {isCameraOpen && (
+                        <div className="absolute inset-0 z-30 bg-slate-950/95 text-white flex flex-col justify-between p-3.5 sm:p-4 animate-in fade-in zoom-in-95 duration-200 backdrop-blur-md">
+                            {/* Top Bar */}
+                            <div className="flex items-center justify-between z-10 pb-1">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse" />
+                                    <span className="text-xs font-bold tracking-wide">
+                                        {capturedPhoto ? 'Review Food Photo 📸' : 'Live Camera Viewfinder'}
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    {!capturedPhoto && !cameraError && (
+                                        <button
+                                            type="button"
+                                            onClick={toggleFacingMode}
+                                            className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+                                            title="Switch Camera (Front/Back)"
+                                            aria-label="Switch Camera"
+                                        >
+                                            <RotateCw className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={stopCamera}
+                                        className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+                                        title="Close Camera"
+                                        aria-label="Close Camera"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Viewfinder / Captured Display */}
+                            <div className="relative flex-1 my-2 bg-slate-900 rounded-2xl overflow-hidden flex items-center justify-center border border-white/10 shadow-inner">
+                                {cameraError ? (
+                                    <div className="p-4 text-center space-y-3 max-w-xs">
+                                        <div className="w-12 h-12 mx-auto rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-2xl">
+                                            📷
+                                        </div>
+                                        <div>
+                                            <h4 className="text-xs font-bold text-white mb-1">Camera Notice</h4>
+                                            <p className="text-[11px] text-slate-300 leading-relaxed">
+                                                {cameraError} You can take a photo using your device camera directly.
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                stopCamera();
+                                                cameraFallbackInputRef.current?.click();
+                                            }}
+                                            className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md"
+                                        >
+                                            <Camera className="w-4 h-4" />
+                                            <span>Open Device Camera</span>
+                                        </button>
+                                    </div>
+                                ) : capturedPhoto ? (
+                                    <img
+                                        src={capturedPhoto.previewUrl}
+                                        alt="Captured plate"
+                                        className="w-full h-full object-cover rounded-xl"
+                                    />
+                                ) : (
+                                    <>
+                                        <video
+                                            ref={videoRef}
+                                            autoPlay
+                                            playsInline
+                                            muted
+                                            className="w-full h-full object-cover rounded-xl"
+                                        />
+                                        {/* Viewfinder Target Reticle */}
+                                        <div className="absolute inset-4 border-2 border-dashed border-white/30 rounded-2xl pointer-events-none flex flex-col items-center justify-between p-3">
+                                            <span className="text-[10px] bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full text-white/90 font-medium">
+                                                Position food inside frame
+                                            </span>
+                                            <span className="text-[9px] text-white/60 bg-black/40 px-2 py-0.5 rounded-full">
+                                                Tap shutter button to snap
+                                            </span>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+
+                            {/* Bottom Controls */}
+                            <div className="pt-1 z-10">
+                                {capturedPhoto ? (
+                                    <div className="flex items-center gap-2.5 w-full">
+                                        <button
+                                            type="button"
+                                            onClick={retakePhoto}
+                                            className="flex-1 py-2.5 px-3 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold text-white flex items-center justify-center gap-1.5 transition-colors"
+                                        >
+                                            <RefreshCw className="w-3.5 h-3.5" />
+                                            <span>Retake</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={confirmPhoto}
+                                            className="flex-1 py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-xs font-bold text-white shadow-lg shadow-emerald-700/30 flex items-center justify-center gap-1.5 transition-all"
+                                        >
+                                            <Check className="w-4 h-4 stroke-[3]" />
+                                            <span>Use Photo</span>
+                                        </button>
+                                    </div>
+                                ) : (
+                                    !cameraError && (
+                                        <div className="flex items-center justify-between w-full px-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    stopCamera();
+                                                    fileInputRef.current?.click();
+                                                }}
+                                                className="text-xs text-white/70 hover:text-white flex flex-col items-center gap-1 transition-colors px-2 py-1"
+                                                title="Choose existing photo from gallery"
+                                            >
+                                                <ImageIcon className="w-5 h-5 text-emerald-400" />
+                                                <span className="text-[10px]">Gallery</span>
+                                            </button>
+
+                                            {/* Shutter Button */}
+                                            <button
+                                                type="button"
+                                                onClick={capturePhoto}
+                                                className="w-14 h-14 rounded-full p-1 border-4 border-white/90 hover:border-emerald-400 flex items-center justify-center bg-white/20 active:scale-90 transition-all shadow-xl shadow-black/50 group"
+                                                title="Take snapshot"
+                                                aria-label="Take snapshot"
+                                            >
+                                                <div className="w-10 h-10 rounded-full bg-white group-hover:bg-emerald-400 transition-colors shadow-inner" />
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    stopCamera();
+                                                    cameraFallbackInputRef.current?.click();
+                                                }}
+                                                className="text-xs text-white/70 hover:text-white flex flex-col items-center gap-1 transition-colors px-2 py-1"
+                                                title="Open native camera app"
+                                            >
+                                                <Camera className="w-5 h-5 text-teal-300" />
+                                                <span className="text-[10px]">Native</span>
+                                            </button>
+                                        </div>
+                                    )
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Input Area */}
-                    <form onSubmit={handleSend} className="p-2.5 sm:p-3 bg-white dark:bg-gray-800 border-t border-slate-100 dark:border-gray-700 flex gap-1.5 sm:gap-2 items-center">
+                    <form onSubmit={handleSend} className="p-2 sm:p-2.5 bg-white dark:bg-gray-800 border-t border-slate-100 dark:border-gray-700 flex gap-1 sm:gap-1.5 items-center">
                         <input
                             type="file"
                             accept="image/*"
@@ -433,23 +689,43 @@ export default function ChatBot() {
                             onChange={handleImageChange}
                             className="hidden"
                         />
+                        <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            ref={cameraFallbackInputRef}
+                            onChange={handleImageChange}
+                            className="hidden"
+                        />
+                        
+                        {/* Camera Button */}
+                        <button
+                            type="button"
+                            onClick={() => startCamera('environment')}
+                            className="text-slate-500 hover:text-emerald-600 dark:text-gray-400 dark:hover:text-emerald-400 transition-colors p-2 rounded-full hover:bg-emerald-50 dark:hover:bg-gray-700 focus:outline-none shrink-0"
+                            title="Open Camera to snap food photo"
+                            aria-label="Open Camera"
+                        >
+                            <Camera className="w-5 h-5" />
+                        </button>
+
+                        {/* Gallery Upload Button */}
                         <button
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
-                            className="text-slate-400 hover:text-emerald-600 dark:hover:text-green-400 transition-colors p-2 rounded-full hover:bg-slate-100 dark:hover:bg-gray-700 focus:outline-none shrink-0"
-                            title="Upload food photo for instant calorie estimation"
-                            aria-label="Upload food photo"
+                            className="text-slate-500 hover:text-emerald-600 dark:text-gray-400 dark:hover:text-emerald-400 transition-colors p-2 rounded-full hover:bg-emerald-50 dark:hover:bg-gray-700 focus:outline-none shrink-0"
+                            title="Upload food photo from gallery"
+                            aria-label="Upload food photo from gallery"
                         >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
+                            <ImageIcon className="w-5 h-5" />
                         </button>
+
                         <input
                             type="text"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            placeholder="Ask a diet question or upload a photo..."
-                            className="flex-1 bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-600 text-slate-900 dark:text-white text-xs sm:text-sm rounded-full px-3.5 py-2 sm:py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-gray-500 min-w-0"
+                            placeholder="Ask a diet question or snap food photo..."
+                            className="flex-1 bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-600 text-slate-900 dark:text-white text-xs sm:text-sm rounded-full px-3 py-2 sm:py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-gray-500 min-w-0"
                             disabled={isLoading}
                         />
                         <button
@@ -469,20 +745,30 @@ export default function ChatBot() {
             {/* Floating Toggle Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`w-13 h-13 sm:w-14 sm:h-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95 focus:outline-none focus:ring-4 focus:ring-emerald-600/30 ${isOpen
-                    ? 'bg-slate-100 dark:bg-gray-700 text-slate-600 dark:text-gray-300 rotate-90 scale-90 hover:bg-slate-200 shadow-md'
-                    : 'bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-900 text-white shadow-emerald-900/30'
+                className={`relative w-15 h-15 sm:w-16 sm:h-16 min-w-[58px] min-h-[58px] sm:min-w-[64px] sm:min-h-[64px] rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-emerald-500/30 ${isOpen
+                    ? 'bg-slate-100 dark:bg-gray-700 text-slate-700 dark:text-gray-200 rotate-90 scale-90 hover:bg-slate-200 shadow-md'
+                    : 'bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-xl shadow-emerald-900/40 ring-2 ring-white/20'
                     }`}
                 aria-label="Toggle AI Nutrition Chatbot"
             >
+                {/* Active Glowing Dot when closed */}
+                {!isOpen && (
+                    <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500 border-2 border-white dark:border-[#081c15]"></span>
+                    </span>
+                )}
+
                 {isOpen ? (
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 ) : (
-                    <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                    </svg>
+                    <div className="flex flex-col items-center justify-center">
+                        <svg className="w-7 h-7 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                        </svg>
+                    </div>
                 )}
             </button>
         </div>

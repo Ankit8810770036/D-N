@@ -78,10 +78,25 @@ export default function OnboardingWizard({ isOpen, onComplete, initialData = {} 
                     </div>
                     <div>
                         <label className="input-label">Gender</label>
-                        <select value={form.gender} onChange={e => set('gender', e.target.value)} className="input-field text-lg text-center font-medium">
-                            <option value="male">Male</option>
-                            <option value="female">Female</option>
-                        </select>
+                        <div className="flex gap-2">
+                            {[
+                                { value: 'male', label: '👨 Male' },
+                                { value: 'female', label: '👩 Female' }
+                            ].map(g => (
+                                <button
+                                    type="button"
+                                    key={g.value}
+                                    onClick={() => set('gender', g.value)}
+                                    className={`flex-1 py-3 text-sm font-bold rounded-2xl border-2 transition-all ${
+                                        form.gender === g.value
+                                            ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 shadow-sm'
+                                            : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                                    }`}
+                                >
+                                    {g.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
                 <div>

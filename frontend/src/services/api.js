@@ -17,18 +17,28 @@ api.interceptors.request.use((config) => {
     return config
 })
 
-// Handle 401 globally only for authenticated endpoints
+// Handle 401 globally with safety checks
+let isLoggingOut = false
 api.interceptors.response.use(
     (res) => res,
     (err) => {
-        const isAuthEndpoint = err.config?.url?.includes('/login') || err.config?.url?.includes('/register')
+        const url = err.config?.url || ''
+        const status = err.response?.status
+        const isAuthEndpoint = url.includes('/login') || url.includes('/register')
+        const isAdminEndpoint = url.includes('/admin/')
         const isPublicRoute = ['/login', '/register', '/forgot-password', '/reset-password'].includes(window.location.pathname)
 
-        if (err.response?.status === 401 && !isAuthEndpoint) {
-            localStorage.removeItem('token')
-            localStorage.removeItem('user')
-            if (!isPublicRoute) {
-                window.location.href = '/login'
+        // Only handle true token invalidation (ignore admin permission 403/401 and auth endpoints)
+        if (status === 401 && !isAuthEndpoint && !isAdminEndpoint && !isLoggingOut) {
+            const token = localStorage.getItem('token')
+            if (token) {
+                isLoggingOut = true
+                localStorage.removeItem('token')
+                localStorage.removeItem('user')
+                if (!isPublicRoute) {
+                    window.location.href = '/login'
+                }
+                setTimeout(() => { isLoggingOut = false }, 3000)
             }
         }
         return Promise.reject(err)

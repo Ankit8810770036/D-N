@@ -133,6 +133,14 @@ export default function Planner() {
     }
 
     async function toggleConsumed(itemId) {
+        if (isPastDate) {
+            toast('Past meal records are locked and read-only.', {
+                icon: '🔒',
+                id: 'past-lock',
+            });
+            return;
+        }
+
         await queryClient.cancelQueries({ queryKey: ['mealPlan', date] });
         const previousPlan = queryClient.getQueryData(['mealPlan', date]);
 
@@ -451,8 +459,16 @@ export default function Planner() {
                                                 return (
                                                     <div 
                                                         key={item.id || idx} 
-                                                        onClick={() => toggleConsumed(item.id)}
-                                                        className={`flex items-center justify-between p-3 rounded-2xl group hover:shadow-sm transition-all border cursor-pointer select-none ${
+                                                        onClick={() => {
+                                                            if (isPastDate) {
+                                                                toast('Past meal records are locked and read-only.', { icon: '🔒', id: 'past-lock' });
+                                                            } else {
+                                                                toggleConsumed(item.id);
+                                                            }
+                                                        }}
+                                                        className={`flex items-center justify-between p-3 rounded-2xl group transition-all border select-none ${
+                                                            isPastDate ? 'cursor-default' : 'cursor-pointer hover:shadow-sm'
+                                                        } ${
                                                             isConsumed 
                                                                 ? 'bg-emerald-50/90 border-emerald-300 dark:bg-emerald-950/40 dark:border-emerald-700/60 shadow-xs' 
                                                                 : 'bg-slate-50/80 border-slate-200/60 hover:border-emerald-300 dark:bg-white/5 dark:border-white/10 dark:hover:border-white/20'
@@ -461,20 +477,33 @@ export default function Planner() {
                                                         <div className="flex items-center gap-3 flex-1 min-w-0">
                                                             <button
                                                                 type="button"
+                                                                disabled={isPastDate}
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
-                                                                    toggleConsumed(item.id);
+                                                                    if (isPastDate) {
+                                                                        toast('Past meal records are locked and read-only.', { icon: '🔒', id: 'past-lock' });
+                                                                    } else {
+                                                                        toggleConsumed(item.id);
+                                                                    }
                                                                 }}
                                                                 aria-checked={isConsumed}
                                                                 role="checkbox"
                                                                 className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all shrink-0 border ${
-                                                                    isConsumed
-                                                                        ? 'bg-emerald-600 border-emerald-600 text-white shadow-xs shadow-emerald-700/30'
-                                                                        : 'border-slate-300 dark:border-white/20 bg-white dark:bg-white/5 hover:border-emerald-500'
+                                                                    isPastDate
+                                                                        ? isConsumed
+                                                                            ? 'bg-emerald-600/80 border-emerald-600/80 text-white cursor-not-allowed'
+                                                                            : 'border-slate-300/60 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-400 cursor-not-allowed'
+                                                                        : isConsumed
+                                                                            ? 'bg-emerald-600 border-emerald-600 text-white shadow-xs shadow-emerald-700/30'
+                                                                            : 'border-slate-300 dark:border-white/20 bg-white dark:bg-white/5 hover:border-emerald-500'
                                                                 }`}
-                                                                title={isConsumed ? 'Mark as not consumed' : 'Mark as consumed'}
+                                                                title={isPastDate ? 'Past date — read-only history' : (isConsumed ? 'Mark as not consumed' : 'Mark as consumed')}
                                                             >
-                                                                {isConsumed && <Check className="w-4 h-4 stroke-[3] text-white" />}
+                                                                {isConsumed ? (
+                                                                    <Check className="w-4 h-4 stroke-[3] text-white" />
+                                                                ) : isPastDate ? (
+                                                                    <Lock className="w-3 h-3 text-slate-400 dark:text-white/40" />
+                                                                ) : null}
                                                             </button>
                                                             <div className="min-w-0">
                                                                 <div className="flex items-center gap-1.5 flex-wrap">
@@ -482,6 +511,11 @@ export default function Planner() {
                                                                         {item.recipe ? item.recipe.name : item.food?.name}
                                                                     </p>
                                                                     {item.recipe && <span className="text-[10px] bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 px-1.5 py-0.5 rounded-md font-bold uppercase tracking-tighter">Recipe</span>}
+                                                                    {isPastDate && (
+                                                                        <span className="text-[9px] bg-slate-200/80 text-slate-600 dark:bg-white/10 dark:text-slate-300 px-1.5 py-0.2 rounded font-medium">
+                                                                            {isConsumed ? 'Consumed' : 'Skipped'}
+                                                                        </span>
+                                                                    )}
                                                                 </div>
                                                                 <p className="text-xs text-slate-400 dark:text-white/40 mt-0.5 font-medium">
                                                                     {item.recipe ? '1 serving' : `${item.quantity}${item.unit}`} &nbsp;·&nbsp;

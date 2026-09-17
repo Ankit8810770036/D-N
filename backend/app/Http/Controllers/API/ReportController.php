@@ -31,9 +31,17 @@ class ReportController extends Controller
 
             $pdf = Pdf::loadView('reports.diet_report', compact('user', 'plan', 'date', 'recentLogs'));
             $pdf->setPaper('a4', 'portrait');
+            $pdf->setOptions([
+                'isRemoteEnabled'      => true,
+                'isHtml5ParserEnabled' => true,
+                'isPhpEnabled'         => false,
+                'defaultFont'          => 'sans-serif',
+                'dpi'                  => 120,
+            ]);
 
             return $pdf->download("diet_report_{$date}.pdf");
         } catch (Exception $e) {
+            \Illuminate\Support\Facades\Log::error('PDF Report generation failed: ' . $e->getMessage());
             return response()->json([
                 'error' => 'Failed to generate PDF report: ' . $e->getMessage()
             ], 500);
@@ -106,9 +114,17 @@ class ReportController extends Controller
 
             $pdf = Pdf::loadView('reports.grocery_report', compact('user', 'grouped', 'list', 'plans', 'dateRange', 'daysFound', 'todayStr'));
             $pdf->setPaper('a4', 'portrait');
+            $pdf->setOptions([
+                'isRemoteEnabled'      => true,
+                'isHtml5ParserEnabled' => true,
+                'isPhpEnabled'         => false,
+                'defaultFont'          => 'sans-serif',
+                'dpi'                  => 120,
+            ]);
 
             return $pdf->download("grocery_shopping_list_{$todayStr}.pdf");
         } catch (Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Grocery PDF generation failed: ' . $e->getMessage());
             return response()->json([
                 'error' => 'Failed to generate Grocery PDF: ' . $e->getMessage()
             ], 500);
@@ -126,7 +142,7 @@ class ReportController extends Controller
         $progressStats = ProgressLog::where('user_id', $user->id)
             ->selectRaw('
                 COUNT(*) as total_logs,
-                SUM(CASE WHEN workout_done THEN 1 ELSE 0 END) as workout_days,
+                SUM(CASE WHEN workout_done = 1 OR workout_done = true THEN 1 ELSE 0 END) as workout_days,
                 AVG(calories_consumed) as avg_calories,
                 AVG(weight) as avg_weight
             ')

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { MessageSquarePlus, Star, Clock, CheckCircle2, Eye, Sparkles, Filter, AlertTriangle, ShieldCheck, HeartHandshake } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 import FeedbackModal from '../components/FeedbackModal'
 import api from '../services/api'
 
@@ -19,6 +20,7 @@ const STATUS_MAP = {
 }
 
 export default function FeedbackPage() {
+    const { isAdmin } = useAuth()
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [selectedCategory, setSelectedCategory] = useState('general')
     const [activeTab, setActiveTab] = useState('all')
@@ -26,15 +28,15 @@ export default function FeedbackPage() {
     const { data: myFeedbacks, isLoading } = useQuery({
         queryKey: ['userFeedbacks'],
         queryFn: async () => {
-            // Re-use or fetch feedback items if user has any submitted
+            if (!isAdmin) return []
             try {
                 const res = await api.get('/admin/feedbacks')
                 return res.data
             } catch (err) {
-                // If standard user who doesn't have access to /admin/feedbacks, return empty list or fallback
                 return []
             }
         },
+        enabled: Boolean(isAdmin),
         retry: false,
     })
 

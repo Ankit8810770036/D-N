@@ -15,37 +15,49 @@ export class ErrorBoundary extends React.Component {
         console.error('Uncaught error caught by ErrorBoundary:', error, errorInfo);
     }
 
+    componentDidUpdate(prevProps) {
+        // Automatically recover and reset error state when user changes route/section
+        if (this.state.hasError && this.props.locationKey && this.props.locationKey !== prevProps.locationKey) {
+            this.setState({ hasError: false, error: null });
+        }
+    }
+
+    handleTryAgain = () => {
+        this.setState({ hasError: false, error: null });
+    };
+
     handleReload = () => {
         window.location.reload();
     };
 
     handleGoHome = () => {
+        this.setState({ hasError: false, error: null });
         window.location.href = '/dashboard';
     };
 
     render() {
         if (this.state.hasError) {
             return (
-                <div className="min-h-screen flex items-center justify-center p-6 bg-gray-50 dark:bg-zinc-950 font-outfit">
-                    <div className="card max-w-md w-full text-center p-8 shadow-2xl border border-red-500/20">
-                        <div className="w-16 h-16 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center mx-auto mb-6">
+                <div className="py-12 px-4 flex items-center justify-center font-outfit w-full">
+                    <div className="card max-w-md w-full text-center p-8 shadow-2xl border border-rose-500/20 bg-white dark:bg-[#0c241a]">
+                        <div className="w-16 h-16 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center mx-auto mb-5 shadow-sm">
                             <AlertTriangle className="w-8 h-8" />
                         </div>
-                        <h2 className="text-2xl font-black text-gray-800 dark:text-white mb-2">Something went wrong</h2>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-                            An unexpected application error occurred. You can reload the page or return to the dashboard.
+                        <h2 className="text-xl sm:text-2xl font-black text-slate-800 dark:text-white mb-2">Something went wrong</h2>
+                        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mb-6">
+                            This section encountered a temporary issue. You can retry or switch to another section anytime.
                         </p>
                         <div className="flex gap-3">
                             <button
-                                onClick={this.handleReload}
-                                className="btn-secondary flex-1 flex items-center justify-center gap-2 py-3 text-sm"
+                                onClick={this.handleTryAgain}
+                                className="btn-secondary flex-1 flex items-center justify-center gap-2 py-3 text-xs sm:text-sm"
                             >
                                 <RefreshCw className="w-4 h-4" />
-                                Reload
+                                Try Again
                             </button>
                             <button
                                 onClick={this.handleGoHome}
-                                className="btn-primary flex-1 flex items-center justify-center gap-2 py-3 text-sm"
+                                className="btn-primary flex-1 flex items-center justify-center gap-2 py-3 text-xs sm:text-sm"
                             >
                                 <Home className="w-4 h-4" />
                                 Dashboard

@@ -7,6 +7,7 @@ import { ArrowLeft, Clock, Flame, BookOpen, CheckCircle2, Plus, Scale, Crown } f
 
 import { useAuth } from '../context/AuthContext';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
+import CustomSelect from '../components/CustomSelect';
 
 const RecipeDetail = () => {
     const { id } = useParams();
@@ -265,17 +266,17 @@ const RecipeDetail = () => {
                                 />
                             </div>
                             <div>
-                                <label className="input-label">Meal Type</label>
-                                <select
-                                    className="input-field"
+                                <CustomSelect
+                                    label="Meal Type"
                                     value={addConfig.meal_type}
-                                    onChange={(e) => setAddConfig({ ...addConfig, meal_type: e.target.value })}
-                                >
-                                    <option value="breakfast">🌅 Breakfast</option>
-                                    <option value="lunch">☀️ Lunch</option>
-                                    <option value="snack">🫐 Snack</option>
-                                    <option value="dinner">🌙 Dinner</option>
-                                </select>
+                                    onChange={(val) => setAddConfig({ ...addConfig, meal_type: val })}
+                                    options={[
+                                        { value: 'breakfast', label: 'Breakfast', icon: '🌅', description: 'Morning kickstart meal' },
+                                        { value: 'lunch', label: 'Lunch', icon: '☀️', description: 'Midday nutrient fuel' },
+                                        { value: 'snack', label: 'Snack', icon: '🫐', description: 'Healthy mini bite' },
+                                        { value: 'dinner', label: 'Dinner', icon: '🌙', description: 'Light evening nutrition' },
+                                    ]}
+                                />
                             </div>
                         </div>
 

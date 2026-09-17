@@ -10,6 +10,7 @@ import { useAuth } from '../context/AuthContext';
 const Cookbook = () => {
     const { user, isPremium } = useAuth();
     const [searchTerm, setSearchTerm] = useState('');
+    const [filterType, setFilterType] = useState('all');
     const debouncedSearch = useDebounce(searchTerm, 250);
 
     const { data: recipes, isLoading } = useQuery({
@@ -20,10 +21,12 @@ const Cookbook = () => {
         }
     });
 
-    const filteredRecipes = recipes?.filter(recipe =>
-        recipe.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-        recipe.description?.toLowerCase().includes(debouncedSearch.toLowerCase())
-    );
+    const filteredRecipes = recipes?.filter(recipe => {
+        const matchesSearch = recipe.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+            recipe.description?.toLowerCase().includes(debouncedSearch.toLowerCase());
+        const matchesType = filterType === 'all' || (filterType === 'premium' ? recipe.is_premium : !recipe.is_premium);
+        return matchesSearch && matchesType;
+    });
 
     if (isLoading) {
         return (
@@ -61,16 +64,27 @@ const Cookbook = () => {
                     <p className="page-subtitle">Discover nutritious, authentic Indian recipes curated for your health metrics and meal plan</p>
                 </div>
 
-                {/* Search */}
-                <div className="relative shrink-0">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/30 w-4 h-4" />
-                    <input
-                        type="text"
-                        placeholder="Search recipes (e.g. Palak Paneer, Poha)..."
-                        className="input-field pl-11 py-3 w-full md:w-80"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+                {/* Search & Filter */}
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                    <div className="relative flex-1 md:w-72">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/30 w-4 h-4" />
+                        <input
+                            type="text"
+                            placeholder="Search recipes (e.g. Palak Paneer)..."
+                            className="input-field pl-11 py-3 w-full"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    <select
+                        value={filterType}
+                        onChange={(e) => setFilterType(e.target.value)}
+                        className="select-field py-3 text-xs sm:text-sm font-bold w-36 sm:w-44 shrink-0"
+                    >
+                        <option value="all">🌟 All Recipes</option>
+                        <option value="free">🥗 Standard</option>
+                        <option value="premium">👑 Premium</option>
+                    </select>
                 </div>
             </div>
 
