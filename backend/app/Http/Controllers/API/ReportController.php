@@ -16,8 +16,11 @@ class ReportController extends Controller
     public function downloadPDF(Request $request)
     {
         try {
-            $user    = $request->user()->load('profile');
-            $date    = $request->input('date', Carbon::today()->toDateString());
+            @ini_set('memory_limit', '256M');
+            @set_time_limit(60);
+
+            $user = $request->user()->load('profile');
+            $date = $request->input('date', Carbon::today()->toDateString());
 
             $plan = MealPlan::where('user_id', $user->id)
                 ->where('date', $date)
@@ -144,65 +147,90 @@ class ReportController extends Controller
 
     public function summary(Request $request, \App\Services\AchievementService $achievementService)
     {
-        $user    = $request->user()->load('profile');
-        $profile = $user->profile;
+        try {
+            $user    = $request->user()->load('profile');
+            $profile = $user->profile;
 
-        $totalPlans = MealPlan::where('user_id', $user->id)->count();
+            $totalPlans = MealPlan::where('user_id', $user->id)->count();
 
-        // Consolidated single query for progress log metrics (cross-database safe for Postgres, MySQL & SQLite)
-        $progressStats = ProgressLog::where('user_id', $user->id)
-            ->selectRaw('
-                COUNT(*) as total_logs,
-                SUM(CASE WHEN workout_done = 1 OR workout_done = true THEN 1 ELSE 0 END) as workout_days,
-                AVG(calories_consumed) as avg_calories,
-                AVG(weight) as avg_weight
-            ')
-            ->first();
+            // Portable cross-database aggregate queries (PostgreSQL, MySQL, SQLite)
+            $totalLogs   = ProgressLog::where('user_id', $user->id)->count();
+            $workoutDays = ProgressLog::where('user_id', $user->id)->where('workout_done', true)->count();
+            $avgCalories = ProgressLog::where('user_id', $user->id)->whereNotNull('calories_consumed')->avg('calories_consumed');
+            $avgWeight   = ProgressLog::where('user_id', $user->id)->whereNotNull('weight')->avg('weight');
 
-        $latestLog = ProgressLog::where('user_id', $user->id)
-            ->latest('date')
-            ->first(['date', 'weight']);
+            $latestLog = ProgressLog::where('user_id', $user->id)
+                ->latest('date')
+                ->first(['date', 'weight']);
 
-        $achievementService->checkAchievements($user);
-        $streak = $achievementService->calculateStreak($user);
-        $badges = UserBadge::where('user_id', $user->id)
-            ->orderBy('earned_at', 'desc')
-            ->get();
+            $streak = 0;
+            $formattedBadges = [];
 
-        $badgeNameMap = [
-            'streak_7'          => '7-Day Streak Warrior',
-            'streak_14'         => '14-Day Consistency Master',
-            'streak_30'         => '30-Day Nutrition Legend',
-            'starter'           => 'First Step Starter',
-            'culinary_explorer' => 'Culinary Explorer',
-            'water_champion'    => 'Hydration Hero',
-            'goal_reached'      => 'Goal Crusher',
-        ];
+            try {
+                $achievementService->checkAchievements($user);
+                $streak = $achievementService->calculateStreak($user);
+                $badges = UserBadge::where('user_id', $user->id)
+                    ->orderBy('earned_at', 'desc')
+                    ->get();
 
-        $formattedBadges = $badges->map(function ($b) use ($badgeNameMap) {
-            return [
-                'id'         => $b->id,
-                'badge_type' => $b->badge_type,
-                'badge_name' => $badgeNameMap[$b->badge_type] ?? ucwords(str_replace('_', ' ', $b->badge_type)),
-                'earned_at'  => $b->earned_at,
-            ];
-        });
+                $badgeNameMap = [
+                    'streak_7'          => '7-Day Streak Warrior',
+                    'streak_14'         => '14-Day Consistency Master',
+                    'streak_30'         => '30-Day Nutrition Legend',
+                    'starter'           => 'First Step Starter',
+                    'culinary_explorer' => 'Culinary Explorer',
+                    'water_champion'    => 'Hydration Hero',
+                    'goal_reached'      => 'Goal Crusher',
+                ];
 
-        return response()->json([
-            'user'    => $user->only('name', 'email', 'profile_photo_url'),
-            'profile' => $profile,
-            'stats'   => [
-                'total_plans_generated' => $totalPlans,
-                'total_logs'            => (int) ($progressStats->total_logs ?? 0),
-                'workout_days'          => (int) ($progressStats->workout_days ?? 0),
-                'latest_weight'         => $latestLog?->weight,
-                'latest_log_date'       => $latestLog?->date,
-                'streak'                => $streak,
-                'avg_calories'          => $progressStats->avg_calories ? round((float)$progressStats->avg_calories, 0) : null,
-                'avg_weight'            => $progressStats->avg_weight   ? round((float)$progressStats->avg_weight,   1) : null,
-            ],
-            'has_profile' => (bool) $profile,
-            'badges'      => $formattedBadges,
-        ]);
+                $formattedBadges = $badges->map(function ($b) use ($badgeNameMap) {
+                    return [
+                        'id'         => $b->id,
+                        'badge_type' => $b->badge_type,
+                        'badge_name' => $badgeNameMap[$b->badge_type] ?? ucwords(str_replace('_', ' ', $b->badge_type)),
+                        'earned_at'  => $b->earned_at,
+                    ];
+                });
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Streak/badge check warning in Report summary: ' . $e->getMessage());
+            }
+
+            return response()->json([
+                'user'    => $user->only('name', 'email', 'profile_photo_url'),
+                'profile' => $profile,
+                'stats'   => [
+                    'total_plans_generated' => (int) $totalPlans,
+                    'total_logs'            => (int) $totalLogs,
+                    'workout_days'          => (int) $workoutDays,
+                    'latest_weight'         => $latestLog?->weight,
+                    'latest_log_date'       => $latestLog?->date,
+                    'streak'                => (int) $streak,
+                    'avg_calories'          => $avgCalories ? round((float)$avgCalories, 0) : null,
+                    'avg_weight'            => $avgWeight   ? round((float)$avgWeight,   1) : null,
+                ],
+                'has_profile' => (bool) $profile,
+                'badges'      => $formattedBadges,
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Report summary failed: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'user'    => $request->user()?->only('name', 'email', 'profile_photo_url'),
+                'profile' => $request->user()?->profile,
+                'stats'   => [
+                    'total_plans_generated' => 0,
+                    'total_logs'            => 0,
+                    'workout_days'          => 0,
+                    'latest_weight'         => null,
+                    'latest_log_date'       => null,
+                    'streak'                => 0,
+                    'avg_calories'          => null,
+                    'avg_weight'            => null,
+                ],
+                'has_profile' => (bool) $request->user()?->profile,
+                'badges'      => [],
+            ]);
+        }
     }
 }
