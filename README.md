@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🥗 NutriPlan AI
+# 🥗 Metrivita AI
 ### *Next-Gen Health-Metric Driven AI Diet & Nutrition Planner*
 
 [![Live Demo](https://img.shields.io/badge/Live_Demo-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://diet-nutrition-planner.vercel.app)

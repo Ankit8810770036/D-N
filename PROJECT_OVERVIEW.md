@@ -1,4 +1,4 @@
-# 🥗 Diet and Nutrition Planner Based on Health Metrics
+# 🥗 Metrivita — Diet & Nutrition Planner Based on Health Metrics
 
 > **Comprehensive Project Master File**  
 > *Note for AI Assistants:* Read this file upon starting work in this workspace to get a complete understanding of the project architecture, features, API routes, database models, and run commands without needing to inspect individual files again.
@@ -7,7 +7,7 @@
 
 ## 📌 1. Project Overview & Features
 
-**Diet & Nutrition Planner (NutriPlan AI)** is an enterprise-grade full-stack health, nutrition, and meal-planning web application powered by **AI (Groq / NVIDIA NIM / Llama 3.3 70B)** and medically recognized health formulas (Mifflin-St Jeor, Devine, ICMR-NIN).
+**Metrivita (Diet & Nutrition Planner)** is an enterprise-grade full-stack health, nutrition, and meal-planning web application powered by **AI (Groq / NVIDIA NIM / Llama 3.3 70B)** and medically recognized health formulas (Mifflin-St Jeor, Devine, ICMR-NIN).
 
 ### Key Capabilities & Modules
 1. **🔐 Authentication & RBAC**: Laravel Sanctum token-based authentication with profile picture upload, asynchronous verification emails, and Spatie role-based access control (User vs. Admin).

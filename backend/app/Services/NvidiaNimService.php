@@ -23,7 +23,7 @@ class NvidiaNimService
         $this->defaultModel = config('services.nvidia.model', 'meta/llama-3.2-11b-vision-instruct');
         $this->visionModel  = config('services.nvidia.vision_model', 'meta/llama-3.2-11b-vision-instruct');
         
-        $this->systemPrompt = "You are NutriBot, an elite Clinical Dietitian, Nutritionist, and Health AI specialized in Indian diets, culinary traditions, and metabolic wellness (ICMR-NIN guidelines). " .
+        $this->systemPrompt = "You are MetriBot, an elite Clinical Dietitian, Nutritionist, and Health AI specialized in Indian diets, culinary traditions, and metabolic wellness (ICMR-NIN guidelines). " .
             "Always act as the platform's proprietary built-in diet AI assistant. NEVER mention NVIDIA, NIM, Meta, Llama, OpenAI, or any external AI providers or model names. " .
             "Provide evidence-based, medically sound, and practical nutrition advice customized for Indian lifestyles (e.g., vegetarian protein pairing, glycemic load management with fiber-rich dals/sabzis, healthy traditional cooking with cold-pressed oils or minimal desi ghee, hydration with chaas/coconut water). " .
             "DOMAIN RESTRICTION RULE: You ONLY answer questions related to diet, Indian food, recipes, calories, macronutrients, hydration, health metrics, fitness, and nutritional wellness. " .
@@ -166,7 +166,7 @@ class NvidiaNimService
                 "• Indian Electrolyte Boosters: **Tender Coconut Water (Nariyal Pani)**, **Chaas with roasted jeera**, and **Lemon Water (Nimbu Pani with rock salt)**.";
         }
 
-        return "### 🥗 NutriBot Indian Diet Assistant\n\n" .
+        return "### 🥗 MetriBot Indian Diet Assistant\n\n" .
             "Namaste! I am your clinical Indian diet and nutrition assistant. I help you tailor authentic Indian meals according to your target calories, macros, and health conditions.\n\n" .
             "You can ask me questions like:\n" .
             "• *'What is a high-protein vegetarian Indian breakfast under 350 calories?'*\n" .
@@ -196,7 +196,7 @@ class NvidiaNimService
             return $this->getDeterministicWeeklyPlan($userProfile, $startDate);
         }
 
-        $prompt = "You are NutriBot, an expert Clinical Indian Dietitian AI. " .
+        $prompt = "You are MetriBot, an expert Clinical Indian Dietitian AI. " .
             "Create an authentic 7-day personalized Indian weekly meal plan starting on {$startDate} tailored to these exact health metrics:\n" .
             "- Daily Calorie Target: {$targetCalories} kcal\n" .
             "- Goal: {$goal}\n" .
@@ -245,7 +245,7 @@ class NvidiaNimService
                 ->post($this->baseUrl, [
                     'model'       => $this->defaultModel,
                     'messages'    => [
-                        ['role' => 'system', 'content' => 'You are NutriBot, an expert Indian clinical meal planning engine. You respond strictly with raw JSON conforming to the requested schema with no extra text.'],
+                        ['role' => 'system', 'content' => 'You are MetriBot, an expert Indian clinical meal planning engine. You respond strictly with raw JSON conforming to the requested schema with no extra text.'],
                         ['role' => 'user',   'content' => $prompt],
                     ],
                     'temperature' => 0.4,

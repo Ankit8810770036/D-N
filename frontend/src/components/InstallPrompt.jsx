@@ -18,7 +18,7 @@ export default function InstallPrompt() {
     }
 
     // Check if user dismissed prompt recently (7-day cooldown)
-    const dismissedAt = localStorage.getItem('nutriplan_pwa_dismissed_at');
+    const dismissedAt = localStorage.getItem('metrivita_pwa_dismissed_at');
     if (dismissedAt) {
       const daysSinceDismiss = (Date.now() - parseInt(dismissedAt, 10)) / (1000 * 60 * 60 * 24);
       if (daysSinceDismiss < 7) {
@@ -37,7 +37,7 @@ export default function InstallPrompt() {
       setIsInstalled(true);
       setIsVisible(false);
       setDeferredPrompt(null);
-      localStorage.removeItem('nutriplan_pwa_dismissed_at');
+      localStorage.removeItem('metrivita_pwa_dismissed_at');
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -63,7 +63,7 @@ export default function InstallPrompt() {
 
   const handleDismiss = () => {
     setIsVisible(false);
-    localStorage.setItem('nutriplan_pwa_dismissed_at', Date.now().toString());
+    localStorage.setItem('metrivita_pwa_dismissed_at', Date.now().toString());
   };
 
   if (isInstalled || !isVisible) {
@@ -75,13 +75,13 @@ export default function InstallPrompt() {
       <div className="bg-gradient-to-r from-emerald-950 via-gray-900 to-emerald-900 border border-emerald-500/30 rounded-3xl p-4 shadow-2xl backdrop-blur-xl flex items-center gap-3.5 text-white">
         {/* App Icon */}
         <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center flex-shrink-0 shadow-inner">
-          <img src="/favicon.svg" alt="NutriPlan Icon" className="w-8 h-8" />
+          <img src="/favicon.svg" alt="Metrivita Icon" className="w-8 h-8" />
         </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
-            <h4 className="font-bold text-sm text-white tracking-wide truncate">Install NutriPlan</h4>
+            <h4 className="font-bold text-sm text-white tracking-wide truncate">Install Metrivita</h4>
             <span className="text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
               App
             </span>

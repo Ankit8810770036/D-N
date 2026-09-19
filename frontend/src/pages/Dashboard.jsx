@@ -249,7 +249,7 @@ export default function Dashboard() {
                         <MessageSquarePlus className="w-6 h-6" />
                     </div>
                     <div>
-                        <h3 className="font-black text-slate-900 dark:text-white text-base">Got feedback or ideas for NutriPlan?</h3>
+                        <h3 className="font-black text-slate-900 dark:text-white text-base">Got feedback or ideas for Metrivita?</h3>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                             Tell us what you love or want improved and earn <strong className="text-amber-600 dark:text-amber-400 font-bold">+10 HealthCoins</strong>!
                         </p>

@@ -74,7 +74,7 @@ class ChatbotController extends Controller
 
         // --- Build Personalized Context ---
         $profile = $user->profile;
-        $contextPrompt = "You are NutriBot, an expert Clinical Dietitian & Nutrition AI for the NutriPlan platform. NEVER mention external AI providers or model names. ";
+        $contextPrompt = "You are MetriBot, an expert Clinical Dietitian & Nutrition AI for the Metrivita platform. NEVER mention external AI providers or model names. ";
         
         $contextPrompt .= "User: {$user->name}. ";
 

@@ -17,7 +17,7 @@ export default function AuthNavbar() {
                 <div>
                     <div className="flex items-center gap-1.5">
                         <span className="font-extrabold text-sm sm:text-lg tracking-tight text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-                            NutriPlan
+                            Metrivita
                         </span>
                         <span className="hidden sm:inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 uppercase tracking-wide">
                             <Sparkles className="w-2.5 h-2.5" /> AI Health
@@ -49,7 +49,7 @@ export default function AuthNavbar() {
                 {path === '/login' && (
                     <div className="flex items-center gap-2">
                         <span className="text-xs text-slate-500 dark:text-gray-400 font-medium hidden md:inline">
-                            New to NutriPlan?
+                            New to Metrivita?
                         </span>
                         <Link
                             to="/register"

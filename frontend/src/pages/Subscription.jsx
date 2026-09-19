@@ -43,7 +43,7 @@ const faqs = [
     },
     {
         q: 'How does the AI chat work on Premium?',
-        a: 'Premium members get up to 20 daily queries to our advanced NutriBot AI system which provides personalized nutrition advice and meal plate photo analysis based on your exact health profile.'
+        a: 'Premium members get up to 20 daily queries to our advanced MetriBot AI system which provides personalized nutrition advice and meal plate photo analysis based on your exact health profile.'
     }
 ];
 

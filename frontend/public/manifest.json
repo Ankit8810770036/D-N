@@ -1,7 +1,7 @@
 {
-  "name": "NutriPlan — Diet & Nutrition Planner",
-  "short_name": "NutriPlan",
-  "description": "AI-powered personalized Indian diet planner and nutrition tracker based on your health metrics.",
+  "name": "Metrivita — Diet & Nutrition Planner",
+  "short_name": "Metrivita",
+  "description": "Metrivita — AI-powered personalized Indian diet planner and nutrition tracker based on your health metrics.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

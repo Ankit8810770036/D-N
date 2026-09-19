@@ -31,7 +31,7 @@
 <body>
 
 <div class="header">
-    <h1>NUTRI-PLAN HEALTH &amp; DIET REPORT</h1>
+    <h1>METRIVITA HEALTH &amp; DIET REPORT</h1>
     <p>Member: <strong>{{ $user->name }}</strong> &nbsp;|&nbsp; Target Date: <strong>{{ $date }}</strong> &nbsp;|&nbsp; Generated: {{ now()->format('d M Y, h:i A') }}</p>
 </div>
 
@@ -167,7 +167,7 @@
 @endif
 
 <div class="footer">
-    NutriPlan AI &bull; Clinical Nutrition Intelligence Platform &bull; Consult a certified medical professional before starting any extreme calorie regimen.
+    Metrivita &bull; Clinical Health &amp; Nutrition Intelligence Platform &bull; Consult a certified medical professional before starting any extreme calorie regimen.
 </div>
 
 </body>

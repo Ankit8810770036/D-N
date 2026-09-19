@@ -47,7 +47,7 @@ class FeedbackController extends Controller
         }
 
         return response()->json([
-            'message'       => 'Thank you for your feedback! It helps make NutriPlan better.',
+            'message'       => 'Thank you for your feedback! It helps make Metrivita better.',
             'feedback'      => $feedback,
             'coins_awarded' => $coinsAwarded,
         ], 201);

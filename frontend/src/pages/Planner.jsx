@@ -592,7 +592,7 @@ export default function Planner() {
                                 🥗
                             </div>
                             <h3 className="text-xl font-black">7-Day AI Weekly Meal Planner</h3>
-                            <p className="text-emerald-100 text-xs mt-1">Powered by NutriBot Clinical Intelligence</p>
+                            <p className="text-emerald-100 text-xs mt-1">Powered by MetriBot Clinical Intelligence</p>
                             <button
                                 onClick={() => setShowAiWeeklyModal(false)}
                                 className="absolute top-4 right-4 text-white/80 hover:text-white text-xl p-1 font-bold"
@@ -643,7 +643,7 @@ export default function Planner() {
                             </div>
 
                             <div className="space-y-1.5 text-xs text-slate-500 dark:text-gray-400 bg-emerald-50/50 dark:bg-emerald-950/20 p-3 rounded-xl border border-emerald-100 dark:border-emerald-900/30">
-                                <p className="font-semibold text-emerald-800 dark:text-emerald-300">What NutriBot will create:</p>
+                                <p className="font-semibold text-emerald-800 dark:text-emerald-300">What MetriBot will create:</p>
                                 <p>• 7 distinct days with authentic Indian regional meal variety</p>
                                 <p>• Strict Indian slot compliance (Poha/Chilla/Idli/Eggs for Breakfast, Makhana/Sprouts for Snacks, Thalis for Lunch &amp; Dinner)</p>
                                 <p>• Immediate synchronization with your 7-Day Indian Grocery List</p>

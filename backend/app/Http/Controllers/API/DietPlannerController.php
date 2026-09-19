@@ -227,7 +227,7 @@ class DietPlannerController extends Controller
     }
 
     /**
-     * Generate an AI-powered 7-day weekly meal plan using NutriBot.
+     * Generate an AI-powered 7-day weekly meal plan using MetriBot.
      */
     public function generateAiWeeklyPlan(Request $request)
     {

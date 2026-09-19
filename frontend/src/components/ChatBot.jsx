@@ -44,7 +44,7 @@ export default function ChatBot() {
         { 
             id: 1, 
             type: 'bot', 
-            text: 'Namaste! I am **NutriBot**, your Clinical Diet & Nutrition Assistant.\n\nAsk me anything about your diet, macronutrients, calorie targets, or upload a photo of your food for instant calorie estimation!',
+            text: 'Namaste! I am **MetriBot**, your Clinical Diet & Nutrition Assistant.\n\nAsk me anything about your diet, macronutrients, calorie targets, or upload a photo of your food for instant calorie estimation!',
             suggestions: DEFAULT_QUICK_QUESTIONS.slice(0, 3)
         },
     ])
@@ -239,7 +239,7 @@ export default function ChatBot() {
                     text: `<b>⚠️ AI Quota Notice</b><br/>${limitMsg}${actionLink}`
                 }]);
             } else {
-                const errMsg = getErrorMessage(error, 'Unable to connect to NutriBot. Please check your connection.');
+                const errMsg = getErrorMessage(error, 'Unable to connect to MetriBot. Please check your connection.');
                 setMessages([...newMessages, { 
                     id: Date.now() + 1, 
                     type: 'bot', 
@@ -340,7 +340,7 @@ export default function ChatBot() {
                             </div>
                             <div>
                                 <h3 className="font-bold text-sm leading-tight text-white flex items-center gap-1.5">
-                                    NutriBot AI
+                                    MetriBot AI
                                     <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-400/30 border border-emerald-300/40 text-emerald-100 font-semibold tracking-wide">CLINICAL AI</span>
                                 </h3>
                                 <p className="text-[10px] text-emerald-100/90 font-medium">Diet &amp; Nutrition Intelligence</p>
@@ -502,7 +502,7 @@ export default function ChatBot() {
                                     <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
                                     <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
                                     <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce"></div>
-                                    <span className="text-[11px] text-slate-400 ml-1 font-medium">NutriBot is analyzing food &amp; nutrition...</span>
+                                    <span className="text-[11px] text-slate-400 ml-1 font-medium">MetriBot is analyzing food &amp; nutrition...</span>
                                 </div>
                             </div>
                         )}
