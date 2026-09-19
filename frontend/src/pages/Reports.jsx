@@ -15,6 +15,17 @@ function bmiMeta(bmi) {
     return { label: 'Obese', color: 'text-red-500' }
 }
 
+function formatDateSafe(val) {
+    if (!val) return '—'
+    try {
+        const d = new Date(val)
+        if (isNaN(d.getTime())) return String(val)
+        return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+    } catch (_) {
+        return String(val)
+    }
+}
+
 function StatCard({ icon: Icon, iconBg, val, lbl, sub, subColor }) {
     return (
         <div className="metric-card flex flex-col gap-2 py-4 px-4">
@@ -35,18 +46,32 @@ export default function Reports() {
     const [summary, setSummary] = useState(null)
     const [loading, setLoading] = useState(true)
     const [downloading, setDownloading] = useState(false)
-    const [date, setDate] = useState(new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0])
+    const [date, setDate] = useState(() => {
+        try {
+            return new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]
+        } catch (_) {
+            return new Date().toISOString().split('T')[0]
+        }
+    })
 
     const minDate = useMemo(() => {
-        const d = new Date()
-        d.setDate(d.getDate() - 30)
-        return d.toISOString().split('T')[0]
+        try {
+            const d = new Date()
+            d.setDate(d.getDate() - 30)
+            return d.toISOString().split('T')[0]
+        } catch (_) {
+            return ''
+        }
     }, [])
 
     const maxDate = useMemo(() => {
-        const d = new Date()
-        d.setDate(d.getDate() + 30)
-        return d.toISOString().split('T')[0]
+        try {
+            const d = new Date()
+            d.setDate(d.getDate() + 30)
+            return d.toISOString().split('T')[0]
+        } catch (_) {
+            return ''
+        }
     }, [])
 
     const fetchSummary = useCallback(() => {
@@ -165,7 +190,7 @@ export default function Reports() {
                         <StatCard
                             icon={Flame}
                             iconBg="bg-orange-500"
-                            val={profile?.calories_target ? `${Math.round(profile.calories_target).toLocaleString()}` : '—'}
+                            val={profile?.calories_target ? `${Math.round(Number(profile.calories_target)).toLocaleString()}` : '—'}
                             lbl="Calorie Target"
                             sub="kcal / day"
                         />
@@ -174,7 +199,7 @@ export default function Reports() {
                         <StatCard
                             icon={Activity}
                             iconBg="bg-blue-500"
-                            val={stats?.avg_calories ? stats.avg_calories.toLocaleString() : '—'}
+                            val={stats?.avg_calories ? Number(stats.avg_calories).toLocaleString() : '—'}
                             lbl="Avg Consumed"
                             sub={stats?.avg_calories ? 'kcal / day' : 'Log progress to see'}
                         />
@@ -183,7 +208,7 @@ export default function Reports() {
                         <StatCard
                             icon={TrendingUp}
                             iconBg="bg-purple-500"
-                            val={stats?.avg_weight ?? (profile?.weight_kg ? `${parseFloat(profile.weight_kg)}` : '—')}
+                            val={stats?.avg_weight !== null && stats?.avg_weight !== undefined ? `${Number(stats.avg_weight).toFixed(1)}` : (profile?.weight_kg ? `${parseFloat(profile.weight_kg)}` : '—')}
                             lbl="Avg Weight (kg)"
                             sub={stats?.avg_weight ? 'from your logs' : (profile?.weight_kg ? 'from profile' : 'No data yet')}
                         />
@@ -192,7 +217,7 @@ export default function Reports() {
                         <StatCard
                             icon={CalendarCheck}
                             iconBg="bg-teal-500"
-                            val={stats?.total_plans_generated ?? 0}
+                            val={Number(stats?.total_plans_generated) || 0}
                             lbl="Meal Plans"
                             sub="generated"
                         />
@@ -200,17 +225,17 @@ export default function Reports() {
                         {/* Workout Days */}
                         <StatCard
                             icon={Dumbbell}
-                            iconBg={stats?.workout_days > 0 ? 'bg-emerald-600' : 'bg-gray-300'}
-                            val={stats?.workout_days ?? 0}
+                            iconBg={Number(stats?.workout_days) > 0 ? 'bg-emerald-600' : 'bg-gray-300'}
+                            val={Number(stats?.workout_days) || 0}
                             lbl="Workout Days"
-                            sub={stats?.workout_days > 0 ? 'all-time ✅' : 'None logged yet'}
+                            sub={Number(stats?.workout_days) > 0 ? 'all-time ✅' : 'None logged yet'}
                         />
 
                         {/* Progress Logs */}
                         <StatCard
                             icon={FileText}
                             iconBg="bg-indigo-500"
-                            val={stats?.total_logs ?? 0}
+                            val={Number(stats?.total_logs) || 0}
                             lbl="Progress Logs"
                             sub="entries"
                         />
@@ -218,10 +243,10 @@ export default function Reports() {
                         {/* Streak */}
                         <StatCard
                             icon={Trophy}
-                            iconBg={stats?.streak > 0 ? 'bg-amber-500' : 'bg-gray-300'}
-                            val={stats?.streak > 0 ? `🔥 ${stats.streak}` : '0'}
+                            iconBg={Number(stats?.streak) > 0 ? 'bg-amber-500' : 'bg-gray-300'}
+                            val={Number(stats?.streak) > 0 ? `🔥 ${stats.streak}` : '0'}
                             lbl="Current Streak"
-                            sub={stats?.streak > 0 ? 'days in a row' : 'Start logging daily!'}
+                            sub={Number(stats?.streak) > 0 ? 'days in a row' : 'Start logging daily!'}
                         />
                     </div>
 
@@ -231,7 +256,7 @@ export default function Reports() {
                             <Activity className="w-3.5 h-3.5" />
                             Last progress entry:{' '}
                             <span className="font-semibold text-gray-700 dark:text-gray-300">
-                                {new Date(stats.latest_log_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                {formatDateSafe(stats.latest_log_date)}
                             </span>
                         </div>
                     )}
@@ -279,7 +304,7 @@ export default function Reports() {
             </div>
 
             {/* ── Badges ── */}
-            {summary?.badges?.length > 0 && (
+            {Array.isArray(summary?.badges) && summary.badges.length > 0 && (
                 <div className="card">
                     <h3 className="font-semibold text-gray-800 dark:text-white/90 mb-3 flex items-center gap-2">
                         <Trophy className="w-4 h-4 text-amber-500" /> Your Badges

@@ -44,3 +44,21 @@ Artisan::command('subscriptions:expire', function () {
 })->purpose('Downgrade users with expired premium subscriptions');
 
 Schedule::command('subscriptions:expire')->dailyAt('00:00');
+
+/*
+|--------------------------------------------------------------------------
+| Prune Old Meal Plans (Past 30 Days Retention)
+|--------------------------------------------------------------------------
+| Automatically purges meal plan logs older than 30 days to free database
+| disk space and maintain optimal query performance.
+*/
+Artisan::command('meals:prune-old {--days=30 : Number of days of meal plans to keep}', function () {
+    $days = (int) $this->option('days');
+    $count = \App\Models\MealPlan::pruneOlderThan($days);
+
+    $this->info("Done. Pruned {$count} historical meal plan(s) older than {$days} days.");
+    \Illuminate\Support\Facades\Log::info("Automatic database prune: deleted {$count} meal plans older than {$days} days.");
+})->purpose('Delete historical meal plans older than 30 days to free database storage');
+
+Schedule::command('meals:prune-old')->dailyAt('01:00');
+

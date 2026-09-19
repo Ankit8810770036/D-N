@@ -1,9 +1,6 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { MessageSquarePlus, Star, Clock, CheckCircle2, Eye, Sparkles, Filter, AlertTriangle, ShieldCheck, HeartHandshake } from 'lucide-react'
-import { useAuth } from '../context/AuthContext'
+import { MessageSquarePlus, Sparkles, ShieldCheck, HeartHandshake } from 'lucide-react'
 import FeedbackModal from '../components/FeedbackModal'
-import api from '../services/api'
 
 const CATEGORY_MAP = {
     bug: { label: 'Bug Report', icon: '🐞', badge: 'badge-rose bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900' },
@@ -13,32 +10,9 @@ const CATEGORY_MAP = {
     general: { label: 'General Feedback', icon: '💬', badge: 'badge-purple bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-900' },
 }
 
-const STATUS_MAP = {
-    pending: { label: 'Under Review', icon: Clock, color: 'text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800' },
-    reviewed: { label: 'Reviewed', icon: Eye, color: 'text-sky-600 bg-sky-50 border-sky-200 dark:bg-sky-950/40 dark:text-sky-400 dark:border-sky-800' },
-    resolved: { label: 'Resolved / Implemented', icon: CheckCircle2, color: 'text-emerald-600 bg-emerald-50 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800' },
-}
-
 export default function FeedbackPage() {
-    const { isAdmin } = useAuth()
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [selectedCategory, setSelectedCategory] = useState('general')
-    const [activeTab, setActiveTab] = useState('all')
-
-    const { data: myFeedbacks, isLoading } = useQuery({
-        queryKey: ['userFeedbacks'],
-        queryFn: async () => {
-            if (!isAdmin) return []
-            try {
-                const res = await api.get('/admin/feedbacks')
-                return res.data
-            } catch (err) {
-                return []
-            }
-        },
-        enabled: Boolean(isAdmin),
-        retry: false,
-    })
 
     return (
         <div className="space-y-8 pb-24 animate-fade-in font-outfit max-w-5xl mx-auto">

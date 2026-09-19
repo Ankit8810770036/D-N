@@ -22,7 +22,13 @@ class HealthProfileController extends Controller
                 ? $this->calculator->calculateIdealWeightRange($profile->height_cm, $profile->gender)
                 : null;
             $extra['macros'] = $profile->calories_target
-                ? $this->calculator->calculateMacros($profile->calories_target, $profile->goal, $profile->food_preference ?? 'standard')
+                ? $this->calculator->calculateMacros(
+                    (float) $profile->calories_target,
+                    $profile->goal ?? 'maintain',
+                    $profile->food_preference ?? 'standard',
+                    (float) ($profile->weight_kg ?? 65),
+                    $profile->gender ?? 'male'
+                )
                 : null;
             $extra['water_intake_liters'] = $profile->weight_kg
                 ? $this->calculator->calculateWaterIntake($profile->weight_kg)
@@ -86,7 +92,7 @@ class HealthProfileController extends Controller
             $validated['gender']
         );
         $tdee   = $this->calculator->calculateTDEE($bmr, $validated['activity_level']);
-        $target = $this->calculator->calculateCaloriesTarget($tdee, $validated['goal']);
+        $target = $this->calculator->calculateCaloriesTarget($tdee, $validated['goal'], $validated['gender']);
 
         $profile->update(array_merge($validated, [
             'bmi'             => $bmi,
@@ -104,7 +110,13 @@ class HealthProfileController extends Controller
                 'bmr'                => $bmr,
                 'tdee'               => $tdee,
                 'calories_target'    => $target,
-                'macros'             => $this->calculator->calculateMacros($target, $validated['goal'], $validated['food_preference']),
+                'macros'             => $this->calculator->calculateMacros(
+                    (float) $target,
+                    $validated['goal'],
+                    $validated['food_preference'],
+                    (float) $validated['weight_kg'],
+                    $validated['gender']
+                ),
                 'water_intake_liters'=> $this->calculator->calculateWaterIntake($validated['weight_kg']),
                 'ideal_weight_range' => $this->calculator->calculateIdealWeightRange(
                     $validated['height_cm'], $validated['gender']

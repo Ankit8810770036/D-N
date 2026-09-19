@@ -58,52 +58,99 @@ class HealthCalculatorService
     }
 
     /**
-     * Calculate calorie target based on goal.
+     * Calculate calorie target based on goal and safe metabolic floors.
      * Lose:     TDEE - 500  (0.5 kg/week deficit)
      * Gain:     TDEE + 300  (moderate surplus)
      * Maintain: TDEE
+     * Safe floor: min 1200 kcal (female/other), min 1500 kcal (male)
      */
-    public function calculateCaloriesTarget(float $tdee, string $goal): float
+    public function calculateCaloriesTarget(float $tdee, string $goal, ?string $gender = 'male'): float
     {
-        return match ($goal) {
-            'lose'     => round($tdee - 500, 2),
-            'gain'     => round($tdee + 300, 2),
+        $rawTarget = match ($goal) {
+            'lose'     => $tdee - 500,
+            'gain'     => $tdee + 300,
             default    => $tdee,
         };
+
+        $minFloor = ($gender === 'female') ? 1200.0 : 1500.0;
+        return round(max($rawTarget, $minFloor), 2);
     }
 
     /**
-     * Calculate macro targets from calorie goal.
-     * Protein: 30%, Carbs: 45%, Fat: 25%
-     * Returns [protein_g, carbs_g, fat_g]
+     * Calculate macro targets scientifically scaled to body weight and clinical goals.
+     * Standard Sports Nutrition guidelines (ISSN / ACSM / ICMR):
+     * - Protein:
+     *   - Lose (deficit): 1.8g - 2.0g / kg (to preserve lean muscle mass)
+     *   - Gain (surplus): 1.8g - 2.2g / kg (to optimize muscle protein synthesis)
+     *   - Maintain: 1.4g - 1.6g / kg
+     * - Fat: 0.8g - 1.0g / kg (hormonal health & essential fatty acids, min 35g)
+     * - Carbs: Balances the remaining calorie pool: (Calories - (Protein*4 + Fat*9)) / 4
+     *
+     * Returns ['protein_g', 'carbs_g', 'fat_g']
      */
-    public function calculateMacros(float $calories, string $goal = 'maintain', string $dietType = 'standard'): array
-    {
+    public function calculateMacros(
+        float $calories,
+        string $goal = 'maintain',
+        string $dietType = 'standard',
+        ?float $weightKg = null,
+        ?string $gender = null
+    ): array {
+        // 1. Specialized Diets (Keto / Paleo)
         if ($dietType === 'keto') {
+            $fatG = round(($calories * 0.70) / 9, 1);
+            $proteinG = round(($calories * 0.25) / 4, 1);
+            $carbsG = round(($calories * 0.05) / 4, 1);
             return [
-                'protein_g' => round(($calories * 0.25) / 4, 1),
-                'carbs_g'   => round(($calories * 0.05) / 4, 1),
-                'fat_g'     => round(($calories * 0.70) / 9, 1),
+                'protein_g' => $proteinG,
+                'carbs_g'   => $carbsG,
+                'fat_g'     => $fatG,
             ];
         }
 
         if ($dietType === 'paleo') {
+            $proteinG = round(($calories * 0.35) / 4, 1);
+            $fatG = round(($calories * 0.35) / 9, 1);
+            $carbsG = round(($calories * 0.30) / 4, 1);
             return [
-                'protein_g' => round(($calories * 0.35) / 4, 1),
-                'carbs_g'   => round(($calories * 0.25) / 4, 1),
-                'fat_g'     => round(($calories * 0.40) / 9, 1),
+                'protein_g' => $proteinG,
+                'carbs_g'   => $carbsG,
+                'fat_g'     => $fatG,
             ];
         }
 
-        // High-protein for muscle gain
-        $proteinPct = $goal === 'gain' ? 0.35 : 0.30;
-        $carbsPct   = $goal === 'lose' ? 0.40 : 0.45;
-        $fatPct     = 1 - $proteinPct - $carbsPct;
+        // 2. Standard & Preference Diets (Veg, Non-Veg, Vegan, Jain, Standard)
+        // If body weight is provided, use gold-standard g/kg bodyweight formulation
+        $effectiveWeight = ($weightKg && $weightKg > 20) ? $weightKg : round($calories / 30, 1);
+
+        // Protein per kg determination
+        $proteinPerKg = match ($goal) {
+            'lose' => 1.8,     // Higher protein during caloric deficit to preserve lean mass
+            'gain' => 2.0,     // Optimal for muscle protein synthesis
+            default => 1.5,    // Healthy maintenance
+        };
+
+        $proteinG = $effectiveWeight * $proteinPerKg;
+        // Clamp protein calories between 15% and 35% of total calories
+        $minProteinG = ($calories * 0.15) / 4;
+        $maxProteinG = ($calories * 0.35) / 4;
+        $proteinG = max($minProteinG, min($maxProteinG, $proteinG));
+
+        // Fat determination: 0.8g - 1.0g per kg of bodyweight, bounded by 20% - 30% of total calories
+        $fatG = $effectiveWeight * 0.9;
+        $minFatG = max(35.0, ($calories * 0.20) / 9);
+        $maxFatG = ($calories * 0.30) / 9;
+        $fatG = max($minFatG, min($maxFatG, $fatG));
+
+        // Carbs fulfill the remaining caloric balance
+        $proteinCals = $proteinG * 4;
+        $fatCals = $fatG * 9;
+        $remainingCals = max(0, $calories - ($proteinCals + $fatCals));
+        $carbsG = max(30.0, $remainingCals / 4);
 
         return [
-            'protein_g' => round(($calories * $proteinPct) / 4, 1), // 4 kcal per gram
-            'carbs_g'   => round(($calories * $carbsPct)   / 4, 1),
-            'fat_g'     => round(($calories * $fatPct)     / 9, 1), // 9 kcal per gram
+            'protein_g' => round($proteinG, 1),
+            'carbs_g'   => round($carbsG, 1),
+            'fat_g'     => round($fatG, 1),
         ];
     }
 

@@ -46,13 +46,24 @@ class DietPlannerController extends Controller
             ], 422);
         }
 
+        // Opportunistic storage cleanup: Prune logs older than 30 days
+        try {
+            MealPlan::pruneOlderThan(30);
+        } catch (\Throwable $e) {}
+
         // Handle adding a specific recipe or food instead of full generation
         if ($request->has('recipe_id') || $request->has('food_id')) {
             return $this->addSpecificItem($request, $user, $date);
         }
 
         $target  = $profile->calories_target;
-        $macros  = $this->calculator->calculateMacros($target, $profile->goal, $profile->food_preference);
+        $macros  = $this->calculator->calculateMacros(
+            (float) $target,
+            $profile->goal ?? 'maintain',
+            $profile->food_preference ?? 'standard',
+            (float) ($profile->weight_kg ?? 65),
+            $profile->gender ?? 'male'
+        );
         $water   = $this->calculator->calculateWaterIntake((float) ($profile->weight_kg ?? 65));
 
         $distribution = [

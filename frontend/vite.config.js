@@ -23,7 +23,7 @@ export default defineConfig({
           'vendor-query': ['@tanstack/react-query'],
           'vendor-charts': ['recharts'],
           'vendor-icons': ['lucide-react'],
-          'vendor-ui': ['@headlessui/react', 'react-hot-toast'],
+          'vendor-ui': ['react-hot-toast'],
         }
       }
     }

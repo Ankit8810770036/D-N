@@ -166,20 +166,22 @@ class AuthController extends Controller
     public function updatePhoto(Request $request)
     {
         $request->validate([
-            'photo' => 'required|image|mimes:jpeg,png,jpg,webp,gif|max:2048',
+            'photo' => 'required|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
         ]);
 
         $user = $request->user();
+        $mediaService = app(\App\Services\MediaUploadService::class);
 
-        // Delete old photo if it exists on disk
-        if ($user->profile_photo_path && Storage::disk('public')->exists($user->profile_photo_path)) {
-            Storage::disk('public')->delete($user->profile_photo_path);
+        // Delete old photo if it exists (cloud or local)
+        if ($user->profile_photo_path) {
+            $mediaService->deleteProfilePhoto($user->profile_photo_path);
         }
 
-        $path = $request->file('photo')->store('profile-photos', 'public');
+        // Upload to Cloudinary / ImageKit or local disk
+        $uploadResult = $mediaService->uploadProfilePhoto($request->file('photo'), $user->id);
         
         $user->update([
-            'profile_photo_path' => $path,
+            'profile_photo_path' => $uploadResult['path'],
         ]);
 
         $user->refresh();
@@ -193,6 +195,7 @@ class AuthController extends Controller
         return response()->json([
             'message'           => 'Profile photo updated successfully',
             'profile_photo_url' => $user->profile_photo_url,
+            'provider'          => $uploadResult['provider'] ?? 'local',
             'user'              => array_merge($user->toArray(), [
                 'token_balance'     => $tokens->getBalance($user),
                 'days_until_expiry' => $daysUntilExpiry,
@@ -203,10 +206,11 @@ class AuthController extends Controller
     public function deletePhoto(Request $request)
     {
         $user = $request->user();
+        $mediaService = app(\App\Services\MediaUploadService::class);
 
-        // Delete photo from disk if exists
-        if ($user->profile_photo_path && Storage::disk('public')->exists($user->profile_photo_path)) {
-            Storage::disk('public')->delete($user->profile_photo_path);
+        // Delete photo from cloud or local disk
+        if ($user->profile_photo_path) {
+            $mediaService->deleteProfilePhoto($user->profile_photo_path);
         }
 
         $user->update([

@@ -49,8 +49,9 @@ const faqs = [
 
 // ─── Cancel Confirmation Modal ────────────────────────────────────────────────
 function CancelModal({ onConfirm, onClose, isLoading }) {
+    useBodyScrollLock(true);
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backdropFilter: 'blur(12px)', backgroundColor: 'rgba(0,0,0,0.6)' }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overscroll-contain" style={{ backdropFilter: 'blur(12px)', backgroundColor: 'rgba(0,0,0,0.6)' }}>
             <div className="bg-white dark:bg-gray-800 border border-transparent dark:border-gray-700 rounded-3xl shadow-2xl max-w-md w-full p-8 animate-scaleIn overflow-y-auto max-h-[90vh]">
                 <div className="flex flex-col items-center text-center">
                     <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-4">
@@ -82,8 +83,21 @@ function CancelModal({ onConfirm, onClose, isLoading }) {
     );
 }
 
+// Helper: safe date formatter
+function formatSubDate(dateStr) {
+    if (!dateStr) return '';
+    try {
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return String(dateStr);
+        return d.toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
+    } catch (_) {
+        return String(dateStr);
+    }
+}
+
 // ─── Payment / Coin Redemption Modal ─────────────────────────────────────────
 function PaymentModal({ user, tokenBalance = 0, onPay, onRedeemFree, onRedeemDiscount, onClose, isLoading }) {
+    useBodyScrollLock(true);
     const [tab, setTab]               = useState('pay');   // 'pay' | 'coins'
     const [discountCoins, setDiscountCoins] = useState(200); // 200 or 400
     const discountINR  = discountCoins === 200 ? 100 : 250;
@@ -93,7 +107,7 @@ function PaymentModal({ user, tokenBalance = 0, onPay, onRedeemFree, onRedeemDis
     const canDiscount  = numericBalance >= discountCoins;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backdropFilter: 'blur(12px)', backgroundColor: 'rgba(0,0,0,0.7)' }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overscroll-contain" style={{ backdropFilter: 'blur(12px)', backgroundColor: 'rgba(0,0,0,0.7)' }}>
             <div className="bg-white dark:bg-gray-800 border border-transparent dark:border-gray-700 rounded-3xl shadow-2xl max-w-md w-full overflow-y-auto max-h-[90vh] animate-scaleIn">
                 {/* Header */}
                 <div className="bg-gradient-to-br from-amber-500 to-orange-600 p-6 text-white text-center">
@@ -190,7 +204,7 @@ function PaymentModal({ user, tokenBalance = 0, onPay, onRedeemFree, onRedeemDis
                                     className="w-full py-2.5 rounded-xl font-bold text-sm bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
                                 >
                                     {isLoading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : '🎁'}
-                                    {canFree ? 'Redeem for Free' : `Need ${500 - tokenBalance} more coins`}
+                                    {canFree ? 'Redeem for Free' : `Need ${Math.max(0, 500 - numericBalance)} more coins`}
                                 </button>
                             </div>
 
@@ -209,7 +223,7 @@ function PaymentModal({ user, tokenBalance = 0, onPay, onRedeemFree, onRedeemDis
                                         <button
                                             key={tier.coins}
                                             onClick={() => setDiscountCoins(tier.coins)}
-                                            disabled={tokenBalance < tier.coins}
+                                            disabled={numericBalance < tier.coins}
                                             className={`flex-1 py-2 rounded-xl text-xs font-bold border-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
                                                 discountCoins === tier.coins
                                                     ? 'border-amber-500 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300'
@@ -234,7 +248,7 @@ function PaymentModal({ user, tokenBalance = 0, onPay, onRedeemFree, onRedeemDis
                                     className="w-full py-2.5 rounded-xl font-bold text-sm bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:from-amber-600 hover:to-orange-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
                                 >
                                     {isLoading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : '🪙'}
-                                    {canDiscount ? `Apply ${discountCoins} Coins & Pay ₹${finalINR}` : `Need ${discountCoins - tokenBalance} more coins`}
+                                    {canDiscount ? `Apply ${discountCoins} Coins & Pay ₹${finalINR}` : `Need ${Math.max(0, discountCoins - numericBalance)} more coins`}
                                 </button>
                             </div>
 
@@ -427,7 +441,6 @@ const Subscription = () => {
         }
     };
 
-    // ── Redeem discount then open Razorpay with discounted amount ────────────
     const handleRedeemDiscount = async (coins, finalPaise) => {
         setPayLoading(true);
         try {
@@ -533,26 +546,12 @@ const Subscription = () => {
                                         <>
                                             {user?.subscribed_at && (
                                                 <p className="text-amber-700/80 dark:text-amber-400/70 text-xs font-medium">
-                                                    Active since {(() => {
-                                                        try {
-                                                            const d = new Date(user.subscribed_at);
-                                                            return isNaN(d.getTime()) ? user.subscribed_at : d.toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
-                                                        } catch (_) {
-                                                            return user.subscribed_at;
-                                                        }
-                                                    })()}
+                                                    Active since {formatSubDate(user.subscribed_at)}
                                                 </p>
                                             )}
                                             {user?.subscription_expires_at && (
                                                 <p className="text-amber-700/80 dark:text-amber-400/70 text-xs font-medium">
-                                                    Renews on {(() => {
-                                                        try {
-                                                             const d = new Date(user.subscription_expires_at);
-                                                             return isNaN(d.getTime()) ? user.subscription_expires_at : d.toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
-                                                        } catch (_) {
-                                                             return user.subscription_expires_at;
-                                                        }
-                                                    })()}
+                                                    Renews on {formatSubDate(user.subscription_expires_at)}
                                                 </p>
                                             )}
                                         </>

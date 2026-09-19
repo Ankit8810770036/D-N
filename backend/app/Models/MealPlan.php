@@ -44,4 +44,13 @@ class MealPlan extends Model
     {
         return $this->mealItems()->where('meal_type', 'dinner');
     }
+
+    /**
+     * Delete meal plans older than a given retention window (default 30 days).
+     */
+    public static function pruneOlderThan(int $days = 30): int
+    {
+        $cutoff = \Carbon\Carbon::today()->subDays($days)->toDateString();
+        return self::where('date', '<', $cutoff)->delete();
+    }
 }

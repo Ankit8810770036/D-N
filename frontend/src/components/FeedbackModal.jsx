@@ -74,14 +74,18 @@ export default function FeedbackModal({ isOpen, onClose, onSuccess, initialCateg
         }
 
         if (includeDeviceInfo) {
-            payload.device_info = {
-                userAgent: navigator.userAgent,
-                platform: navigator.platform,
-                screen: `${window.screen.width}x${window.screen.height}`,
-                window: `${window.innerWidth}x${window.innerHeight}`,
-                pixelRatio: window.devicePixelRatio,
-                language: navigator.language,
-                standalonePWA: window.matchMedia('(display-mode: standalone)').matches,
+            try {
+                payload.device_info = {
+                    userAgent: typeof navigator !== 'undefined' ? (navigator.userAgent || '') : '',
+                    platform: typeof navigator !== 'undefined' ? (navigator.platform || '') : '',
+                    screen: typeof window !== 'undefined' && window.screen ? `${window.screen.width}x${window.screen.height}` : '',
+                    window: typeof window !== 'undefined' ? `${window.innerWidth}x${window.innerHeight}` : '',
+                    pixelRatio: typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1,
+                    language: typeof navigator !== 'undefined' ? (navigator.language || 'en') : 'en',
+                    standalonePWA: typeof window !== 'undefined' && typeof window.matchMedia === 'function' ? Boolean(window.matchMedia('(display-mode: standalone)').matches) : false,
+                }
+            } catch (_) {
+                payload.device_info = {}
             }
         }
 
@@ -224,12 +228,12 @@ export default function FeedbackModal({ isOpen, onClose, onSuccess, initialCateg
                     </div>
 
                     {/* Diagnostic checkbox */}
-                    <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 flex items-start gap-3 cursor-pointer" onClick={() => setIncludeDeviceInfo(!includeDeviceInfo)}>
+                    <label className="p-3.5 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 flex items-start gap-3 cursor-pointer select-none">
                         <input
                             type="checkbox"
                             checked={includeDeviceInfo}
                             onChange={(e) => setIncludeDeviceInfo(e.target.checked)}
-                            className="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                            className="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
                         />
                         <div className="text-xs">
                             <p className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
@@ -240,7 +244,7 @@ export default function FeedbackModal({ isOpen, onClose, onSuccess, initialCateg
                                 Includes screen size &amp; browser to help our developers reproduce visual/mobile issues faster.
                             </p>
                         </div>
-                    </div>
+                    </label>
 
                     {/* Buttons */}
                     <div className="pt-2 flex items-center justify-end gap-3">

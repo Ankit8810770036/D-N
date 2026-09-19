@@ -1,0 +1,38 @@
+{
+    "workouts": {
+        "\/workouts\/bicycle_crunches.jpg": "https:\/\/res.cloudinary.com\/dtmny71xd\/image\/upload\/f_auto,q_auto\/diet-planner\/workouts\/bicycle_crunches.jpg",
+        "\/workouts\/bird_dog.jpg": "https:\/\/res.cloudinary.com\/dtmny71xd\/image\/upload\/f_auto,q_auto\/diet-planner\/workouts\/bird_dog.jpg",
+        "\/workouts\/cobra_pose.jpg": "https:\/\/res.cloudinary.com\/dtmny71xd\/image\/upload\/f_auto,q_auto\/diet-planner\/workouts\/cobra_pose.jpg",
+        "\/workouts\/dead_bug.jpg": "https:\/\/res.cloudinary.com\/dtmny71xd\/image\/upload\/f_auto,q_auto\/diet-planner\/workouts\/dead_bug.jpg",
+        "\/workouts\/downward_dog.jpg": "https:\/\/res.cloudinary.com\/dtmny71xd\/image\/upload\/f_auto,q_auto\/diet-planner\/workouts\/downward_dog.jpg",
+        "\/workouts\/dumbbell_rows.jpg": "https:\/\/res.cloudinary.com\/dtmny71xd\/image\/upload\/f_auto,q_auto\/diet-planner\/workouts\/dumbbell_rows.jpg",
+        "\/workouts\/glute_bridge.jpg": "https:\/\/res.cloudinary.com\/dtmny71xd\/image\/upload\/f_auto,q_auto\/diet-planner\/workouts\/glute_bridge.jpg",
+        "\/workouts\/high_knees.jpg": "https:\/\/res.cloudinary.com\/dtmny71xd\/image\/upload\/f_auto,q_auto\/diet-planner\/workouts\/high_knees.jpg",
+        "\/workouts\/jumping_jacks.jpg": "https:\/\/res.cloudinary.com\/dtmny71xd\/image\/upload\/f_auto,q_auto\/diet-planner\/workouts\/jumping_jacks.jpg",
+        "\/workouts\/mountain_climbers.jpg": "https:\/\/res.cloudinary.com\/dtmny71xd\/image\/upload\/f_auto,q_auto\/diet-planner\/workouts\/mountain_climbers.jpg",
+        "\/workouts\/plank.jpg": "https:\/\/res.cloudinary.com\/dtmny71xd\/image\/upload\/f_auto,q_auto\/diet-planner\/workouts\/plank.jpg",
+        "\/workouts\/push_ups.jpg": "https:\/\/res.cloudinary.com\/dtmny71xd\/image\/upload\/f_auto,q_auto\/diet-planner\/workouts\/push_ups.jpg",
+        "\/workouts\/reverse_crunch.jpg": "https:\/\/res.cloudinary.com\/dtmny71xd\/image\/upload\/f_auto,q_auto\/diet-planner\/workouts\/reverse_crunch.jpg",
+        "\/workouts\/russian_twists.jpg": "https:\/\/res.cloudinary.com\/dtmny71xd\/image\/upload\/f_auto,q_auto\/diet-planner\/workouts\/russian_twists.jpg",
+        "\/workouts\/side_plank.jpg": "https:\/\/res.cloudinary.com\/dtmny71xd\/image\/upload\/f_auto,q_auto\/diet-planner\/workouts\/side_plank.jpg",
+        "\/workouts\/squats.jpg": "https:\/\/res.cloudinary.com\/dtmny71xd\/image\/upload\/f_auto,q_auto\/diet-planner\/workouts\/squats.jpg",
+        "\/workouts\/surya_namaskar.jpg": "https:\/\/res.cloudinary.com\/dtmny71xd\/image\/upload\/f_auto,q_auto\/diet-planner\/workouts\/surya_namaskar.jpg",
+        "\/workouts\/tree_pose.jpg": "https:\/\/res.cloudinary.com\/dtmny71xd\/image\/upload\/f_auto,q_auto\/diet-planner\/workouts\/tree_pose.jpg",
+        "\/workouts\/walking_lunges.jpg": "https:\/\/res.cloudinary.com\/dtmny71xd\/image\/upload\/f_auto,q_auto\/diet-planner\/workouts\/walking_lunges.jpg",
+        "\/workouts\/warrior_pose.jpg": "https:\/\/res.cloudinary.com\/dtmny71xd\/image\/upload\/f_auto,q_auto\/diet-planner\/workouts\/warrior_pose.jpg"
+    },
+    "recipes": {
+        "\/recipes\/chicken_curry.jpg": "https:\/\/res.cloudinary.com\/dtmny71xd\/image\/upload\/f_auto,q_auto\/diet-planner\/recipes\/chicken_curry.jpg",
+        "\/recipes\/dal_tadka.jpg": "https:\/\/res.cloudinary.com\/dtmny71xd\/image\/upload\/f_auto,q_auto\/diet-planner\/recipes\/dal_tadka.jpg",
+        "\/recipes\/egg_bhurji.jpg": "https:\/\/res.cloudinary.com\/dtmny71xd\/image\/upload\/f_auto,q_auto\/diet-planner\/recipes\/egg_bhurji.jpg",
+        "\/recipes\/idli_sambhar.jpg": "https:\/\/res.cloudinary.com\/dtmny71xd\/image\/upload\/f_auto,q_auto\/diet-planner\/recipes\/idli_sambhar.jpg",
+        "\/recipes\/khichdi.jpg": "https:\/\/res.cloudinary.com\/dtmny71xd\/image\/upload\/f_auto,q_auto\/diet-planner\/recipes\/khichdi.jpg",
+        "\/recipes\/moong_chilla.jpg": "https:\/\/res.cloudinary.com\/dtmny71xd\/image\/upload\/f_auto,q_auto\/diet-planner\/recipes\/moong_chilla.jpg",
+        "\/recipes\/palak_paneer.jpg": "https:\/\/res.cloudinary.com\/dtmny71xd\/image\/upload\/f_auto,q_auto\/diet-planner\/recipes\/palak_paneer.jpg",
+        "\/recipes\/paneer_bhurji.jpg": "https:\/\/res.cloudinary.com\/dtmny71xd\/image\/upload\/f_auto,q_auto\/diet-planner\/recipes\/paneer_bhurji.jpg",
+        "\/recipes\/poha.jpg": "https:\/\/res.cloudinary.com\/dtmny71xd\/image\/upload\/f_auto,q_auto\/diet-planner\/recipes\/poha.jpg",
+        "\/recipes\/rajma_chawal.jpg": "https:\/\/res.cloudinary.com\/dtmny71xd\/image\/upload\/f_auto,q_auto\/diet-planner\/recipes\/rajma_chawal.jpg",
+        "\/recipes\/soya_pulao.jpg": "https:\/\/res.cloudinary.com\/dtmny71xd\/image\/upload\/f_auto,q_auto\/diet-planner\/recipes\/soya_pulao.jpg",
+        "\/recipes\/sprouts_chaat.jpg": "https:\/\/res.cloudinary.com\/dtmny71xd\/image\/upload\/f_auto,q_auto\/diet-planner\/recipes\/sprouts_chaat.jpg"
+    }
+}

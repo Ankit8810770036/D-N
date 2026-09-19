@@ -526,11 +526,16 @@ export default function Planner() {
                                                     <div className="flex items-center gap-2.5 shrink-0">
                                                         {!item.is_consumed && !isPastDate && (
                                                             <button
-                                                                onClick={() => swapItem(item.id)}
-                                                                className="opacity-0 group-hover:opacity-100 transition-opacity bg-white hover:bg-slate-100 dark:bg-black/60 dark:hover:bg-white/10 text-slate-600 dark:text-white/80 rounded-lg p-1.5 shadow-sm border border-slate-200 dark:border-white/20 scale-95 hover:scale-105"
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    swapItem(item.id);
+                                                                }}
+                                                                className="p-1.5 rounded-xl border border-slate-200 dark:border-white/15 bg-white hover:bg-slate-100 dark:bg-black/40 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:border-emerald-300 dark:hover:border-emerald-500/40 transition-all shadow-xs flex items-center justify-center shrink-0 active:scale-95"
                                                                 title="Swap with another item in this category"
+                                                                aria-label="Swap food item"
                                                             >
-                                                                🔄
+                                                                <RefreshCw className="w-3.5 h-3.5" />
                                                             </button>
                                                         )}
                                                         <span className={`text-sm font-bold ${item.is_consumed ? 'text-emerald-600' : 'text-emerald-700 dark:text-emerald-400'}`}>{item.calories} kcal</span>

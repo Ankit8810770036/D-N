@@ -46,7 +46,13 @@ class ProcessWeeklyAiMealPlan implements ShouldQueue
 
         $startDate = $this->startDate ?: Carbon::today()->toDateString();
         $targetCalories = (float) $profile->calories_target;
-        $macros = $calculator->calculateMacros($targetCalories, $profile->goal, $profile->food_preference);
+        $macros = $calculator->calculateMacros(
+            $targetCalories,
+            $profile->goal ?? 'maintain',
+            $profile->food_preference ?? 'standard',
+            (float) ($profile->weight_kg ?? 65),
+            $profile->gender ?? 'male'
+        );
         $water  = $calculator->calculateWaterIntake((float) ($profile->weight_kg ?? 65));
 
         $profileData = [
