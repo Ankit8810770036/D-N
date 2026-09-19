@@ -30,6 +30,32 @@ export default function Profile() {
     })
     const [loading, setLoading] = useState(false)
     const [photoLoading, setPhotoLoading] = useState(false)
+    const [imgError, setImgError] = useState(false)
+
+    // Resolve full image URL across mobile, local, and deployed endpoints
+    const resolvePhotoUrl = (rawUrl) => {
+        if (!rawUrl) return null
+        if (rawUrl.startsWith('data:image') || rawUrl.includes('ui-avatars.com')) return rawUrl
+
+        // If pointing to localhost/127.0.0.1 on a deployed site or mobile device, point to live API host
+        if (rawUrl.startsWith('http://localhost') || rawUrl.startsWith('http://127.0.0.1')) {
+            const apiBase = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? 'https://diet-planner-api-njyc.onrender.com/api' : '')
+            if (apiBase) {
+                const hostOrigin = apiBase.replace(/\/api\/?$/, '')
+                const relativePath = rawUrl.replace(/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?/, '')
+                return `${hostOrigin}${relativePath}`
+            }
+        }
+
+        // If relative /storage path
+        if (rawUrl.startsWith('/storage')) {
+            const apiBase = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? 'https://diet-planner-api-njyc.onrender.com/api' : '')
+            const hostOrigin = apiBase ? apiBase.replace(/\/api\/?$/, '') : ''
+            return `${hostOrigin}${rawUrl}`
+        }
+
+        return rawUrl
+    }
 
     // Load existing profile via React Query cache
     const { data: profile } = useQuery({
@@ -92,6 +118,7 @@ export default function Profile() {
         formData.append('photo', file)
 
         setPhotoLoading(true)
+        setImgError(false)
         try {
             const { data } = await api.post('/profile/photo', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
@@ -110,6 +137,7 @@ export default function Profile() {
 
     async function handlePhotoDelete() {
         setPhotoLoading(true)
+        setImgError(false)
         try {
             const { data } = await api.delete('/profile/photo')
             const updatedUser = data.user || { ...authUser, profile_photo_url: data.profile_photo_url, profile_photo_path: null }
@@ -151,7 +179,8 @@ export default function Profile() {
         }
     }
 
-    const hasCustomPhoto = authUser?.profile_photo_path || (authUser?.profile_photo_url && !authUser.profile_photo_url.includes('ui-avatars.com'))
+    const resolvedPhoto = resolvePhotoUrl(authUser?.profile_photo_url || authUser?.profile_photo_path)
+    const hasCustomPhoto = Boolean(authUser?.profile_photo_path || (resolvedPhoto && !resolvedPhoto.includes('ui-avatars.com')))
 
     return (
         <div className="space-y-6 w-full pb-10 animate-fade-in">
@@ -159,14 +188,17 @@ export default function Profile() {
                 <div className="flex items-center gap-6">
                     <div className="relative group">
                         <div className="w-24 h-24 rounded-3xl overflow-hidden shadow-lg border-2 border-white dark:border-white/10 ring-4 ring-green-50 dark:ring-green-900/20 bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center relative">
-                            {authUser?.profile_photo_url ? (
+                            {resolvedPhoto && !imgError ? (
                                 <img
-                                    src={authUser.profile_photo_url}
-                                    alt="Profile"
+                                    src={resolvedPhoto}
+                                    alt={authUser?.name || 'Profile'}
+                                    onError={() => setImgError(true)}
                                     className="w-full h-full object-cover rounded-3xl"
                                 />
                             ) : (
-                                <UserIcon className="w-10 h-10 text-emerald-400 dark:text-emerald-500" />
+                                <div className="w-full h-full rounded-3xl bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white flex items-center justify-center font-bold text-3xl font-outfit shadow-inner">
+                                    {authUser?.name ? authUser.name.charAt(0).toUpperCase() : <UserIcon className="w-10 h-10 text-white" />}
+                                </div>
                             )}
                             {photoLoading && (
                                 <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex items-center justify-center rounded-3xl">
@@ -205,6 +237,7 @@ export default function Profile() {
                             )}
                         </div>
                     </div>
+
                     <div>
                         <h1 className="page-title">My Health Profile</h1>
                         <p className="page-subtitle">Personalize your avatar, metrics, calorie targets, and dietary preferences</p>

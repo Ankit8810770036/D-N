@@ -124,9 +124,9 @@
         @endforeach
 
         <div class="grid" style="margin-top: 10px;">
-            <div class="col"><div class="metric-box"><div class="val">{{ round($plan->total_calories) }} kcal</div><div class="lbl">Planned Calories</div></div></div>
-            <div class="col"><div class="metric-box"><div class="val">{{ round($plan->protein_target) }}g</div><div class="lbl">Planned Protein</div></div></div>
-            <div class="col"><div class="metric-box"><div class="val">{{ $plan->water_intake_liters }} L</div><div class="lbl">Hydration Target</div></div></div>
+            <div class="col"><div class="metric-box"><div class="val">{{ round((float)($plan->total_calories ?? 0)) }} kcal</div><div class="lbl">Planned Calories</div></div></div>
+            <div class="col"><div class="metric-box"><div class="val">{{ round((float)($plan->protein_target ?? 0)) }}g</div><div class="lbl">Planned Protein</div></div></div>
+            <div class="col"><div class="metric-box"><div class="val">{{ $plan->water_intake_liters ?? '2.5' }} L</div><div class="lbl">Hydration Target</div></div></div>
         </div>
     @else
         <p class="empty-notice">No specific meal plan generated for {{ $date }}. You can generate your daily meal plan from the AI Meal Planner screen.</p>

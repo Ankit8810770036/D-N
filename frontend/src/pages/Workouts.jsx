@@ -395,16 +395,16 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
                 </div>
 
                 {/* Content Body */}
-                <div className="p-4 sm:p-6 overflow-y-auto flex-1 overscroll-contain">
+                <div className="p-3.5 sm:p-6 overflow-y-auto flex-1 overscroll-contain">
                     
                     {/* START SCREEN */}
                     {phase === 'ready' && (
-                        <div className="space-y-4 sm:space-y-5 text-center py-1 sm:py-2">
-                            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-emerald-500/10 border border-emerald-500/20 text-3xl sm:text-4xl flex items-center justify-center mx-auto shadow-sm">
+                        <div className="space-y-3.5 sm:space-y-5 text-center py-1 sm:py-2">
+                            <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-emerald-500/10 border border-emerald-500/20 text-2xl sm:text-4xl flex items-center justify-center mx-auto shadow-sm">
                                 {routine.icon || '🏋️'}
                             </div>
                             <div className="space-y-1">
-                                <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
+                                <h3 className="text-base sm:text-xl font-bold text-slate-900 dark:text-white">
                                     {routine.title}
                                 </h3>
                                 <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
@@ -413,7 +413,7 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
                             </div>
 
                             {/* Summary Metrics */}
-                            <div className="grid grid-cols-3 gap-1.5 sm:gap-2 p-3 sm:p-3.5 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 text-center">
+                            <div className="grid grid-cols-3 gap-1.5 sm:gap-2 p-2.5 sm:p-3.5 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 text-center">
                                 <div>
                                     <span className="text-[10px] uppercase font-bold text-slate-400 block">Movements</span>
                                     <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white">{exercises.length}</span>
@@ -433,7 +433,7 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
                                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                                     Workout Lineup:
                                 </p>
-                                <div className="space-y-1.5 max-h-44 sm:max-h-52 overflow-y-auto pr-1">
+                                <div className="space-y-1.5 max-h-40 sm:max-h-52 overflow-y-auto pr-1">
                                     {exercises.map((ex, idx) => (
                                         <div
                                             key={idx}
@@ -464,9 +464,9 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
 
                     {/* ACTIVE EXERCISE SCREEN */}
                     {phase === 'exercise' && (
-                        <div className="space-y-3 sm:space-y-4">
+                        <div className="space-y-2.5 sm:space-y-4">
                             {/* Edge-to-edge filled exercise demo container */}
-                            <div className="w-full h-48 sm:h-64 rounded-2xl sm:rounded-3xl overflow-hidden relative shadow-md">
+                            <div className="w-full h-36 sm:h-56 max-h-[26vh] sm:max-h-none rounded-2xl sm:rounded-3xl overflow-hidden relative shadow-md">
                                 {currentEx.image ? (
                                     <img
                                         key={currentEx.image || currentEx.name || stepIndex}
@@ -479,8 +479,8 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
                                     />
                                 ) : (
                                     <div className="w-full h-full bg-slate-900 flex flex-col items-center justify-center text-slate-500 gap-2 p-4">
-                                        <Dumbbell className="w-12 h-12 sm:w-16 sm:h-16 text-emerald-500/60 animate-pulse" />
-                                        <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">{currentEx.muscle || 'Custom Exercise'}</span>
+                                        <Dumbbell className="w-10 h-10 sm:w-16 sm:h-16 text-emerald-500/60 animate-pulse" />
+                                        <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">{currentEx.muscle || 'Custom Exercise'}</span>
                                     </div>
                                 )}
                                 {isPaused && (
@@ -1413,12 +1413,12 @@ export default function Workouts() {
                     </p>
                 </div>
 
-                {/* Static, Non-Scrolling Tab Bar for all 4 Tabs */}
+                {/* Responsive Tab Bar for all 4 Tabs */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2 p-1 sm:p-1.5 bg-slate-100 dark:bg-[#0c241a] rounded-2xl border border-slate-200/50 dark:border-white/10 w-full">
                     <button
                         type="button"
                         onClick={() => setActiveTab('routines')}
-                        className={`flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all ${
+                        className={`flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all ${
                             activeTab === 'routines'
                                 ? 'bg-white dark:bg-emerald-600 text-slate-900 dark:text-white shadow-xs'
                                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
@@ -1430,40 +1430,41 @@ export default function Workouts() {
                     <button
                         type="button"
                         onClick={() => setActiveTab('library')}
-                        className={`flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all ${
+                        className={`flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all ${
                             activeTab === 'library'
                                 ? 'bg-white dark:bg-emerald-600 text-slate-900 dark:text-white shadow-xs'
                                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
                         }`}
                     >
                         <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 shrink-0" />
-                        <span className="truncate">Exercise Library</span>
+                        <span className="truncate">Exercises</span>
                     </button>
                     <button
                         type="button"
                         onClick={() => setActiveTab('custom')}
-                        className={`flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all ${
+                        className={`flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all ${
                             activeTab === 'custom'
                                 ? 'bg-white dark:bg-emerald-600 text-slate-900 dark:text-white shadow-xs'
                                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
                         }`}
                     >
                         <SlidersHorizontal className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-teal-500 shrink-0" />
-                        <span className="truncate">Customize Activity</span>
+                        <span className="truncate">Custom Builder</span>
                     </button>
                     <button
                         type="button"
                         onClick={() => setActiveTab('activity')}
-                        className={`flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all ${
+                        className={`flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all ${
                             activeTab === 'activity'
                                 ? 'bg-white dark:bg-emerald-600 text-slate-900 dark:text-white shadow-xs'
                                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
                         }`}
                     >
                         <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-500 shrink-0" />
-                        <span className="truncate">My Activity</span>
+                        <span className="truncate">My Logs</span>
                     </button>
                 </div>
+
             </div>
 
             {/* TAB 1: GUIDED ROUTINES */}

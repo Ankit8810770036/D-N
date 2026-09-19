@@ -32,16 +32,20 @@ class ReportController extends Controller
             $pdf = Pdf::loadView('reports.diet_report', compact('user', 'plan', 'date', 'recentLogs'));
             $pdf->setPaper('a4', 'portrait');
             $pdf->setOptions([
-                'isRemoteEnabled'      => true,
+                'isRemoteEnabled'      => false,
                 'isHtml5ParserEnabled' => true,
                 'isPhpEnabled'         => false,
-                'defaultFont'          => 'sans-serif',
+                'defaultFont'          => 'DejaVu Sans',
                 'dpi'                  => 120,
+                'tempDir'              => sys_get_temp_dir(),
+                'chroot'               => base_path(),
             ]);
 
             return $pdf->download("diet_report_{$date}.pdf");
         } catch (Exception $e) {
-            \Illuminate\Support\Facades\Log::error('PDF Report generation failed: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error('PDF Report generation failed: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json([
                 'error' => 'Failed to generate PDF report: ' . $e->getMessage()
             ], 500);
@@ -51,6 +55,9 @@ class ReportController extends Controller
     public function downloadGroceryPDF(Request $request)
     {
         try {
+            @ini_set('memory_limit', '256M');
+            @set_time_limit(60);
+
             $user     = $request->user()->load('profile');
             $todayStr = $request->input('date', Carbon::today()->toDateString());
             
@@ -115,16 +122,20 @@ class ReportController extends Controller
             $pdf = Pdf::loadView('reports.grocery_report', compact('user', 'grouped', 'list', 'plans', 'dateRange', 'daysFound', 'todayStr'));
             $pdf->setPaper('a4', 'portrait');
             $pdf->setOptions([
-                'isRemoteEnabled'      => true,
+                'isRemoteEnabled'      => false,
                 'isHtml5ParserEnabled' => true,
                 'isPhpEnabled'         => false,
-                'defaultFont'          => 'sans-serif',
+                'defaultFont'          => 'DejaVu Sans',
                 'dpi'                  => 120,
+                'tempDir'              => sys_get_temp_dir(),
+                'chroot'               => base_path(),
             ]);
 
             return $pdf->download("grocery_shopping_list_{$todayStr}.pdf");
         } catch (Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Grocery PDF generation failed: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error('Grocery PDF generation failed: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json([
                 'error' => 'Failed to generate Grocery PDF: ' . $e->getMessage()
             ], 500);
