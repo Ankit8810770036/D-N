@@ -88,10 +88,14 @@ export function AuthProvider({ children }) {
     }
 
     async function logout() {
-        try { await api.post('/logout') } catch (_) { }
+        // Fire-and-forget server token revocation in background
+        api.post('/logout').catch(() => {})
+        
+        // Immediately clear client state and caches for 0ms instant response
         localStorage.removeItem('token')
         localStorage.removeItem('user')
         localStorage.removeItem('seen_badges')
+        localStorage.removeItem('user_profile_cache')
         queryClient.clear()
         setUser(null)
     }

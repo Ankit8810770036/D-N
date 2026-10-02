@@ -165,6 +165,7 @@ const GroceryList = () => {
     };
 
     const handleDownloadPDF = async () => {
+        if (downloadingPdf) return;
         if (groceries.length === 0) {
             toast.error('Your grocery list is empty.');
             return;

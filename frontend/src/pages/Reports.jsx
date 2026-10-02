@@ -87,6 +87,7 @@ export default function Reports() {
     }, [fetchSummary])
 
     async function downloadPDF() {
+        if (downloading) return
         setDownloading(true)
         try {
             const response = await api.get(`/report/pdf?date=${date}`, { responseType: 'blob' })

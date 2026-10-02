@@ -3,7 +3,6 @@ import { useEffect } from 'react'
 let lockCount = 0
 let originalBodyOverflow = ''
 let originalHtmlOverflow = ''
-let originalTouchAction = ''
 
 /**
  * Custom hook to lock body and html scrolling when a modal, drawer, or overlay is open.
@@ -16,14 +15,12 @@ export function useBodyScrollLock(isLocked = false) {
         if (!isLocked) return
 
         if (lockCount === 0) {
-            // Snapshot the pristine, unlocked styles only once
+            // Snapshot the pristine, unlocked styles
             originalBodyOverflow = document.body.style.overflow || ''
             originalHtmlOverflow = document.documentElement.style.overflow || ''
-            originalTouchAction = document.body.style.touchAction || ''
 
             document.body.style.overflow = 'hidden'
             document.documentElement.style.overflow = 'hidden'
-            document.body.style.touchAction = 'none'
         }
         lockCount++
 
@@ -33,10 +30,19 @@ export function useBodyScrollLock(isLocked = false) {
                 // Restore pristine styles
                 document.body.style.overflow = originalBodyOverflow
                 document.documentElement.style.overflow = originalHtmlOverflow
-                document.body.style.touchAction = originalTouchAction
             }
         }
     }, [isLocked])
+}
+
+/**
+ * Force reset scroll lock on route change to guarantee no page gets frozen
+ */
+export function resetBodyScrollLock() {
+    lockCount = 0
+    document.body.style.overflow = ''
+    document.documentElement.style.overflow = ''
+    document.body.style.touchAction = ''
 }
 
 export default useBodyScrollLock

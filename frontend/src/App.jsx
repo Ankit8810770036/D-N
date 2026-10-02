@@ -5,10 +5,13 @@ import { ThemeProvider } from './context/ThemeContext'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Suspense, lazy, useEffect } from 'react'
 
+import { resetBodyScrollLock } from './hooks/useBodyScrollLock'
+
 function ScrollToTop() {
     const { pathname } = useLocation()
 
     useEffect(() => {
+        resetBodyScrollLock()
         if (!window.location.hash) {
             window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
             if (document.documentElement) document.documentElement.scrollTop = 0
@@ -64,6 +67,7 @@ const Workouts = lazyRetry(() => import('./pages/Workouts'))
 import AppLayout from './components/AppLayout'
 import ErrorBoundary from './components/ErrorBoundary'
 import InstallPrompt from './components/InstallPrompt'
+import OfflineBanner from './components/OfflineBanner'
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -164,6 +168,7 @@ export default function App() {
             <ThemeProvider>
                 <AuthProvider>
                     <BrowserRouter>
+                        <OfflineBanner />
                         <ScrollToTop />
                         <AppRoutes />
                         <InstallPrompt />

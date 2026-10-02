@@ -66,22 +66,49 @@ export default function TodayMealSection({ plan, localToday, profile }) {
         }, 0)
     }, [items])
 
-    // Toggle consumption directly from Dashboard
+    // Toggle consumption with instant optimistic UI update (0ms lag)
     const toggleMutation = useMutation({
         mutationFn: async (itemId) => {
             const res = await api.put(`/meal-item/${itemId}/consume`)
             return res.data
         },
+        onMutate: async (itemId) => {
+            await queryClient.cancelQueries({ queryKey: ['mealPlan', localToday] })
+            const previousPlan = queryClient.getQueryData(['mealPlan', localToday])
+
+            if (previousPlan && previousPlan.meals) {
+                queryClient.setQueryData(['mealPlan', localToday], (old) => {
+                    if (!old || !old.meals) return old
+                    const newMeals = {}
+                    for (const slot in old.meals) {
+                        newMeals[slot] = old.meals[slot].map((item) => {
+                            if (String(item.id) === String(itemId)) {
+                                return { ...item, is_consumed: !item.is_consumed }
+                            }
+                            return item
+                        })
+                    }
+                    return { ...old, meals: newMeals }
+                })
+            }
+
+            return { previousPlan }
+        },
         onSuccess: (data) => {
-            toast.success(data.message || 'Meal updated! ✅')
+            toast.success(data.message || 'Meal updated! ✅', { id: 'meal-toggle-toast', duration: 1500 })
+        },
+        onError: (err, itemId, context) => {
+            if (context?.previousPlan) {
+                queryClient.setQueryData(['mealPlan', localToday], context.previousPlan)
+            }
+            toast.error(err.response?.data?.message || 'Failed to update meal status.', { id: 'meal-toggle-toast' })
+        },
+        onSettled: () => {
             queryClient.invalidateQueries({ queryKey: ['mealPlan', localToday] })
             queryClient.invalidateQueries({ queryKey: ['summary'] })
             queryClient.invalidateQueries({ queryKey: ['profile'] })
             queryClient.invalidateQueries({ queryKey: ['tokens'] })
         },
-        onError: (err) => {
-            toast.error(err.response?.data?.message || 'Failed to update meal consumption status.')
-        }
     })
 
     // 1-Click meal plan generation if missing
@@ -277,9 +304,9 @@ export default function TodayMealSection({ plan, localToday, profile }) {
                                         <button
                                             type="button"
                                             onClick={() => item.id && toggleMutation.mutate(item.id)}
-                                            disabled={toggleMutation.isPending || !item.id}
+                                            disabled={!item.id}
                                             title={isConsumed ? 'Mark as not eaten' : 'Mark as eaten'}
-                                            className={`w-5 h-5 rounded-lg flex items-center justify-center transition-all ${
+                                            className={`w-5 h-5 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
                                                 isConsumed
                                                     ? 'bg-emerald-600 text-white shadow-xs'
                                                     : 'border-2 border-slate-300 dark:border-gray-600 hover:border-emerald-500 bg-transparent'

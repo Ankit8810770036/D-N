@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import Sidebar from './Sidebar'
@@ -9,14 +9,29 @@ import FeedbackModal from './FeedbackModal'
 import ErrorBoundary from './ErrorBoundary'
 import { MessageSquarePlus } from 'lucide-react'
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
+import { useSwipeNavigation } from '../hooks/useSwipeNavigation'
+
+const TABS = ['/dashboard', '/planner', '/workouts', '/progress', '/profile']
 
 export default function AppLayout() {
     const location = useLocation()
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
     const [isFeedbackOpen, setIsFeedbackOpen] = useState(false)
     const { user, daysUntilExpiry } = useAuth()
+    const prevPathRef = useRef(location.pathname)
 
     useBodyScrollLock(isSidebarOpen)
+    useSwipeNavigation()
+
+    // Determine swipe / transition animation class based on relative tab position
+    const prevIdx = TABS.indexOf(prevPathRef.current)
+    const currIdx = TABS.indexOf(location.pathname)
+
+    let pageAnimClass = 'animate-fade-in'
+    if (prevIdx !== -1 && currIdx !== -1 && prevIdx !== currIdx) {
+        pageAnimClass = currIdx > prevIdx ? 'animate-page-slide-left' : 'animate-page-slide-right'
+    }
+    prevPathRef.current = location.pathname
 
     return (
         <div className="flex min-h-screen bg-[#f8fafc] dark:bg-none dark:bg-[#081c15] transition-colors duration-300">
@@ -58,9 +73,11 @@ export default function AppLayout() {
                         ? 'pt-4 sm:pt-6' 
                         : 'pt-24 sm:pt-28'
                 }`}>
-                    <ErrorBoundary locationKey={location.pathname}>
-                        <Outlet />
-                    </ErrorBoundary>
+                    <div key={location.pathname} className={`w-full ${pageAnimClass}`}>
+                        <ErrorBoundary locationKey={location.pathname}>
+                            <Outlet />
+                        </ErrorBoundary>
+                    </div>
                 </main>
             </div>
 

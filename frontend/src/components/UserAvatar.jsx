@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { User, Crown, Shield } from 'lucide-react'
 
 const SIZES = {
@@ -47,6 +47,10 @@ export default function UserAvatar({
 
     const photoUrl = resolvePhotoUrl(user?.profile_photo_url || user?.profile_photo_path)
 
+    useEffect(() => {
+        setImgError(false)
+    }, [photoUrl])
+
     const name = user?.name || ''
     const initial = name ? name.charAt(0).toUpperCase() : 'U'
 
@@ -62,6 +66,7 @@ export default function UserAvatar({
                     onError={() => setImgError(true)}
                     className="w-full h-full object-cover rounded-2xl"
                     loading="lazy"
+                    decoding="async"
                 />
             ) : (
                 <div className="w-full h-full rounded-2xl bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white flex items-center justify-center font-bold font-outfit shadow-inner">

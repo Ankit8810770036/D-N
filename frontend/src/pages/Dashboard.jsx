@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useLocation, Link } from 'react-router-dom'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
@@ -22,13 +22,33 @@ export default function Dashboard() {
     const d = new Date();
     const localToday = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
 
-    const { data: profileData, isLoading: loadingProfile } = useQuery({
+    // Read cached profile data so offline mode never opens empty onboarding
+    const cachedProfileData = useMemo(() => {
+        try {
+            const raw = localStorage.getItem('user_profile_cache')
+            return raw ? JSON.parse(raw) : null
+        } catch {
+            return null
+        }
+    }, [])
+
+    const { data: profileData, isLoading: loadingProfile, isError: isProfileError, isSuccess: isProfileSuccess } = useQuery({
         queryKey: ['profile', localToday],
-        queryFn: () => api.get(`/profile?date=${localToday}`).then(res => res.data),
+        queryFn: async () => {
+            const res = await api.get(`/profile?date=${localToday}`)
+            if (res.data) {
+                try {
+                    localStorage.setItem('user_profile_cache', JSON.stringify(res.data))
+                } catch (_) {}
+            }
+            return res.data
+        },
+        initialData: cachedProfileData,
     })
 
-    const profile = profileData?.profile;
-    const metrics = profileData?.metrics;
+    const activeProfileData = profileData || cachedProfileData;
+    const profile = activeProfileData?.profile;
+    const metrics = activeProfileData?.metrics;
 
     const { data: plan, isLoading: loadingPlan } = useQuery({
         queryKey: ['mealPlan', localToday],
@@ -167,7 +187,7 @@ export default function Dashboard() {
 
             </div>
 
-            {!profile?.bmi && (
+            {!profile?.bmi && !isProfileError && !loadingProfile && (
                 <div className="card w-full border-dashed border-2 border-emerald-300 dark:border-emerald-700/50 bg-emerald-50/50 dark:bg-emerald-950/20 flex flex-col items-center py-8 gap-3">
                     <span className="text-4xl">🧬</span>
                     <p className="font-bold text-slate-800 dark:text-white">Complete Your Health Profile</p>
@@ -177,7 +197,7 @@ export default function Dashboard() {
             )}
 
             <OnboardingWizard
-                isOpen={isWizardOpen || (!loading && !profile?.bmi)}
+                isOpen={isWizardOpen || (Boolean(isProfileSuccess && profileData && !profile?.bmi) && navigator.onLine)}
                 initialData={profile || {}}
                 onComplete={() => setIsWizardOpen(false)}
             />
