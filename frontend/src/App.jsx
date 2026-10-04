@@ -72,11 +72,11 @@ import OfflineBanner from './components/OfflineBanner'
 const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
-            refetchOnWindowFocus: false,
+            refetchOnWindowFocus: 'always', // Silent background update on tab/window re-focus for dynamic stats
             refetchOnMount: false,
             retry: 1,
             staleTime: 5 * 60 * 1000, // 5 minutes: cached data loads instantly (0ms) without refetch
-            gcTime: 10 * 60 * 1000,    // 10 minutes garbage collection in memory
+            gcTime: 15 * 60 * 1000,   // 15 minutes garbage collection in memory
         },
     },
 })
@@ -137,11 +137,23 @@ function AppRoutes() {
                         <Route path="/cookbook/:id" element={<RecipeDetail />} />
 
                         {/* Friendly Route Aliases to prevent 404s */}
+                        <Route path="/pricing" element={<Navigate to="/subscription" replace />} />
+                        <Route path="/pricing-plans" element={<Navigate to="/subscription" replace />} />
+                        <Route path="/pricing-plan" element={<Navigate to="/subscription" replace />} />
+                        <Route path="/subscribe" element={<Navigate to="/subscription" replace />} />
+                        <Route path="/subscriptions" element={<Navigate to="/subscription" replace />} />
+                        <Route path="/premium" element={<Navigate to="/subscription" replace />} />
+                        <Route path="/upgrade" element={<Navigate to="/subscription" replace />} />
+                        <Route path="/pro" element={<Navigate to="/subscription" replace />} />
+                        <Route path="/billing" element={<Navigate to="/subscription" replace />} />
+                        <Route path="/membership" element={<Navigate to="/subscription" replace />} />
+
                         <Route path="/recipes" element={<Navigate to="/cookbook" replace />} />
                         <Route path="/recipes/:id" element={<Navigate to="/cookbook" replace />} />
                         <Route path="/grocery" element={<Navigate to="/shopping-list" replace />} />
                         <Route path="/groceries" element={<Navigate to="/shopping-list" replace />} />
                         <Route path="/shopping" element={<Navigate to="/shopping-list" replace />} />
+                        <Route path="/grocery-list" element={<Navigate to="/shopping-list" replace />} />
                         <Route path="/plans" element={<Navigate to="/planner" replace />} />
                         <Route path="/diet-planner" element={<Navigate to="/planner" replace />} />
                         <Route path="/workout" element={<Navigate to="/workouts" replace />} />

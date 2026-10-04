@@ -18,7 +18,9 @@ const Cookbook = () => {
         queryFn: async () => {
             const response = await api.get('/recipes');
             return response.data;
-        }
+        },
+        staleTime: 30 * 60 * 1000, // 30 minutes static catalog caching
+        refetchOnWindowFocus: false, // Avoid redundant network fetches for static recipes
     });
 
     const filteredRecipes = recipes?.filter(recipe => {

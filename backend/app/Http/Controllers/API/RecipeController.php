@@ -38,7 +38,7 @@ class RecipeController extends Controller
             $query->where('name', 'like', '%' . $request->search . '%');
         }
 
-        return response()->json($query->latest()->get());
+        return response()->json($query->latest()->limit(100)->get());
     }
 
     /**

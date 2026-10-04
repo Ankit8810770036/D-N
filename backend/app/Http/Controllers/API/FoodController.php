@@ -46,7 +46,7 @@ class FoodController extends Controller
         }
 
         if ($request->has('all') && filter_var($request->all, FILTER_VALIDATE_BOOLEAN)) {
-            return response()->json($query->latest()->get());
+            return response()->json($query->latest()->limit(150)->get());
         }
 
         return response()->json($query->latest()->paginate(20));

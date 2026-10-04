@@ -14,16 +14,47 @@ const CATEGORIES = [
     { id: 'general', label: 'General Feedback', icon: '💬', color: 'border-purple-300 bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800' },
 ]
 
+const DRAFT_FEEDBACK_KEY = 'metrivita_feedback_draft'
+
 export default function FeedbackModal({ isOpen, onClose, onSuccess, initialCategory = 'general' }) {
     useBodyScrollLock(isOpen)
     const [category, setCategory] = useState(initialCategory || 'general')
     const [rating, setRating] = useState(5)
     const [hoverRating, setHoverRating] = useState(0)
-    const [title, setTitle] = useState('')
-    const [message, setMessage] = useState('')
+    const [title, setTitle] = useState(() => {
+        try {
+            const saved = localStorage.getItem(DRAFT_FEEDBACK_KEY)
+            return saved ? JSON.parse(saved).title || '' : ''
+        } catch (_) { return '' }
+    })
+    const [message, setMessage] = useState(() => {
+        try {
+            const saved = localStorage.getItem(DRAFT_FEEDBACK_KEY)
+            return saved ? JSON.parse(saved).message || '' : ''
+        } catch (_) { return '' }
+    })
     const [includeDeviceInfo, setIncludeDeviceInfo] = useState(true)
 
     const queryClient = useQueryClient()
+
+    // Auto-save draft on user typing
+    useEffect(() => {
+        if (title || message) {
+            localStorage.setItem(DRAFT_FEEDBACK_KEY, JSON.stringify({ title, message }))
+        }
+    }, [title, message])
+
+    // Warn on page close if user has typed unsaved feedback
+    useEffect(() => {
+        const handleBeforeUnload = (e) => {
+            if (isOpen && (title.trim() || message.trim())) {
+                e.preventDefault()
+                e.returnValue = ''
+            }
+        }
+        window.addEventListener('beforeunload', handleBeforeUnload)
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+    }, [isOpen, title, message])
 
     useEffect(() => {
         if (isOpen && initialCategory) {
@@ -41,6 +72,7 @@ export default function FeedbackModal({ isOpen, onClose, onSuccess, initialCateg
             queryClient.invalidateQueries({ queryKey: ['userFeedbacks'] })
             queryClient.invalidateQueries({ queryKey: ['walletBalance'] })
             queryClient.invalidateQueries({ queryKey: ['walletTransactions'] })
+            localStorage.removeItem(DRAFT_FEEDBACK_KEY)
             setTitle('')
             setMessage('')
             setCategory('general')

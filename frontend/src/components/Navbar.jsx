@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
+import { useQueryClient } from '@tanstack/react-query'
+import { prefetchRoute } from '../utils/prefetch'
 import { Menu, Crown, Shield, UserCircle, User, LogOut, ChevronDown, Sparkles, MessageSquare } from 'lucide-react'
 import toast from 'react-hot-toast'
 import FeedbackModal from './FeedbackModal'
@@ -10,9 +12,14 @@ import UserAvatar from './UserAvatar'
 export default function Navbar({ onMenuClick }) {
     const { user, logout } = useAuth()
     const { isDarkMode, toggleTheme } = useTheme()
+    const queryClient = useQueryClient()
     const [dropdownOpen, setDropdownOpen] = useState(false)
     const dropdownRef = useRef(null)
     const navigate = useNavigate()
+
+    const handlePrefetch = (to) => {
+        prefetchRoute(to, queryClient, user)
+    }
 
     useEffect(() => {
         function handleClickOutside(event) {
@@ -106,6 +113,8 @@ export default function Navbar({ onMenuClick }) {
                                             setDropdownOpen(false)
                                             navigate('/profile')
                                         }}
+                                        onMouseEnter={() => handlePrefetch('/profile')}
+                                        onTouchStart={() => handlePrefetch('/profile')}
                                         className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-gray-200 hover:bg-emerald-50/70 hover:text-emerald-900 dark:hover:bg-white/5 rounded-xl transition-colors text-left"
                                     >
                                         <User className="w-4 h-4 text-emerald-600 dark:text-green-400" />
@@ -117,6 +126,8 @@ export default function Navbar({ onMenuClick }) {
                                             setDropdownOpen(false)
                                             navigate('/subscription')
                                         }}
+                                        onMouseEnter={() => handlePrefetch('/subscription')}
+                                        onTouchStart={() => handlePrefetch('/subscription')}
                                         className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-gray-200 hover:bg-emerald-50/70 hover:text-emerald-900 dark:hover:bg-white/5 rounded-xl transition-colors text-left"
                                     >
                                         <Crown className="w-4 h-4 text-amber-500" />
@@ -128,6 +139,8 @@ export default function Navbar({ onMenuClick }) {
                                             setDropdownOpen(false)
                                             navigate('/feedback')
                                         }}
+                                        onMouseEnter={() => handlePrefetch('/feedback')}
+                                        onTouchStart={() => handlePrefetch('/feedback')}
                                         className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-gray-200 hover:bg-emerald-50/70 hover:text-emerald-900 dark:hover:bg-white/5 rounded-xl transition-colors text-left"
                                     >
                                         <MessageSquare className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />

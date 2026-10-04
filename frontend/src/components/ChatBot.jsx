@@ -328,10 +328,10 @@ export default function ChatBot() {
     }
 
     return (
-        <div className="fixed bottom-20 sm:bottom-6 right-3.5 sm:right-6 z-40 flex flex-col items-end">
+        <div className="fixed bottom-20 sm:bottom-6 right-3 sm:right-6 z-40 flex flex-col items-end">
             {/* Chat Window */}
             {isOpen && (
-                <div className="w-[calc(100vw-2rem)] sm:w-96 max-w-sm bg-white/95 dark:bg-gray-850 backdrop-blur-xl border border-white/50 dark:border-gray-700 shadow-2xl rounded-2xl flex flex-col overflow-hidden mb-3 transition-all duration-300 transform origin-bottom-right max-h-[82dvh] sm:max-h-[75dvh]">
+                <div className="w-[calc(100vw-1.5rem)] sm:w-96 max-w-sm bg-white dark:bg-[#0c241a] border border-slate-200/90 dark:border-white/10 shadow-2xl rounded-3xl flex flex-col overflow-hidden mb-3 transition-transform duration-200 transform origin-bottom-right max-h-[82dvh] sm:max-h-[75dvh]">
                     {/* Header */}
                     <div className="bg-gradient-to-r from-[#1b4332] via-[#2d6a4f] to-[#40916c] p-3.5 sm:p-4 text-white flex justify-between items-center z-10 relative shadow-sm flex-shrink-0">
                         <div className="flex items-center gap-2.5">
@@ -745,7 +745,7 @@ export default function ChatBot() {
             {/* Floating Toggle Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`relative w-15 h-15 sm:w-16 sm:h-16 min-w-[58px] min-h-[58px] sm:min-w-[64px] sm:min-h-[64px] rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-emerald-500/30 ${isOpen
+                className={`relative w-13 h-13 sm:w-14 sm:h-14 min-w-[52px] min-h-[52px] sm:min-w-[56px] sm:min-h-[56px] rounded-full flex items-center justify-center shadow-2xl transition-transform duration-200 hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-emerald-500/30 ${isOpen
                     ? 'bg-slate-100 dark:bg-gray-700 text-slate-700 dark:text-gray-200 rotate-90 scale-90 hover:bg-slate-200 shadow-md'
                     : 'bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-xl shadow-emerald-900/40 ring-2 ring-white/20'
                     }`}

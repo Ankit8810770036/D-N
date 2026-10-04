@@ -26,11 +26,22 @@ export default function Dashboard() {
     const cachedProfileData = useMemo(() => {
         try {
             const raw = localStorage.getItem('user_profile_cache')
-            return raw ? JSON.parse(raw) : null
+            if (raw) return JSON.parse(raw)
+            if (user?.profile) {
+                return { profile: user.profile, metrics: {} }
+            }
+            const rawUser = localStorage.getItem('user')
+            if (rawUser) {
+                const parsed = JSON.parse(rawUser)
+                if (parsed?.profile) {
+                    return { profile: parsed.profile, metrics: {} }
+                }
+            }
+            return null
         } catch {
             return null
         }
-    }, [])
+    }, [user])
 
     const { data: profileData, isLoading: loadingProfile, isError: isProfileError, isSuccess: isProfileSuccess } = useQuery({
         queryKey: ['profile', localToday],
@@ -39,6 +50,9 @@ export default function Dashboard() {
             if (res.data) {
                 try {
                     localStorage.setItem('user_profile_cache', JSON.stringify(res.data))
+                    if (res.data.profile && (res.data.profile.bmi || res.data.profile.height_cm || res.data.profile.age)) {
+                        localStorage.setItem('metrics_onboarding_completed', 'true')
+                    }
                 } catch (_) {}
             }
             return res.data
@@ -49,6 +63,15 @@ export default function Dashboard() {
     const activeProfileData = profileData || cachedProfileData;
     const profile = activeProfileData?.profile;
     const metrics = activeProfileData?.metrics;
+
+    // Check if user has metrics stored anywhere in state, cache, or auth
+    const hasExistingMetrics = useMemo(() => {
+        if (localStorage.getItem('metrics_onboarding_completed') === 'true') return true
+        if (profile?.bmi || profile?.height_cm || profile?.age) return true
+        if (user?.profile?.bmi || user?.profile?.height_cm || user?.profile?.age) return true
+        if (cachedProfileData?.profile?.bmi || cachedProfileData?.profile?.height_cm) return true
+        return false
+    }, [profile, user, cachedProfileData])
 
     const { data: plan, isLoading: loadingPlan } = useQuery({
         queryKey: ['mealPlan', localToday],
@@ -187,7 +210,7 @@ export default function Dashboard() {
 
             </div>
 
-            {!profile?.bmi && !isProfileError && !loadingProfile && (
+            {!hasExistingMetrics && !isProfileError && !loadingProfile && (
                 <div className="card w-full border-dashed border-2 border-emerald-300 dark:border-emerald-700/50 bg-emerald-50/50 dark:bg-emerald-950/20 flex flex-col items-center py-8 gap-3">
                     <span className="text-4xl">🧬</span>
                     <p className="font-bold text-slate-800 dark:text-white">Complete Your Health Profile</p>
@@ -197,7 +220,7 @@ export default function Dashboard() {
             )}
 
             <OnboardingWizard
-                isOpen={isWizardOpen || (Boolean(isProfileSuccess && profileData && !profile?.bmi) && navigator.onLine)}
+                isOpen={isWizardOpen || (!hasExistingMetrics && isProfileSuccess && Boolean(profileData) && !profile?.bmi && navigator.onLine)}
                 initialData={profile || {}}
                 onComplete={() => setIsWizardOpen(false)}
             />

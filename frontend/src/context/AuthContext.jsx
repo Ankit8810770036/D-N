@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+    import { createContext, useContext, useState, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import api from '../services/api'
 
@@ -20,6 +20,10 @@ export function AuthProvider({ children }) {
                     .then(({ data }) => {
                         setUser(data)
                         localStorage.setItem('user', JSON.stringify(data))
+                        if (data.profile && (data.profile.bmi || data.profile.height_cm || data.profile.age)) {
+                            localStorage.setItem('metrics_onboarding_completed', 'true')
+                            localStorage.setItem('user_profile_cache', JSON.stringify({ profile: data.profile, metrics: {} }))
+                        }
                     })
                     .catch((err) => {
                         // Only log out on explicit 401 Unauthorized (invalid/expired token)
@@ -33,7 +37,11 @@ export function AuthProvider({ children }) {
                             const cached = localStorage.getItem('user')
                             if (cached) {
                                 try {
-                                    setUser(JSON.parse(cached))
+                                    const parsed = JSON.parse(cached)
+                                    setUser(parsed)
+                                    if (parsed.profile && (parsed.profile.bmi || parsed.profile.height_cm || parsed.profile.age)) {
+                                        localStorage.setItem('metrics_onboarding_completed', 'true')
+                                    }
                                 } catch (_) {}
                             }
                         }
@@ -52,7 +60,27 @@ export function AuthProvider({ children }) {
                 fetchMe()
             }
         }
+        // Listen to cross-tab storage changes (multi-tab sync)
+        const handleStorageChange = (e) => {
+            if (e.key === 'token') {
+                if (!e.newValue) {
+                    // Logged out in another tab
+                    setUser(null)
+                    queryClient.clear()
+                } else {
+                    // Logged in or token updated in another tab
+                    fetchMe()
+                }
+            } else if (e.key === 'user' && e.newValue) {
+                try {
+                    setUser(JSON.parse(e.newValue))
+                    queryClient.invalidateQueries()
+                } catch (_) {}
+            }
+        }
+
         window.addEventListener('online', handleOnline)
+        window.addEventListener('storage', handleStorageChange)
 
         // Periodically refresh session (every 30 mins) to catch mid-session auto-downgrades
         const interval = setInterval(() => {
@@ -64,8 +92,9 @@ export function AuthProvider({ children }) {
         return () => {
             clearInterval(interval)
             window.removeEventListener('online', handleOnline)
+            window.removeEventListener('storage', handleStorageChange)
         }
-    }, [])
+    }, [queryClient])
 
     async function login(email, password) {
         queryClient.clear()
@@ -73,6 +102,10 @@ export function AuthProvider({ children }) {
         const { data } = await api.post('/login', { email, password })
         localStorage.setItem('token', data.token)
         localStorage.setItem('user', JSON.stringify(data.user))
+        if (data.user?.profile && (data.user.profile.bmi || data.user.profile.height_cm || data.user.profile.age)) {
+            localStorage.setItem('metrics_onboarding_completed', 'true')
+            localStorage.setItem('user_profile_cache', JSON.stringify({ profile: data.user.profile, metrics: {} }))
+        }
         setUser(data.user)
         return data.user
     }

@@ -68,7 +68,7 @@ export default function AppLayout() {
                     </div>
                 )}
 
-                <main className={`flex-1 px-3.5 sm:px-8 lg:px-10 pb-24 lg:pb-10 w-full max-w-[96rem] mx-auto min-w-0 ${
+                <main className={`flex-1 px-3 sm:px-8 lg:px-10 pb-28 lg:pb-10 w-full max-w-[96rem] mx-auto min-w-0 ${
                     user?.plan_type === 'premium' && daysUntilExpiry !== null && daysUntilExpiry <= 3 
                         ? 'pt-4 sm:pt-6' 
                         : 'pt-24 sm:pt-28'

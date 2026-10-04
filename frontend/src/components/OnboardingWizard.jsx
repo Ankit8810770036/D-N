@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import api from '../services/api'
 import toast from 'react-hot-toast'
 import { useQueryClient } from '@tanstack/react-query'
@@ -12,24 +12,53 @@ const activityLevels = [
     { value: 'very_active', label: '🔥 Very Active', desc: 'Hard daily' },
 ]
 
+const DRAFT_KEY = 'metrivita_onboarding_draft'
+
 export default function OnboardingWizard({ isOpen, onComplete, initialData = {} }) {
     useBodyScrollLock(isOpen)
     const queryClient = useQueryClient()
     const [step, setStep] = useState(1)
     const [loading, setLoading] = useState(false)
-    const [form, setForm] = useState({
-        age: initialData.age || '',
-        gender: initialData.gender || 'male',
-        height_cm: initialData.height_cm || '',
-        weight_kg: initialData.weight_kg || '',
-        waist_cm: initialData.waist_cm || '',
-        goal: initialData.goal || 'maintain',
-        activity_level: initialData.activity_level || 'sedentary',
-        sleep_hours: initialData.sleep_hours || '7',
-        food_preference: initialData.food_preference || 'veg',
-        diseases: initialData.diseases || [],
-        allergies: initialData.allergies || [],
+    const [form, setForm] = useState(() => {
+        const savedDraft = localStorage.getItem(DRAFT_KEY)
+        if (savedDraft) {
+            try {
+                return JSON.parse(savedDraft)
+            } catch (_) {}
+        }
+        return {
+            age: initialData.age || '',
+            gender: initialData.gender || 'male',
+            height_cm: initialData.height_cm || '',
+            weight_kg: initialData.weight_kg || '',
+            waist_cm: initialData.waist_cm || '',
+            goal: initialData.goal || 'maintain',
+            activity_level: initialData.activity_level || 'sedentary',
+            sleep_hours: initialData.sleep_hours || '7',
+            food_preference: initialData.food_preference || 'veg',
+            diseases: initialData.diseases || [],
+            allergies: initialData.allergies || [],
+        }
     })
+
+    // Auto-save draft whenever user fills fields
+    useEffect(() => {
+        if (isOpen && form) {
+            localStorage.setItem(DRAFT_KEY, JSON.stringify(form))
+        }
+    }, [form, isOpen])
+
+    // Warn before closing tab if user has progressed past step 1
+    useEffect(() => {
+        const handleBeforeUnload = (e) => {
+            if (isOpen && step > 1 && !loading) {
+                e.preventDefault()
+                e.returnValue = ''
+            }
+        }
+        window.addEventListener('beforeunload', handleBeforeUnload)
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+    }, [isOpen, step, loading])
 
     if (!isOpen) return null
 
@@ -42,6 +71,9 @@ export default function OnboardingWizard({ isOpen, onComplete, initialData = {} 
         setLoading(true)
         try {
             await api.put('/profile/update', form)
+            localStorage.removeItem(DRAFT_KEY)
+            localStorage.setItem('metrics_onboarding_completed', 'true')
+            localStorage.setItem('user_profile_cache', JSON.stringify({ profile: form, metrics: {} }))
             queryClient.invalidateQueries({ queryKey: ['profile'] })
             queryClient.invalidateQueries({ queryKey: ['summary'] })
             queryClient.invalidateQueries({ queryKey: ['mealPlan'] })

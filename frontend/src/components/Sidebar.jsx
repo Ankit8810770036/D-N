@@ -1,5 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useQueryClient } from '@tanstack/react-query'
+import { prefetchRoute } from '../utils/prefetch'
 import { TokenWalletSidebar } from './TokenWallet'
 import { X } from 'lucide-react'
 import UserAvatar from './UserAvatar'
@@ -20,9 +22,14 @@ const navItems = [
 
 export default function Sidebar({ isOpen, onClose }) {
     const { user, isAdmin } = useAuth()
+    const queryClient = useQueryClient()
 
     const handleLinkClick = () => {
         if (onClose) onClose()
+    }
+
+    const handlePrefetch = (to) => {
+        prefetchRoute(to, queryClient, user)
     }
 
     return (
@@ -51,13 +58,14 @@ export default function Sidebar({ isOpen, onClose }) {
             <nav className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
                 {navItems.filter(item => {
                     if (item.adminOnly && !isAdmin) return false;
-                    if (item.to === '/subscription' && isAdmin) return false;
                     return true;
                 }).map(({ to, icon, label, badge }) => (
                     <NavLink
                         key={to}
                         to={to}
                         onClick={handleLinkClick}
+                        onMouseEnter={() => handlePrefetch(to)}
+                        onTouchStart={() => handlePrefetch(to)}
                         className={({ isActive }) =>
                             `sidebar-link flex items-center justify-between ${isActive ? 'active' : ''}`
                         }
@@ -85,6 +93,8 @@ export default function Sidebar({ isOpen, onClose }) {
                 <NavLink
                     to="/profile"
                     onClick={handleLinkClick}
+                    onMouseEnter={() => handlePrefetch('/profile')}
+                    onTouchStart={() => handlePrefetch('/profile')}
                     className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group"
                 >
                     <UserAvatar user={user} size="sm" className="w-9 h-9" />

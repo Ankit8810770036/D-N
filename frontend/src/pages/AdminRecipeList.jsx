@@ -19,7 +19,9 @@ const AdminRecipeList = () => {
         queryFn: async () => {
             const response = await api.get('/recipes');
             return response.data;
-        }
+        },
+        staleTime: 30 * 60 * 1000,
+        refetchOnWindowFocus: false,
     });
 
     const saveMutation = useMutation({

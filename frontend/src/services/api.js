@@ -2,6 +2,7 @@ import axios from 'axios'
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? 'https://diet-planner-api-njyc.onrender.com/api' : '/api'),
+    timeout: 15000, // 15 seconds timeout to prevent hanging on flaky mobile connections (e.g. lift, train)
     headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
