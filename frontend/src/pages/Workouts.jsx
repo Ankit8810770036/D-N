@@ -14,17 +14,23 @@ import {
 } from 'lucide-react';
 import useDebounce from '../hooks/useDebounce';
 
-// ─── Native Web Audio Tone Generator ─────────────────────────────────────────
+// ─── Native Web Audio Tone Generator (Reused context for mobile stability) ──
 function playTimerBeep(freq = 520, duration = 0.12, type = 'sine') {
     try {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         if (!AudioContext) return;
-        const ctx = new AudioContext();
+        if (!window._workoutAudioCtx || window._workoutAudioCtx.state === 'closed') {
+            window._workoutAudioCtx = new AudioContext();
+        }
+        const ctx = window._workoutAudioCtx;
+        if (ctx.state === 'suspended') {
+            ctx.resume().catch(() => {});
+        }
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = type;
         osc.frequency.setValueAtTime(freq, ctx.currentTime);
-        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.setValueAtTime(0.12, ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
         osc.connect(gain);
         gain.connect(ctx.destination);
@@ -215,10 +221,20 @@ function formatClock(seconds) {
 }
 
 // ─── Interactive Guided Workout Player Modal ────────────────────────────────
-function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
+function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging, onViewLogs }) {
     useBodyScrollLock(true);
 
-    const exercises = routine.exercises || [];
+    const rawExercises = routine?.exercises || [];
+    const exercises = rawExercises.length > 0 ? rawExercises : [
+        {
+            name: routine?.title || 'General Movement',
+            sets: '1 set',
+            target: '30 secs',
+            muscle: 'Full Body',
+            tip: 'Focus on slow, steady, controlled breathing.'
+        }
+    ];
+
     const [phase, setPhase] = useState('ready'); // 'ready' | 'exercise' | 'rest' | 'finished'
     const [stepIndex, setStepIndex] = useState(0);
     const [exerciseSeconds, setExerciseSeconds] = useState(30);
@@ -229,7 +245,7 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
     const [imgErrors, setImgErrors] = useState({});
 
     const currentEx = exercises[stepIndex] || exercises[0] || {};
-    const isLast = stepIndex === exercises.length - 1;
+    const isLast = stepIndex >= exercises.length - 1;
     const nextEx = stepIndex < exercises.length - 1 ? exercises[stepIndex + 1] : null;
 
     // Preload next exercise image for instant seamless rendering
@@ -282,10 +298,12 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
                 // Finish Workout
                 setPhase('finished');
                 if (!isMuted) playTimerBeep(880, 0.4, 'triangle');
-                onComplete(routine);
+                onComplete && onComplete(routine);
             }
         }
-        return () => clearInterval(timer);
+        return () => {
+            if (timer) clearInterval(timer);
+        };
     }, [phase, isPaused, exerciseSeconds, isLast, isMuted, routine, onComplete]);
 
     // Rest Countdown Timer
@@ -308,7 +326,9 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
                 goToExercise(nextIdx);
             }
         }
-        return () => clearInterval(timer);
+        return () => {
+            if (timer) clearInterval(timer);
+        };
     }, [phase, isPaused, restSeconds, stepIndex, exercises, isMuted]);
 
     // Navigation handlers
@@ -322,7 +342,7 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
         if (isLast) {
             setPhase('finished');
             if (!isMuted) playTimerBeep(880, 0.4, 'triangle');
-            onComplete(routine);
+            onComplete && onComplete(routine);
             return;
         }
         goToExercise(stepIndex + 1);
@@ -332,7 +352,7 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
         if (isLast) {
             setPhase('finished');
             if (!isMuted) playTimerBeep(880, 0.4, 'triangle');
-            onComplete(routine);
+            onComplete && onComplete(routine);
             return;
         }
         setRestSeconds(15);
@@ -374,10 +394,10 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
                             </span>
                         </div>
                         <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-                            {phase === 'ready' && `${exercises.length} Movements · ~${routine.duration}`}
+                            {phase === 'ready' && `${exercises.length} Movements · ~${routine.duration || '20 mins'}`}
                             {phase === 'exercise' && `Exercise ${stepIndex + 1} of ${exercises.length}`}
                             {phase === 'rest' && `Rest Interval (${restSeconds}s)`}
-                            {phase === 'finished' && `Workout Completed!`}
+                            {phase === 'finished' && `Workout Completed! 🎉`}
                         </p>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
@@ -448,7 +468,7 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
                                     {routine.title}
                                 </h3>
                                 <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
-                                    {routine.description}
+                                    {routine.description || 'Guided personalized fitness routine designed for optimal health and stamina.'}
                                 </p>
                             </div>
 
@@ -460,11 +480,11 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
                                 </div>
                                 <div>
                                     <span className="text-[10px] uppercase font-bold text-slate-400 block">Est. Time</span>
-                                    <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white">{routine.duration}</span>
+                                    <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white">{routine.duration || '20 mins'}</span>
                                 </div>
                                 <div>
                                     <span className="text-[10px] uppercase font-bold text-slate-400 block">Est. Burn</span>
-                                    <span className="text-xs sm:text-sm font-bold text-emerald-600 dark:text-green-400">~{routine.calories} kcal</span>
+                                    <span className="text-xs sm:text-sm font-bold text-emerald-600 dark:text-green-400">~{routine.calories || 200} kcal</span>
                                 </div>
                             </div>
 
@@ -538,7 +558,7 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
                                 {/* Target badge overlay on top right */}
                                 <div className="absolute top-3 right-3 z-10">
                                     <span className="text-xs sm:text-sm font-bold px-3 py-1 rounded-full bg-black/80 backdrop-blur-md text-emerald-300 border border-white/20 shadow-md">
-                                        🎯 {currentEx.target}
+                                        🎯 {currentEx.target || 'Active Set'}
                                     </span>
                                 </div>
 
@@ -566,7 +586,7 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
                                         {currentEx.name}
                                     </h3>
                                     <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-                                        {currentEx.sets} · Focus: <strong className="text-emerald-600 dark:text-emerald-400">{currentEx.muscle}</strong>
+                                        {currentEx.sets || '1 set'} · Focus: <strong className="text-emerald-600 dark:text-emerald-400">{currentEx.muscle || 'Full Body'}</strong>
                                     </p>
                                 </div>
                             </div>
@@ -770,7 +790,7 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
                                     Workout Completed! 🎉
                                 </h3>
                                 <p className="text-xs text-slate-400 max-w-xs mx-auto">
-                                    Outstanding consistency! You crushed the <strong>{routine.title}</strong> routine.
+                                    Outstanding consistency! You completed the <strong>{routine.title}</strong> routine.
                                 </p>
                             </div>
 
@@ -782,7 +802,7 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
                                 <div className="h-6 w-px bg-emerald-200 dark:bg-emerald-800" />
                                 <div>
                                     <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 uppercase block">Burned</span>
-                                    <span className="text-sm font-bold text-slate-900 dark:text-white">~{routine.calories} kcal</span>
+                                    <span className="text-sm font-bold text-slate-900 dark:text-white">~{routine.calories || 200} kcal</span>
                                 </div>
                                 <div className="h-6 w-px bg-emerald-200 dark:bg-emerald-800" />
                                 <div>
@@ -791,14 +811,42 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
                                 </div>
                             </div>
 
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                disabled={isLogging}
-                                className="btn-primary w-full text-xs py-3.5 shadow-md shadow-emerald-500/10 font-bold"
-                            >
-                                {isLogging ? 'Saving Reward...' : 'Done & Return to Workouts'}
-                            </button>
+                            {/* Status Pill */}
+                            <div className="py-1">
+                                {isLogging ? (
+                                    <span className="text-amber-500 font-bold text-xs inline-flex items-center gap-1.5 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
+                                        <RotateCcw className="w-3.5 h-3.5 animate-spin" />
+                                        <span>Saving workout log & HealthCoins...</span>
+                                    </span>
+                                ) : (
+                                    <span className="text-emerald-600 dark:text-green-400 font-bold text-xs inline-flex items-center gap-1.5 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+                                        <CheckCircle2 className="w-4 h-4" />
+                                        <span>Logged to Activity & +15 Coins Awarded!</span>
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        onClose();
+                                        if (onViewLogs) onViewLogs();
+                                    }}
+                                    className="btn-primary flex-1 text-xs py-3.5 shadow-md shadow-emerald-500/10 font-bold flex items-center justify-center gap-2"
+                                >
+                                    <BarChart3 className="w-4 h-4" />
+                                    <span>View in My Activity Logs →</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={onClose}
+                                    className="btn-secondary sm:w-auto px-5 text-xs py-3.5 font-bold"
+                                >
+                                    Done
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -1363,6 +1411,16 @@ export default function Workouts() {
         }
     });
 
+    // Workout session history loaded from localStorage
+    const [workoutHistory, setWorkoutHistory] = useState(() => {
+        try {
+            const saved = localStorage.getItem('user_workout_history');
+            return saved ? JSON.parse(saved) : [];
+        } catch {
+            return [];
+        }
+    });
+
     // Custom routine modal state
     const [isBuilderOpen, setIsBuilderOpen] = useState(false);
     const [editingRoutine, setEditingRoutine] = useState(null);
@@ -1407,13 +1465,67 @@ export default function Workouts() {
     const userGoal = user?.profile?.goal || 'maintain';
 
     // Fetch Today's Progress from backend
-    const { data: summary, isLoading } = useQuery({
+    const { data: summary } = useQuery({
         queryKey: ['summary'],
         queryFn: () => api.get('/report/summary').then(res => res.data).catch(() => null),
         staleTime: 30 * 1000,
     });
 
-    const isTodayWorkoutDone = summary?.stats?.workout_days > 0 && summary?.stats?.latest_log_date === todayStr;
+    const isTodayWorkoutDone = Boolean(
+        (summary?.stats?.workout_days > 0 && summary?.stats?.latest_log_date === todayStr) ||
+        workoutHistory.some(w => w.date === todayStr)
+    );
+
+    // Helper to record workout session in history
+    const recordWorkoutSession = (routine) => {
+        if (!routine) return;
+        try {
+            const existing = JSON.parse(localStorage.getItem('user_workout_history') || '[]');
+            const newEntry = {
+                id: `session-${Date.now()}`,
+                routineId: routine.id || `routine-${Date.now()}`,
+                title: routine.title || 'Personalized Workout',
+                category: routine.category || 'General Fitness',
+                calories: routine.calories || 200,
+                duration: routine.duration || '20 mins',
+                exercisesCount: routine.exercises?.length || 1,
+                completedAt: new Date().toISOString(),
+                date: todayStr,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                coinsEarned: 15
+            };
+            const updated = [newEntry, ...existing.slice(0, 49)];
+            localStorage.setItem('user_workout_history', JSON.stringify(updated));
+            setWorkoutHistory(updated);
+        } catch (e) {
+            console.error('Failed to save workout history', e);
+        }
+    };
+
+    // Helper to check if a specific routine was done today
+    const isRoutineDoneToday = (routineIdOrTitle) => {
+        if (!routineIdOrTitle) return false;
+        return workoutHistory.some(w => w.date === todayStr && (w.routineId === routineIdOrTitle || w.title === routineIdOrTitle));
+    };
+
+    const handleDeleteHistoryItem = (sessionId) => {
+        const updated = workoutHistory.filter(item => item.id !== sessionId);
+        setWorkoutHistory(updated);
+        try {
+            localStorage.setItem('user_workout_history', JSON.stringify(updated));
+            toast.success('Workout log removed');
+        } catch (_) {}
+    };
+
+    const handleClearHistory = () => {
+        if (window.confirm('Clear all recorded workout history logs?')) {
+            setWorkoutHistory([]);
+            try {
+                localStorage.removeItem('user_workout_history');
+                toast.success('Workout logs cleared');
+            } catch (_) {}
+        }
+    };
 
     // Log workout mutation
     const logWorkoutMutation = useMutation({
@@ -1421,20 +1533,20 @@ export default function Workouts() {
             const res = await api.post('/log-progress', {
                 date: todayStr,
                 workout_done: true,
-                notes: `Completed: ${routine.title} (~${routine.calories} kcal burned)`
+                notes: `Completed: ${routine.title} (~${routine.calories || 200} kcal burned)`
             });
-            return res.data;
+            return { data: res.data, routine };
         },
-        onSuccess: () => {
+        onSuccess: ({ routine }) => {
+            recordWorkoutSession(routine);
             toast.success('🎉 Workout logged! +15 HealthCoins awarded! 🪙', { duration: 3500 });
             queryClient.invalidateQueries({ queryKey: ['summary'] });
             queryClient.invalidateQueries({ queryKey: ['tokens'] });
             queryClient.invalidateQueries({ queryKey: ['profile'] });
-            setActiveWorkout(null);
         },
-        onError: (err) => {
-            toast.error(err.response?.data?.message || 'Failed to save workout.');
-            setActiveWorkout(null);
+        onError: (err, routine) => {
+            recordWorkoutSession(routine);
+            toast.error(err.response?.data?.message || 'Logged workout locally.');
         }
     });
 
@@ -1518,13 +1630,15 @@ export default function Workouts() {
     return (
         <div className="space-y-5 sm:space-y-6 pb-20 animate-fade-in w-full min-w-0 font-outfit">
 
-            {/* Active Workout Player Modal */}
+            {/* Active Workout Player Modal with isolated key for safe switching */}
             {activeWorkout && (
                 <WorkoutPlayerModal
+                    key={activeWorkout.id || activeWorkout.title || 'active-workout-player'}
                     routine={activeWorkout}
                     onClose={() => setActiveWorkout(null)}
                     onComplete={(r) => logWorkoutMutation.mutate(r)}
                     isLogging={logWorkoutMutation.isPending}
+                    onViewLogs={() => setActiveTab('activity')}
                 />
             )}
 
@@ -1628,7 +1742,7 @@ export default function Workouts() {
                             }`}
                     >
                         <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-500 shrink-0" />
-                        <span className="truncate">My Logs</span>
+                        <span className="truncate">My Logs {workoutHistory.length > 0 ? `(${workoutHistory.length})` : ''}</span>
                     </button>
                 </div>
 
@@ -1665,9 +1779,17 @@ export default function Workouts() {
                     {recommendedRoutine && selectedCategory === 'all' && !debouncedSearch && (
                         <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 p-5 sm:p-8 text-white shadow-xl">
                             <div className="relative z-10 max-w-xl space-y-3.5 sm:space-y-4">
-                                <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-[11px] sm:text-xs font-bold">
-                                    <Sparkles className="w-3.5 h-3.5 shrink-0" />
-                                    <span>Recommended for Goal ({userGoal.toUpperCase()})</span>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-[11px] sm:text-xs font-bold">
+                                        <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                                        <span>Recommended for Goal ({userGoal.toUpperCase()})</span>
+                                    </div>
+                                    {isRoutineDoneToday(recommendedRoutine.id) && (
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500 text-slate-950 text-[10px] sm:text-xs font-black shadow-md shadow-emerald-500/30 animate-pulse">
+                                            <CheckCircle2 className="w-3.5 h-3.5" />
+                                            <span>Done Today ✓</span>
+                                        </span>
+                                    )}
                                 </div>
                                 <h2 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">
                                     {recommendedRoutine.title}
@@ -1695,10 +1817,13 @@ export default function Workouts() {
                                     <button
                                         type="button"
                                         onClick={() => setActiveWorkout(recommendedRoutine)}
-                                        className="w-full sm:w-auto px-5 sm:px-6 py-2.5 sm:py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg shadow-emerald-500/30"
+                                        className={`w-full sm:w-auto px-5 sm:px-6 py-2.5 sm:py-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg ${isRoutineDoneToday(recommendedRoutine.id)
+                                            ? 'bg-emerald-400 hover:bg-emerald-300 text-slate-950 shadow-emerald-400/30'
+                                            : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-emerald-500/30'
+                                        }`}
                                     >
                                         <Play className="w-4 h-4 fill-current" />
-                                        <span>Start Workout (+15 🪙)</span>
+                                        <span>{isRoutineDoneToday(recommendedRoutine.id) ? 'Replay Workout (Done Today ✓)' : 'Start Workout (+15 🪙)'}</span>
                                     </button>
                                 </div>
                             </div>
@@ -1727,73 +1852,83 @@ export default function Workouts() {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                            {filteredRoutines.map((routine) => (
-                                <div
-                                    key={routine.id}
-                                    className="card card-hover p-0 overflow-hidden rounded-2xl sm:rounded-3xl flex flex-col justify-between group border border-slate-200/50 dark:border-white/10 dark:bg-[#0c241a]/90"
-                                >
-                                    {/* Edge-to-edge filled image without letterboxing */}
-                                    <div className="relative h-44 sm:h-56 overflow-hidden w-full">
-                                        <img
-                                            src={routine.coverImage}
-                                            alt={routine.title}
-                                            loading="lazy"
-                                            className="w-full h-full object-cover object-center select-none"
-                                        />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none" />
+                            {filteredRoutines.map((routine) => {
+                                const isDone = isRoutineDoneToday(routine.id);
+                                return (
+                                    <div
+                                        key={routine.id}
+                                        className={`card card-hover p-0 overflow-hidden rounded-2xl sm:rounded-3xl flex flex-col justify-between group border ${isDone ? 'border-emerald-500/60 dark:border-emerald-500/40 ring-1 ring-emerald-500/30' : 'border-slate-200/50 dark:border-white/10'} dark:bg-[#0c241a]/90`}
+                                    >
+                                        {/* Edge-to-edge filled image without letterboxing */}
+                                        <div className="relative h-44 sm:h-56 overflow-hidden w-full">
+                                            <img
+                                                src={routine.coverImage}
+                                                alt={routine.title}
+                                                loading="lazy"
+                                                className="w-full h-full object-cover object-center select-none"
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none" />
 
-                                        <div className="absolute top-2.5 right-2.5 bg-black/70 backdrop-blur-sm text-white px-2 py-0.5 rounded-full text-[10px] font-bold border border-white/20">
-                                            {routine.level}
+                                            <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
+                                                {isDone && (
+                                                    <span className="bg-emerald-500 text-slate-950 font-black px-2 py-0.5 rounded-full text-[10px] shadow-sm flex items-center gap-1">
+                                                        <Check className="w-3 h-3 stroke-[3]" /> Done Today
+                                                    </span>
+                                                )}
+                                                <span className="bg-black/70 backdrop-blur-sm text-white px-2 py-0.5 rounded-full text-[10px] font-bold border border-white/20">
+                                                    {routine.level}
+                                                </span>
+                                            </div>
+
+                                            <div className="absolute bottom-2.5 left-3.5 right-3.5">
+                                                <span className="text-[9px] sm:text-[10px] font-bold bg-emerald-600 text-white px-2 py-0.5 rounded-lg uppercase tracking-wider">
+                                                    {routine.badge}
+                                                </span>
+                                                <h4 className="text-sm font-bold text-white mt-1 line-clamp-1">
+                                                    {routine.title}
+                                                </h4>
+                                            </div>
                                         </div>
 
-                                        <div className="absolute bottom-2.5 left-3.5 right-3.5">
-                                            <span className="text-[9px] sm:text-[10px] font-bold bg-emerald-600 text-white px-2 py-0.5 rounded-lg uppercase tracking-wider">
-                                                {routine.badge}
-                                            </span>
-                                            <h4 className="text-sm font-bold text-white mt-1 line-clamp-1">
-                                                {routine.title}
-                                            </h4>
+                                        <div className="p-3.5 sm:p-4 space-y-3 flex-1 flex flex-col justify-between">
+                                            <div className="flex items-center justify-between text-[11px] sm:text-xs font-bold text-slate-400 dark:text-white/40">
+                                                <span className="flex items-center gap-1 text-orange-500">
+                                                    <Flame className="w-3.5 h-3.5" /> ~{routine.calories} kcal
+                                                </span>
+                                                <span className="flex items-center gap-1 text-emerald-600 dark:text-green-400">
+                                                    <Clock className="w-3.5 h-3.5" /> {routine.duration}
+                                                </span>
+                                                <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+                                                    <Activity className="w-3.5 h-3.5" /> {routine.exercises.length} moves
+                                                </span>
+                                            </div>
+
+                                            <div className="space-y-1 bg-slate-50 dark:bg-black/40 p-2.5 rounded-xl sm:rounded-2xl border border-slate-100 dark:border-white/10">
+                                                {routine.exercises.slice(0, 3).map((ex, idx) => (
+                                                    <div key={idx} className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
+                                                        <span className="truncate font-medium">· {ex.name}</span>
+                                                        <span className="text-[10px] sm:text-[11px] font-bold text-slate-400">{ex.target}</span>
+                                                    </div>
+                                                ))}
+                                                {routine.exercises.length > 3 && (
+                                                    <p className="text-[10px] text-slate-400 italic pt-0.5">
+                                                        + {routine.exercises.length - 3} more movements
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => setActiveWorkout(routine)}
+                                                className={`w-full text-xs py-2.5 rounded-xl flex items-center justify-center gap-2 font-bold transition-all ${isDone ? 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30' : 'btn-primary'}`}
+                                            >
+                                                <Play className="w-3.5 h-3.5 fill-current" />
+                                                <span>{isDone ? 'Re-start Routine (Done ✓)' : 'Start Routine (+15 🪙)'}</span>
+                                            </button>
                                         </div>
                                     </div>
-
-                                    <div className="p-3.5 sm:p-4 space-y-3 flex-1 flex flex-col justify-between">
-                                        <div className="flex items-center justify-between text-[11px] sm:text-xs font-bold text-slate-400 dark:text-white/40">
-                                            <span className="flex items-center gap-1 text-orange-500">
-                                                <Flame className="w-3.5 h-3.5" /> ~{routine.calories} kcal
-                                            </span>
-                                            <span className="flex items-center gap-1 text-emerald-600 dark:text-green-400">
-                                                <Clock className="w-3.5 h-3.5" /> {routine.duration}
-                                            </span>
-                                            <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
-                                                <Activity className="w-3.5 h-3.5" /> {routine.exercises.length} moves
-                                            </span>
-                                        </div>
-
-                                        <div className="space-y-1 bg-slate-50 dark:bg-black/40 p-2.5 rounded-xl sm:rounded-2xl border border-slate-100 dark:border-white/10">
-                                            {routine.exercises.slice(0, 3).map((ex, idx) => (
-                                                <div key={idx} className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
-                                                    <span className="truncate font-medium">· {ex.name}</span>
-                                                    <span className="text-[10px] sm:text-[11px] font-bold text-slate-400">{ex.target}</span>
-                                                </div>
-                                            ))}
-                                            {routine.exercises.length > 3 && (
-                                                <p className="text-[10px] text-slate-400 italic pt-0.5">
-                                                    + {routine.exercises.length - 3} more movements
-                                                </p>
-                                            )}
-                                        </div>
-
-                                        <button
-                                            type="button"
-                                            onClick={() => setActiveWorkout(routine)}
-                                            className="btn-primary w-full text-xs py-2.5 rounded-xl flex items-center justify-center gap-2"
-                                        >
-                                            <Play className="w-3.5 h-3.5 fill-current" />
-                                            <span>Start Routine (+15 🪙)</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
@@ -1925,90 +2060,98 @@ export default function Workouts() {
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                                {filteredCustomRoutines.map((routine) => (
-                                    <div
-                                        key={routine.id}
-                                        className="card card-hover p-0 overflow-hidden rounded-2xl sm:rounded-3xl flex flex-col justify-between group border border-slate-200/50 dark:border-white/10 dark:bg-[#0c241a]/90"
-                                    >
-                                        <div className="relative h-44 sm:h-56 overflow-hidden w-full">
-                                            <img
-                                                src={routine.coverImage}
-                                                alt={routine.title}
-                                                loading="lazy"
-                                                className="w-full h-full object-cover object-center select-none"
-                                            />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none" />
+                                {filteredCustomRoutines.map((routine) => {
+                                    const isDone = isRoutineDoneToday(routine.id);
+                                    return (
+                                        <div
+                                            key={routine.id}
+                                            className={`card card-hover p-0 overflow-hidden rounded-2xl sm:rounded-3xl flex flex-col justify-between group border ${isDone ? 'border-teal-500/60 dark:border-teal-500/40 ring-1 ring-teal-500/30' : 'border-slate-200/50 dark:border-white/10'} dark:bg-[#0c241a]/90`}
+                                        >
+                                            <div className="relative h-44 sm:h-56 overflow-hidden w-full">
+                                                <img
+                                                    src={routine.coverImage}
+                                                    alt={routine.title}
+                                                    loading="lazy"
+                                                    className="w-full h-full object-cover object-center select-none"
+                                                />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none" />
 
-                                            <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
+                                                <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
+                                                    {isDone && (
+                                                        <span className="bg-teal-500 text-slate-950 font-black px-2 py-0.5 rounded-full text-[10px] shadow-sm flex items-center gap-1">
+                                                            <Check className="w-3 h-3 stroke-[3]" /> Done Today
+                                                        </span>
+                                                    )}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setEditingRoutine(routine);
+                                                            setIsBuilderOpen(true);
+                                                        }}
+                                                        className="p-1.5 rounded-lg bg-black/60 text-white hover:bg-emerald-600 transition-colors"
+                                                        title="Edit Routine"
+                                                    >
+                                                        <Edit3 className="w-3.5 h-3.5" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDeleteRoutine(routine.id)}
+                                                        className="p-1.5 rounded-lg bg-black/60 text-rose-300 hover:bg-rose-600 hover:text-white transition-colors"
+                                                        title="Delete Routine"
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+
+                                                <div className="absolute bottom-2.5 left-3.5 right-3.5">
+                                                    <span className="text-[9px] sm:text-[10px] font-bold bg-teal-600 text-white px-2 py-0.5 rounded-lg uppercase tracking-wider">
+                                                        {routine.badge || 'Custom'}
+                                                    </span>
+                                                    <h4 className="text-sm font-bold text-white mt-1 line-clamp-1">
+                                                        {routine.title}
+                                                    </h4>
+                                                </div>
+                                            </div>
+
+                                            <div className="p-3.5 sm:p-4 space-y-3 flex-1 flex flex-col justify-between">
+                                                <div className="flex items-center justify-between text-[11px] sm:text-xs font-bold text-slate-400 dark:text-white/40">
+                                                    <span className="flex items-center gap-1 text-orange-500">
+                                                        <Flame className="w-3.5 h-3.5" /> ~{routine.calories} kcal
+                                                    </span>
+                                                    <span className="flex items-center gap-1 text-emerald-600 dark:text-green-400">
+                                                        <Clock className="w-3.5 h-3.5" /> {routine.duration}
+                                                    </span>
+                                                    <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+                                                        <Activity className="w-3.5 h-3.5" /> {routine.exercises?.length || 0} moves
+                                                    </span>
+                                                </div>
+
+                                                <div className="space-y-1 bg-slate-50 dark:bg-black/40 p-2.5 rounded-xl sm:rounded-2xl border border-slate-100 dark:border-white/10">
+                                                    {routine.exercises?.slice(0, 3).map((ex, idx) => (
+                                                        <div key={idx} className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
+                                                            <span className="truncate font-medium">· {ex.name}</span>
+                                                            <span className="text-[10px] sm:text-[11px] font-bold text-slate-400">{ex.target}</span>
+                                                        </div>
+                                                    ))}
+                                                    {(routine.exercises?.length || 0) > 3 && (
+                                                        <p className="text-[10px] text-slate-400 italic pt-0.5">
+                                                            + {routine.exercises.length - 3} more movements
+                                                        </p>
+                                                    )}
+                                                </div>
+
                                                 <button
                                                     type="button"
-                                                    onClick={() => {
-                                                        setEditingRoutine(routine);
-                                                        setIsBuilderOpen(true);
-                                                    }}
-                                                    className="p-1.5 rounded-lg bg-black/60 text-white hover:bg-emerald-600 transition-colors"
-                                                    title="Edit Routine"
+                                                    onClick={() => setActiveWorkout(routine)}
+                                                    className={`w-full text-xs py-2.5 rounded-xl flex items-center justify-center gap-2 font-bold transition-all ${isDone ? 'bg-teal-500/15 hover:bg-teal-500/25 text-teal-600 dark:text-teal-400 border border-teal-500/30' : 'btn-primary'}`}
                                                 >
-                                                    <Edit3 className="w-3.5 h-3.5" />
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleDeleteRoutine(routine.id)}
-                                                    className="p-1.5 rounded-lg bg-black/60 text-rose-300 hover:bg-rose-600 hover:text-white transition-colors"
-                                                    title="Delete Routine"
-                                                >
-                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                    <Play className="w-3.5 h-3.5 fill-current" />
+                                                    <span>{isDone ? 'Re-start Routine (Done ✓)' : 'Start Routine (+15 🪙)'}</span>
                                                 </button>
                                             </div>
-
-                                            <div className="absolute bottom-2.5 left-3.5 right-3.5">
-                                                <span className="text-[9px] sm:text-[10px] font-bold bg-teal-600 text-white px-2 py-0.5 rounded-lg uppercase tracking-wider">
-                                                    {routine.badge || 'Custom'}
-                                                </span>
-                                                <h4 className="text-sm font-bold text-white mt-1 line-clamp-1">
-                                                    {routine.title}
-                                                </h4>
-                                            </div>
                                         </div>
-
-                                        <div className="p-3.5 sm:p-4 space-y-3 flex-1 flex flex-col justify-between">
-                                            <div className="flex items-center justify-between text-[11px] sm:text-xs font-bold text-slate-400 dark:text-white/40">
-                                                <span className="flex items-center gap-1 text-orange-500">
-                                                    <Flame className="w-3.5 h-3.5" /> ~{routine.calories} kcal
-                                                </span>
-                                                <span className="flex items-center gap-1 text-emerald-600 dark:text-green-400">
-                                                    <Clock className="w-3.5 h-3.5" /> {routine.duration}
-                                                </span>
-                                                <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
-                                                    <Activity className="w-3.5 h-3.5" /> {routine.exercises?.length || 0} moves
-                                                </span>
-                                            </div>
-
-                                            <div className="space-y-1 bg-slate-50 dark:bg-black/40 p-2.5 rounded-xl sm:rounded-2xl border border-slate-100 dark:border-white/10">
-                                                {routine.exercises?.slice(0, 3).map((ex, idx) => (
-                                                    <div key={idx} className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
-                                                        <span className="truncate font-medium">· {ex.name}</span>
-                                                        <span className="text-[10px] sm:text-[11px] font-bold text-slate-400">{ex.target}</span>
-                                                    </div>
-                                                ))}
-                                                {(routine.exercises?.length || 0) > 3 && (
-                                                    <p className="text-[10px] text-slate-400 italic pt-0.5">
-                                                        + {routine.exercises.length - 3} more movements
-                                                    </p>
-                                                )}
-                                            </div>
-
-                                            <button
-                                                type="button"
-                                                onClick={() => setActiveWorkout(routine)}
-                                                className="btn-primary w-full text-xs py-2.5 rounded-xl flex items-center justify-center gap-2"
-                                            >
-                                                <Play className="w-3.5 h-3.5 fill-current" />
-                                                <span>Start Routine (+15 🪙)</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         )}
                     </div>
@@ -2048,6 +2191,102 @@ export default function Workouts() {
                             <div className="metric-lbl text-[10px] sm:text-xs">Target Goal</div>
                             <span className="text-[10px] sm:text-xs text-slate-400 font-medium">tailored plan</span>
                         </div>
+                    </div>
+
+                    {/* COMPLETED WORKOUT LOGS FEED */}
+                    <div className="card p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200/50 dark:border-white/10 dark:bg-[#0c241a]/90 space-y-4">
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                                <div className="flex items-center gap-2">
+                                    <Trophy className="w-4 h-4 text-amber-500" />
+                                    <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
+                                        Completed Workout Logs ({workoutHistory.length})
+                                    </h4>
+                                </div>
+                                <p className="text-[11px] sm:text-xs text-slate-400">
+                                    Detailed history of all completed training sessions and logged calories
+                                </p>
+                            </div>
+
+                            {workoutHistory.length > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={handleClearHistory}
+                                    className="text-[11px] font-bold text-slate-400 hover:text-rose-500 transition-colors px-2 py-1 rounded-lg hover:bg-rose-500/10"
+                                >
+                                    Clear All Logs
+                                </button>
+                            )}
+                        </div>
+
+                        {workoutHistory.length === 0 ? (
+                            <div className="p-8 sm:p-10 rounded-2xl border border-dashed border-slate-200 dark:border-white/10 text-center space-y-2 bg-slate-50/50 dark:bg-black/20">
+                                <Activity className="w-10 h-10 text-slate-400 mx-auto opacity-60" />
+                                <h5 className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200">
+                                    No completed workouts recorded yet
+                                </h5>
+                                <p className="text-[11px] sm:text-xs text-slate-400 max-w-sm mx-auto">
+                                    Complete any guided routine from the "Routines" tab or build your own in "Custom Builder". Finished sessions and calories will show up right here!
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('routines')}
+                                    className="btn-primary py-2 px-4 text-xs font-bold inline-flex items-center gap-1.5 mt-2"
+                                >
+                                    <Play className="w-3.5 h-3.5 fill-current" />
+                                    <span>Browse Routines</span>
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="space-y-2.5">
+                                {workoutHistory.map((item) => (
+                                    <div
+                                        key={item.id}
+                                        className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl bg-slate-50 dark:bg-black/40 border border-slate-200/60 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all hover:border-emerald-500/40"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center font-bold text-lg shrink-0">
+                                                {item.icon || '💪'}
+                                            </div>
+                                            <div className="space-y-0.5">
+                                                <div className="flex items-center gap-2">
+                                                    <h5 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
+                                                        {item.title}
+                                                    </h5>
+                                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                                                        {item.category}
+                                                    </span>
+                                                </div>
+                                                <div className="flex flex-wrap items-center gap-3 text-[10px] sm:text-[11px] text-slate-400">
+                                                    <span>📅 {item.date} at {item.time}</span>
+                                                    <span>⏱️ {item.duration}</span>
+                                                    <span>🎯 {item.exercisesCount} movement{item.exercisesCount !== 1 ? 's' : ''}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200/50 dark:border-white/5">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs font-black text-orange-500 bg-orange-500/10 px-2 py-1 rounded-lg">
+                                                    🔥 {item.calories} kcal
+                                                </span>
+                                                <span className="text-xs font-bold text-amber-500 bg-amber-500/10 px-2 py-1 rounded-lg">
+                                                    🪙 +15 Coins
+                                                </span>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleDeleteHistoryItem(item.id)}
+                                                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
+                                                title="Delete this log entry"
+                                            >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     {/* How rewards work card */}
