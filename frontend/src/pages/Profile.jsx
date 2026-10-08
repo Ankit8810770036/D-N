@@ -57,11 +57,14 @@ export default function Profile() {
         return rawUrl
     }
 
+    // Calculate local today's date correctly to prevent timezone drift
+    const localToday = useMemo(() => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0], []);
+
     // Load existing profile via React Query cache
     const { data: profile } = useQuery({
         queryKey: ['profile'],
         queryFn: async () => {
-            const { data } = await api.get('/profile')
+            const { data } = await api.get(`/profile?date=${localToday}`)
             return data
         },
         staleTime: 60 * 1000,
@@ -70,10 +73,10 @@ export default function Profile() {
     const { data: summary } = useQuery({
         queryKey: ['summary'],
         queryFn: async () => {
-            const { data } = await api.get('/report/summary')
+            const { data } = await api.get(`/report/summary?date=${localToday}`)
             return data
         },
-        staleTime: 60 * 1000,
+        staleTime: 30 * 1000,
     })
 
     useEffect(() => {
@@ -253,13 +256,16 @@ export default function Profile() {
                         <div className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/40 px-3 py-1 rounded-full border border-amber-200 dark:border-amber-800/60 shadow-xs">
                             <span className="text-base">🔥</span>
                             <span className="font-black text-amber-700 dark:text-amber-300 text-xs sm:text-sm">
-                                {summary?.stats?.current_streak ?? summary?.stats?.streak ?? profile?.metrics?.current_streak ?? profile?.metrics?.streak ?? 0} Day Streak
+                                {Number(summary?.stats?.current_streak ?? summary?.stats?.streak ?? profile?.metrics?.current_streak ?? profile?.metrics?.streak ?? authUser?.current_streak ?? authUser?.streak ?? 0)} Day Streak
                             </span>
                         </div>
                         <div className="flex items-center gap-1.5 bg-amber-500/10 dark:bg-amber-500/15 px-3 py-1 rounded-full border border-amber-500/30 shadow-xs">
                             <span className="text-base">👑</span>
                             <span className="font-bold text-amber-800 dark:text-amber-200 text-xs sm:text-sm">
-                                Best: {summary?.stats?.longest_streak ?? profile?.metrics?.longest_streak ?? summary?.stats?.streak ?? profile?.metrics?.streak ?? 0}d
+                                Best: {Math.max(
+                                    Number(summary?.stats?.current_streak ?? summary?.stats?.streak ?? profile?.metrics?.current_streak ?? profile?.metrics?.streak ?? 0),
+                                    Number(summary?.stats?.longest_streak ?? profile?.metrics?.longest_streak ?? authUser?.longest_streak ?? 0)
+                                )}d
                             </span>
                         </div>
                     </div>
@@ -270,8 +276,8 @@ export default function Profile() {
                         { name: 'Consistency Master', days: 14, icon: '🥈', desc: '14 days of dedicated tracking' },
                         { name: 'Nutrition Legend', days: 30, icon: '🥇', desc: '30 days streak perfection!' },
                     ].map(b => {
-                        const currentStreak = Number(summary?.stats?.current_streak ?? summary?.stats?.streak ?? profile?.metrics?.current_streak ?? profile?.metrics?.streak ?? 0);
-                        const longestStreak = Number(summary?.stats?.longest_streak ?? profile?.metrics?.longest_streak ?? currentStreak);
+                        const currentStreak = Number(summary?.stats?.current_streak ?? summary?.stats?.streak ?? profile?.metrics?.current_streak ?? profile?.metrics?.streak ?? authUser?.current_streak ?? authUser?.streak ?? 0);
+                        const longestStreak = Math.max(currentStreak, Number(summary?.stats?.longest_streak ?? profile?.metrics?.longest_streak ?? authUser?.longest_streak ?? currentStreak));
                         const earnedBadges = summary?.badges || [];
                         const achieved = longestStreak >= b.days || currentStreak >= b.days || earnedBadges.some(eb => eb.badge_type === `streak_${b.days}`);
                         const daysLeft = Math.max(0, b.days - currentStreak);

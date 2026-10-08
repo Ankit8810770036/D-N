@@ -1,5 +1,6 @@
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import api from '../services/api'
 import toast from 'react-hot-toast'
 import { FileText, Download, User, Activity, Flame, Scale, Dumbbell, CalendarCheck, TrendingUp, Trophy, RefreshCw, Sparkles } from 'lucide-react'
@@ -43,8 +44,6 @@ function StatCard({ icon: Icon, iconBg, val, lbl, sub, subColor }) {
 
 export default function Reports() {
     const navigate = useNavigate()
-    const [summary, setSummary] = useState(null)
-    const [loading, setLoading] = useState(true)
     const [downloading, setDownloading] = useState(false)
     const [date, setDate] = useState(() => {
         try {
@@ -74,17 +73,14 @@ export default function Reports() {
         }
     }, [])
 
-    const fetchSummary = useCallback(() => {
-        setLoading(true)
-        api.get('/report/summary')
-            .then(({ data }) => setSummary(data))
-            .catch((err) => toast.error(getErrorMessage(err, 'Failed to load report summary.')))
-            .finally(() => setLoading(false))
-    }, [])
-
-    useEffect(() => {
-        fetchSummary()
-    }, [fetchSummary])
+    const { data: summary, isLoading: loading, refetch: fetchSummary } = useQuery({
+        queryKey: ['summary'],
+        queryFn: async () => {
+            const res = await api.get(`/report/summary?date=${date}`)
+            return res.data
+        },
+        staleTime: 30 * 1000,
+    })
 
     async function downloadPDF() {
         if (downloading) return

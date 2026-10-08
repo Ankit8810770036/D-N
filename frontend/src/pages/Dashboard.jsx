@@ -98,8 +98,26 @@ export default function Dashboard() {
 
     const { data: summary, isLoading: loadingSummary } = useQuery({
         queryKey: ['summary'],
-        queryFn: () => api.get('/report/summary').then(res => res.data).catch(() => null),
+        queryFn: () => api.get(`/report/summary?date=${localToday}`).then(res => res.data).catch(() => null),
+        staleTime: 30 * 1000,
     })
+
+    // Keep localStorage streak cache perfectly in sync whenever summary loads
+    useEffect(() => {
+        if (summary?.stats?.current_streak !== undefined) {
+            try {
+                const raw = localStorage.getItem('user_profile_cache')
+                let parsed = raw ? JSON.parse(raw) : {}
+                parsed.metrics = {
+                    ...(parsed.metrics || {}),
+                    current_streak: summary.stats.current_streak,
+                    streak: summary.stats.current_streak,
+                    longest_streak: summary.stats.longest_streak || summary.stats.current_streak
+                }
+                localStorage.setItem('user_profile_cache', JSON.stringify(parsed))
+            } catch (_) {}
+        }
+    }, [summary])
 
     const loading = loadingProfile || loadingPlan || loadingSummary
     const [celebratingBadges, setCelebratingBadges] = useState([])
@@ -191,9 +209,26 @@ export default function Dashboard() {
 
     const bmiInfo = getBMIClass(profile?.bmi)
 
-    // Instant multi-tiered streak fallback (Live Metrics -> Profile Cache -> Summary Query -> Auth User)
-    const currentStreakValue = metrics?.current_streak ?? metrics?.streak ?? summary?.stats?.current_streak ?? summary?.stats?.streak ?? user?.current_streak ?? user?.streak ?? cachedProfileData?.metrics?.current_streak ?? cachedProfileData?.metrics?.streak ?? 0;
-    const longestStreakValue = metrics?.longest_streak ?? summary?.stats?.longest_streak ?? user?.longest_streak ?? cachedProfileData?.metrics?.longest_streak ?? currentStreakValue;
+    // Synchronized streak calculation matching Profile and Reports
+    const currentStreakValue = Number(
+        summary?.stats?.current_streak ??
+        summary?.stats?.streak ??
+        (profileData ? metrics?.current_streak ?? metrics?.streak : null) ??
+        user?.current_streak ??
+        user?.streak ??
+        cachedProfileData?.metrics?.current_streak ??
+        0
+    );
+    const longestStreakValue = Math.max(
+        currentStreakValue,
+        Number(
+            summary?.stats?.longest_streak ??
+            (profileData ? metrics?.longest_streak : null) ??
+            user?.longest_streak ??
+            cachedProfileData?.metrics?.longest_streak ??
+            currentStreakValue
+        )
+    );
 
     return (
         <div className="space-y-6 w-full min-w-0">
