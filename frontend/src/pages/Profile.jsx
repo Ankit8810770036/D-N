@@ -247,13 +247,21 @@ export default function Profile() {
 
             {/* Gamification Badges */}
             <div className="card">
-                <h2 className="font-semibold text-slate-800 dark:text-white/90 mb-4 flex items-center justify-between">
+                <h2 className="font-semibold text-slate-800 dark:text-white/90 mb-4 flex flex-wrap items-center justify-between gap-2">
                     <span className="font-black text-slate-900 dark:text-white text-base">🏆 Achievements & Badges</span>
-                    <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-950/40 px-3.5 py-1.5 rounded-full border border-amber-200 dark:border-amber-800/60 shadow-xs">
-                        <span className="text-xl">🔥</span>
-                        <span className="font-black text-amber-700 dark:text-amber-300 text-sm">
-                            {summary?.stats?.streak ?? profile?.metrics?.streak ?? 1} Day Streak
-                        </span>
+                    <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/40 px-3 py-1 rounded-full border border-amber-200 dark:border-amber-800/60 shadow-xs">
+                            <span className="text-base">🔥</span>
+                            <span className="font-black text-amber-700 dark:text-amber-300 text-xs sm:text-sm">
+                                {summary?.stats?.current_streak ?? summary?.stats?.streak ?? profile?.metrics?.current_streak ?? profile?.metrics?.streak ?? 0} Day Streak
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 bg-amber-500/10 dark:bg-amber-500/15 px-3 py-1 rounded-full border border-amber-500/30 shadow-xs">
+                            <span className="text-base">👑</span>
+                            <span className="font-bold text-amber-800 dark:text-amber-200 text-xs sm:text-sm">
+                                Best: {summary?.stats?.longest_streak ?? profile?.metrics?.longest_streak ?? summary?.stats?.streak ?? profile?.metrics?.streak ?? 0}d
+                            </span>
+                        </div>
                     </div>
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
@@ -262,9 +270,10 @@ export default function Profile() {
                         { name: 'Consistency Master', days: 14, icon: '🥈', desc: '14 days of dedicated tracking' },
                         { name: 'Nutrition Legend', days: 30, icon: '🥇', desc: '30 days streak perfection!' },
                     ].map(b => {
-                        const currentStreak = Number(summary?.stats?.streak ?? profile?.metrics?.streak ?? 1);
+                        const currentStreak = Number(summary?.stats?.current_streak ?? summary?.stats?.streak ?? profile?.metrics?.current_streak ?? profile?.metrics?.streak ?? 0);
+                        const longestStreak = Number(summary?.stats?.longest_streak ?? profile?.metrics?.longest_streak ?? currentStreak);
                         const earnedBadges = summary?.badges || [];
-                        const achieved = currentStreak >= b.days || earnedBadges.some(eb => eb.badge_type === `streak_${b.days}`);
+                        const achieved = longestStreak >= b.days || currentStreak >= b.days || earnedBadges.some(eb => eb.badge_type === `streak_${b.days}`);
                         const daysLeft = Math.max(0, b.days - currentStreak);
                         return (
                             <div key={b.days} className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all ${achieved ? 'border-amber-400 bg-amber-50/70 dark:bg-amber-950/30 shadow-sm' : 'border-slate-100 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/40 opacity-75'}`}>

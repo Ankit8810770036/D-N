@@ -4,9 +4,10 @@ import api from '../services/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
+import CustomSelect from '../components/CustomSelect';
 import {
     Dumbbell, Flame, Clock, Trophy, CheckCircle2,
-    Play, Pause, X, Check, Search, ChevronRight, Volume2, VolumeX,
+    Play, Pause, X, Check, Search, ChevronRight, ChevronLeft, Volume2, VolumeX,
     Sparkles, ArrowRight, Activity, BookOpen, BarChart3, Plus,
     RotateCcw, ShieldCheck, HeartPulse, Zap, Trash2, Edit3,
     SlidersHorizontal, Layers, PlusCircle, BookmarkCheck
@@ -29,7 +30,7 @@ function playTimerBeep(freq = 520, duration = 0.12, type = 'sine') {
         gain.connect(ctx.destination);
         osc.start();
         osc.stop(ctx.currentTime + duration);
-    } catch (_) {}
+    } catch (_) { }
 }
 
 // ─── Cloudinary CDN Asset Base ───────────────────────────────────────────────
@@ -225,6 +226,7 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
     const [restSeconds, setRestSeconds] = useState(15);
     const [isPaused, setIsPaused] = useState(false);
     const [isMuted, setIsMuted] = useState(false);
+    const [imgErrors, setImgErrors] = useState({});
 
     const currentEx = exercises[stepIndex] || exercises[0] || {};
     const isLast = stepIndex === exercises.length - 1;
@@ -238,15 +240,21 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
         }
     }, [stepIndex, nextEx]);
 
-    // Start Workout Session
-    const handleStart = () => {
-        const dur = parseSeconds(exercises[0]?.target);
-        setStepIndex(0);
+    // Jump directly to any exercise
+    const goToExercise = (idx) => {
+        if (idx < 0 || idx >= exercises.length) return;
+        const dur = parseSeconds(exercises[idx]?.target);
+        setStepIndex(idx);
         setExerciseSeconds(dur);
         setTotalExerciseSeconds(dur);
         setIsPaused(false);
         setPhase('exercise');
         if (!isMuted) playTimerBeep(580, 0.15, 'sine');
+    };
+
+    // Start Workout Session from Ready Screen
+    const handleStart = () => {
+        goToExercise(0);
     };
 
     // Exercise Countdown Timer
@@ -265,13 +273,13 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
             }, 1000);
         } else if (phase === 'exercise' && !isPaused && exerciseSeconds === 0) {
             if (!isLast) {
-                // Auto 15s Break
+                // Auto Rest Break
                 setRestSeconds(15);
                 setIsPaused(false);
                 setPhase('rest');
                 if (!isMuted) playTimerBeep(650, 0.18, 'sine');
             } else {
-                // Finish
+                // Finish Workout
                 setPhase('finished');
                 if (!isMuted) playTimerBeep(880, 0.4, 'triangle');
                 onComplete(routine);
@@ -297,20 +305,30 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
         } else if (phase === 'rest' && !isPaused && restSeconds === 0) {
             const nextIdx = stepIndex + 1;
             if (nextIdx < exercises.length) {
-                const dur = parseSeconds(exercises[nextIdx].target);
-                setStepIndex(nextIdx);
-                setExerciseSeconds(dur);
-                setTotalExerciseSeconds(dur);
-                setIsPaused(false);
-                setPhase('exercise');
-                if (!isMuted) playTimerBeep(580, 0.15, 'sine');
+                goToExercise(nextIdx);
             }
         }
         return () => clearInterval(timer);
     }, [phase, isPaused, restSeconds, stepIndex, exercises, isMuted]);
 
-    // Skip exercise manually
-    const handleSkipExercise = () => {
+    // Navigation handlers
+    const handlePrevExercise = () => {
+        if (stepIndex > 0) {
+            goToExercise(stepIndex - 1);
+        }
+    };
+
+    const handleNextExercise = () => {
+        if (isLast) {
+            setPhase('finished');
+            if (!isMuted) playTimerBeep(880, 0.4, 'triangle');
+            onComplete(routine);
+            return;
+        }
+        goToExercise(stepIndex + 1);
+    };
+
+    const handleCompleteMovementWithRest = () => {
         if (isLast) {
             setPhase('finished');
             if (!isMuted) playTimerBeep(880, 0.4, 'triangle');
@@ -323,46 +341,42 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
         if (!isMuted) playTimerBeep(650, 0.18, 'sine');
     };
 
-    // Skip rest break
     const handleSkipRest = () => {
         const nextIdx = stepIndex + 1;
         if (nextIdx < exercises.length) {
-            const dur = parseSeconds(exercises[nextIdx].target);
-            setStepIndex(nextIdx);
-            setExerciseSeconds(dur);
-            setTotalExerciseSeconds(dur);
-            setIsPaused(false);
-            setPhase('exercise');
-            if (!isMuted) playTimerBeep(580, 0.15, 'sine');
+            goToExercise(nextIdx);
         }
     };
 
-    const overallProgress = Math.round(((stepIndex + (phase === 'rest' ? 0.5 : 0)) / exercises.length) * 100);
+    const overallProgress = Math.round(((stepIndex + (phase === 'rest' ? 0.5 : (phase === 'finished' ? 1 : 0))) / exercises.length) * 100);
     const exerciseProgress = totalExerciseSeconds > 0
         ? Math.round(((totalExerciseSeconds - exerciseSeconds) / totalExerciseSeconds) * 100)
         : 0;
 
     return (
-        <div 
-            className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200 overscroll-contain"
+        <div
+            className="fixed inset-0 z-50 flex sm:items-center sm:justify-center p-0 sm:p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-200 overflow-hidden"
             onClick={(e) => {
                 if (e.target === e.currentTarget) onClose();
             }}
         >
-            <div className="card max-w-xl w-full p-0 overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[94vh] border border-slate-200/50 dark:border-white/10 shadow-2xl rounded-2xl sm:rounded-3xl dark:bg-[#0d2118]">
-                
-                {/* Modal Header */}
-                <div className="px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between border-b border-slate-100 dark:border-white/10 bg-slate-50/70 dark:bg-emerald-950/40">
+            <div className="w-full h-[100dvh] sm:h-auto sm:max-h-[94vh] sm:max-w-2xl md:max-w-3xl bg-white dark:bg-[#0c241a] border-0 sm:border sm:border-slate-200/80 dark:sm:border-white/10 shadow-2xl rounded-none sm:rounded-3xl flex flex-col overflow-hidden my-0 sm:my-auto transition-all duration-200">
+
+                {/* ── Modal Header ── */}
+                <div className="px-4 sm:px-5 py-3 sm:py-3.5 flex items-center justify-between border-b border-slate-100 dark:border-white/10 bg-slate-50/90 dark:bg-emerald-950/50 shrink-0">
                     <div className="min-w-0 pr-2">
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-green-400 truncate">
+                        <div className="flex items-center gap-1.5 sm:gap-2">
+                            <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-emerald-600 dark:text-green-400 truncate">
                                 {routine.title}
                             </span>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 shrink-0">
+                                {routine.level || 'All Levels'}
+                            </span>
                         </div>
-                        <p className="text-[11px] sm:text-xs text-slate-400 font-medium mt-0.5">
+                        <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
                             {phase === 'ready' && `${exercises.length} Movements · ~${routine.duration}`}
                             {phase === 'exercise' && `Exercise ${stepIndex + 1} of ${exercises.length}`}
-                            {phase === 'rest' && `15s Rest Interval`}
+                            {phase === 'rest' && `Rest Interval (${restSeconds}s)`}
                             {phase === 'finished' && `Workout Completed!`}
                         </p>
                     </div>
@@ -370,7 +384,7 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
                         <button
                             type="button"
                             onClick={() => setIsMuted(!isMuted)}
-                            className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors"
+                            className="p-1.5 sm:p-2 rounded-xl text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors"
                             title={isMuted ? 'Unmute Audio' : 'Mute Audio'}
                         >
                             {isMuted ? <VolumeX className="w-4 h-4 text-slate-400" /> : <Volume2 className="w-4 h-4 text-emerald-600 dark:text-green-400" />}
@@ -378,7 +392,7 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
                         <button
                             type="button"
                             onClick={onClose}
-                            className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-rose-500 transition-colors"
+                            className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
                             title="Close"
                         >
                             <X className="w-5 h-5" />
@@ -386,25 +400,51 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
                     </div>
                 </div>
 
-                {/* Progress bar */}
-                <div className="w-full bg-slate-100 dark:bg-white/10 h-1.5">
+                {/* ── Interactive Movement Step Stepper Bar (Active in exercise & rest phases) ── */}
+                {phase !== 'ready' && phase !== 'finished' && (
+                    <div className="flex items-center gap-1.5 overflow-x-auto px-3 py-2 bg-slate-100/70 dark:bg-black/30 border-b border-slate-200/60 dark:border-white/5 shrink-0 scrollbar-none">
+                        {exercises.map((ex, idx) => {
+                            const isActive = idx === stepIndex;
+                            const isCompleted = idx < stepIndex;
+                            return (
+                                <button
+                                    key={idx}
+                                    type="button"
+                                    onClick={() => goToExercise(idx)}
+                                    className={`px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-bold whitespace-nowrap transition-all flex items-center gap-1 shrink-0 cursor-pointer ${isActive
+                                            ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-500/40'
+                                            : isCompleted
+                                                ? 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-300/60 dark:border-emerald-700/60'
+                                                : 'bg-white dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/10 border border-slate-200/60 dark:border-white/10'
+                                        }`}
+                                >
+                                    <span className="opacity-90">{isCompleted ? '✓' : `${idx + 1}.`}</span>
+                                    <span className="truncate max-w-[110px] sm:max-w-[150px]">{ex.name}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
+
+                {/* ── Overall Progress Bar ── */}
+                <div className="w-full bg-slate-100 dark:bg-white/10 h-1.5 shrink-0">
                     <div
                         className="bg-emerald-500 h-full transition-all duration-300"
                         style={{ width: `${phase === 'finished' ? 100 : overallProgress}%` }}
                     />
                 </div>
 
-                {/* Content Body */}
-                <div className="p-3.5 sm:p-6 overflow-y-auto flex-1 overscroll-contain">
-                    
-                    {/* START SCREEN */}
+                {/* ── Modal Scrollable Body ── */}
+                <div className="p-3.5 sm:p-5 overflow-y-auto flex-1 min-h-0 overscroll-contain">
+
+                    {/* 1. START SCREEN */}
                     {phase === 'ready' && (
-                        <div className="space-y-3.5 sm:space-y-5 text-center py-1 sm:py-2">
-                            <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-emerald-500/10 border border-emerald-500/20 text-2xl sm:text-4xl flex items-center justify-center mx-auto shadow-sm">
+                        <div className="space-y-4 sm:space-y-5 text-center py-2">
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-emerald-500/10 border border-emerald-500/20 text-3xl sm:text-4xl flex items-center justify-center mx-auto shadow-sm">
                                 {routine.icon || '🏋️'}
                             </div>
                             <div className="space-y-1">
-                                <h3 className="text-base sm:text-xl font-bold text-slate-900 dark:text-white">
+                                <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
                                     {routine.title}
                                 </h3>
                                 <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
@@ -413,7 +453,7 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
                             </div>
 
                             {/* Summary Metrics */}
-                            <div className="grid grid-cols-3 gap-1.5 sm:gap-2 p-2.5 sm:p-3.5 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 text-center">
+                            <div className="grid grid-cols-3 gap-2 p-2.5 sm:p-3.5 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 text-center">
                                 <div>
                                     <span className="text-[10px] uppercase font-bold text-slate-400 block">Movements</span>
                                     <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white">{exercises.length}</span>
@@ -428,16 +468,17 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
                                 </div>
                             </div>
 
-                            {/* Exercises sequence */}
+                            {/* Exercises sequence list */}
                             <div className="text-left space-y-1.5">
                                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                                    Workout Lineup:
+                                    Workout Lineup ({exercises.length} Exercises):
                                 </p>
-                                <div className="space-y-1.5 max-h-40 sm:max-h-52 overflow-y-auto pr-1">
+                                <div className="space-y-1.5 max-h-48 sm:max-h-56 overflow-y-auto pr-1">
                                     {exercises.map((ex, idx) => (
                                         <div
                                             key={idx}
-                                            className="flex items-center justify-between p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/10 text-xs text-slate-700 dark:text-slate-300 font-medium"
+                                            onClick={() => goToExercise(idx)}
+                                            className="flex items-center justify-between p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/10 text-xs text-slate-700 dark:text-slate-300 font-medium hover:border-emerald-500/40 transition-colors cursor-pointer"
                                         >
                                             <div className="flex items-center gap-2 sm:gap-3 min-w-0 pr-2">
                                                 <span className="w-5 h-5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-green-400 font-bold text-[10px] flex items-center justify-center shrink-0">
@@ -445,7 +486,10 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
                                                 </span>
                                                 <span className="font-semibold truncate">{ex.name}</span>
                                             </div>
-                                            <span className="text-slate-400 text-[11px] font-bold shrink-0">{ex.target}</span>
+                                            <div className="flex items-center gap-2 shrink-0">
+                                                <span className="text-slate-400 text-[11px] font-bold">{ex.target}</span>
+                                                <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -454,7 +498,7 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
                             <button
                                 type="button"
                                 onClick={handleStart}
-                                className="btn-primary w-full text-xs sm:text-sm py-3 sm:py-3.5 shadow-lg shadow-emerald-500/20"
+                                className="btn-primary w-full text-xs sm:text-sm py-3 sm:py-3.5 shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 font-bold"
                             >
                                 <Play className="w-4 h-4 fill-current" />
                                 <span>Start Workout Now</span>
@@ -462,69 +506,90 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
                         </div>
                     )}
 
-                    {/* ACTIVE EXERCISE SCREEN */}
+                    {/* 2. ACTIVE EXERCISE SCREEN */}
                     {phase === 'exercise' && (
-                        <div className="space-y-2.5 sm:space-y-4">
-                            {/* Edge-to-edge filled exercise demo container */}
-                            <div className="w-full h-36 sm:h-56 max-h-[26vh] sm:max-h-none rounded-2xl sm:rounded-3xl overflow-hidden relative shadow-md">
-                                {currentEx.image ? (
+                        <div className="space-y-3.5 sm:space-y-4">
+
+                            {/* Exercise Visual / Media Banner with Enriched High-Res Visibility */}
+                            <div className="w-full h-72 sm:h-96 md:h-[400px] rounded-2xl sm:rounded-3xl overflow-hidden relative shadow-lg bg-slate-950 border border-slate-200/20 dark:border-white/10 shrink-0">
+                                {currentEx.image && !imgErrors[currentEx.name] ? (
                                     <img
-                                        key={currentEx.image || currentEx.name || stepIndex}
+                                        key={currentEx.name || stepIndex}
                                         src={currentEx.image}
                                         alt={currentEx.name}
                                         className="w-full h-full object-cover object-center select-none animate-in fade-in duration-200"
-                                        onError={(e) => {
-                                            e.currentTarget.style.display = 'none';
+                                        onError={() => {
+                                            setImgErrors(prev => ({ ...prev, [currentEx.name]: true }));
                                         }}
                                     />
                                 ) : (
-                                    <div className="w-full h-full bg-slate-900 flex flex-col items-center justify-center text-slate-500 gap-2 p-4">
-                                        <Dumbbell className="w-10 h-10 sm:w-16 sm:h-16 text-emerald-500/60 animate-pulse" />
-                                        <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">{currentEx.muscle || 'Custom Exercise'}</span>
+                                    <div className="w-full h-full bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 flex flex-col items-center justify-center text-slate-400 gap-3 p-6 select-none">
+                                        <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                                            <Dumbbell className="w-10 h-10 text-emerald-400 animate-pulse" />
+                                        </div>
+                                        <span className="text-sm font-bold text-white tracking-wide uppercase">{currentEx.muscle || 'Full Body Movement'}</span>
+                                        <span className="text-xs text-slate-400">{currentEx.sets || 'Active Set'}</span>
                                     </div>
                                 )}
+
+                                {/* Gradient vignette overlay for contrast */}
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
+
+                                {/* Target badge overlay on top right */}
+                                <div className="absolute top-3 right-3 z-10">
+                                    <span className="text-xs sm:text-sm font-bold px-3 py-1 rounded-full bg-black/80 backdrop-blur-md text-emerald-300 border border-white/20 shadow-md">
+                                        🎯 {currentEx.target}
+                                    </span>
+                                </div>
+
+                                {/* Step badge overlay on top left */}
+                                <div className="absolute top-3 left-3 z-10">
+                                    <span className="text-xs sm:text-sm font-bold px-3 py-1 rounded-full bg-emerald-600 text-white shadow-md">
+                                        Move {stepIndex + 1}/{exercises.length}
+                                    </span>
+                                </div>
+
                                 {isPaused && (
-                                    <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-10">
-                                        <span className="px-3.5 py-1.5 rounded-full bg-amber-500 text-white text-[11px] sm:text-xs font-bold uppercase tracking-wider shadow-lg">
-                                            Workout Paused
+                                    <div className="absolute inset-0 bg-black/75 backdrop-blur-xs flex items-center justify-center z-20 animate-in fade-in duration-150">
+                                        <span className="px-5 py-2.5 rounded-full bg-amber-500 text-white text-xs sm:text-sm font-black uppercase tracking-wider shadow-xl flex items-center gap-2">
+                                            <Pause className="w-4 h-4 fill-current" />
+                                            <span>Workout Paused</span>
                                         </span>
                                     </div>
                                 )}
                             </div>
 
-                            <div>
-                                <div className="flex items-center justify-between gap-2">
-                                    <h3 className="text-base sm:text-xl font-bold text-slate-900 dark:text-white truncate">
+                            {/* Exercise Name & Muscle focus */}
+                            <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0 flex-1">
+                                    <h3 className="text-base sm:text-xl font-black text-slate-900 dark:text-white truncate">
                                         {currentEx.name}
                                     </h3>
-                                    <span className="text-[11px] sm:text-xs font-bold px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shrink-0">
-                                        {currentEx.target}
-                                    </span>
+                                    <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                                        {currentEx.sets} · Focus: <strong className="text-emerald-600 dark:text-emerald-400">{currentEx.muscle}</strong>
+                                    </p>
                                 </div>
-                                <p className="text-[11px] sm:text-xs text-slate-400 font-medium mt-0.5 truncate">
-                                    {currentEx.sets} · Focus: {currentEx.muscle}
-                                </p>
                             </div>
 
                             {/* Timer Display Box */}
-                            <div className="p-3 sm:p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 space-y-2">
+                            <div className="p-3 sm:p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 space-y-2.5">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-[10px] sm:text-xs font-bold uppercase text-slate-400">
-                                        Remaining Time
+                                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                        Interval Countdown
                                     </span>
-                                    <span className="text-2xl sm:text-3xl font-bold font-mono text-emerald-600 dark:text-green-400">
+                                    <span className="text-3xl sm:text-4xl font-black font-mono text-emerald-600 dark:text-green-400 tracking-tight">
                                         {formatClock(exerciseSeconds)}
                                     </span>
                                 </div>
 
-                                <div className="w-full bg-slate-200 dark:bg-white/10 h-2 sm:h-2.5 rounded-full overflow-hidden">
+                                <div className="w-full bg-slate-200 dark:bg-white/10 h-2.5 rounded-full overflow-hidden">
                                     <div
                                         className="bg-emerald-500 h-full transition-all duration-1000 ease-linear rounded-full"
                                         style={{ width: `${exerciseProgress}%` }}
                                     />
                                 </div>
 
-                                <div className="flex items-center justify-between pt-1">
+                                <div className="flex items-center justify-between pt-1 gap-2">
                                     <div className="flex items-center gap-1.5">
                                         <button
                                             type="button"
@@ -532,7 +597,7 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
                                                 setExerciseSeconds(p => Math.max(5, p - 10));
                                                 setTotalExerciseSeconds(p => Math.max(5, p - 10));
                                             }}
-                                            className="px-2.5 py-1 rounded-xl bg-white dark:bg-white/10 text-slate-600 dark:text-slate-300 text-xs font-bold border border-slate-200 dark:border-white/10 hover:border-emerald-500 transition-colors"
+                                            className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-white/10 text-slate-700 dark:text-slate-200 text-xs font-bold border border-slate-200 dark:border-white/10 hover:border-emerald-500 transition-colors active:scale-95"
                                         >
                                             -10s
                                         </button>
@@ -542,7 +607,7 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
                                                 setExerciseSeconds(p => p + 10);
                                                 setTotalExerciseSeconds(p => p + 10);
                                             }}
-                                            className="px-2.5 py-1 rounded-xl bg-white dark:bg-white/10 text-slate-600 dark:text-slate-300 text-xs font-bold border border-slate-200 dark:border-white/10 hover:border-emerald-500 transition-colors"
+                                            className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-white/10 text-slate-700 dark:text-slate-200 text-xs font-bold border border-slate-200 dark:border-white/10 hover:border-emerald-500 transition-colors active:scale-95"
                                         >
                                             +10s
                                         </button>
@@ -551,11 +616,10 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
                                     <button
                                         type="button"
                                         onClick={() => setIsPaused(!isPaused)}
-                                        className={`px-3.5 sm:px-4 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
-                                            isPaused
-                                                ? 'bg-emerald-600 text-white'
-                                                : 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30'
-                                        }`}
+                                        className={`px-4 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 ${isPaused
+                                                ? 'bg-emerald-600 text-white shadow-sm'
+                                                : 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 hover:bg-amber-500/25'
+                                            }`}
                                     >
                                         {isPaused ? (
                                             <>
@@ -572,71 +636,100 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
                                 </div>
                             </div>
 
+                            {/* Form Cue Callout */}
                             {currentEx.tip && (
-                                <p className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-white/5 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border border-slate-100 dark:border-white/10 leading-relaxed font-medium">
+                                <p className="text-[11px] sm:text-xs text-slate-700 dark:text-slate-300 bg-emerald-50/50 dark:bg-emerald-950/30 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border border-emerald-200/50 dark:border-emerald-800/40 leading-relaxed font-medium">
                                     💡 <strong>Form Cue:</strong> {currentEx.tip}
                                 </p>
                             )}
 
-                            <button
-                                type="button"
-                                onClick={handleSkipExercise}
-                                className="btn-primary w-full text-xs py-3 sm:py-3.5 shadow-md shadow-emerald-500/10"
-                            >
-                                {isLast ? (
-                                    <>
-                                        <Trophy className="w-4 h-4 text-amber-300" />
-                                        <span>Finish Workout (+15 🪙)</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Check className="w-4 h-4" />
-                                        <span>Complete Movement (15s Break) →</span>
-                                    </>
+                            {/* Bottom Navigation Control Bar */}
+                            <div className="flex items-center gap-2 pt-1">
+                                {stepIndex > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={handlePrevExercise}
+                                        className="btn-secondary py-3 px-3.5 text-xs font-bold flex items-center justify-center gap-1.5 shrink-0"
+                                        title="Previous Exercise"
+                                    >
+                                        <ChevronLeft className="w-4 h-4" />
+                                        <span className="hidden sm:inline">Prev</span>
+                                    </button>
                                 )}
-                            </button>
+
+                                <button
+                                    type="button"
+                                    onClick={handleCompleteMovementWithRest}
+                                    className="btn-primary flex-1 py-3 text-xs font-bold flex items-center justify-center gap-2 shadow-md shadow-emerald-500/15"
+                                >
+                                    {isLast ? (
+                                        <>
+                                            <Trophy className="w-4 h-4 text-amber-300" />
+                                            <span>Finish Workout (+15 🪙)</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Check className="w-4 h-4" />
+                                            <span>Next (15s Rest) →</span>
+                                        </>
+                                    )}
+                                </button>
+
+                                {!isLast && (
+                                    <button
+                                        type="button"
+                                        onClick={handleNextExercise}
+                                        className="btn-secondary py-3 px-3 sm:px-4 text-xs font-bold flex items-center justify-center gap-1 shrink-0 text-slate-600 dark:text-slate-300 hover:text-emerald-600"
+                                        title="Skip directly to next movement without rest"
+                                    >
+                                        <span>Skip</span>
+                                        <ChevronRight className="w-4 h-4" />
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     )}
 
-                    {/* REST BREAK SCREEN */}
+                    {/* 3. REST BREAK SCREEN */}
                     {phase === 'rest' && (
-                        <div className="py-6 flex flex-col items-center text-center space-y-4">
-                            <div className="w-20 h-20 rounded-full bg-amber-500/10 border-2 border-amber-500/30 flex items-center justify-center animate-pulse">
-                                <span className="text-2xl font-bold font-mono text-amber-600 dark:text-amber-400">
+                        <div className="py-4 flex flex-col items-center text-center space-y-4">
+                            <div className="w-20 h-20 rounded-full bg-amber-500/10 border-2 border-amber-500/40 flex items-center justify-center animate-pulse shadow-sm">
+                                <span className="text-2xl sm:text-3xl font-black font-mono text-amber-600 dark:text-amber-400">
                                     {restSeconds}s
                                 </span>
                             </div>
 
                             <div>
-                                <span className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 block">
+                                <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 block">
                                     Rest Interval
                                 </span>
                                 <p className="text-xs text-slate-400 mt-0.5">
-                                    Catch your breath and prepare for the next movement.
+                                    Deep breath and hydrate before your next movement!
                                 </p>
                             </div>
 
                             {nextEx && (
-                                <div className="w-full p-3.5 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 flex items-center gap-3 text-left">
-                                    {nextEx.image ? (
-                                        <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0">
+                                <div className="w-full p-3 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 flex items-center gap-3 text-left">
+                                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden shrink-0 bg-slate-900">
+                                        {nextEx.image && !imgErrors[nextEx.name] ? (
                                             <img
-                                                key={nextEx.image || nextEx.name}
+                                                key={nextEx.name}
                                                 src={nextEx.image}
                                                 alt={nextEx.name}
                                                 className="w-full h-full object-cover object-center"
+                                                onError={() => setImgErrors(prev => ({ ...prev, [nextEx.name]: true }))}
                                             />
-                                        </div>
-                                    ) : (
-                                        <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center shrink-0">
-                                            <Dumbbell className="w-8 h-8" />
-                                        </div>
-                                    )}
+                                        ) : (
+                                            <div className="w-full h-full bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                                                <Dumbbell className="w-6 h-6" />
+                                            </div>
+                                        )}
+                                    </div>
                                     <div className="min-w-0 flex-1">
                                         <span className="text-[10px] uppercase font-bold text-emerald-600 dark:text-green-400 block">
                                             Up Next · Step {stepIndex + 2} of {exercises.length}
                                         </span>
-                                        <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                        <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
                                             {nextEx.name}
                                         </h4>
                                         <p className="text-[11px] text-slate-400 truncate">
@@ -646,29 +739,29 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
                                 </div>
                             )}
 
-                            <div className="flex items-center gap-2 pt-2">
+                            <div className="flex items-center gap-2 pt-2 w-full">
                                 <button
                                     type="button"
                                     onClick={() => setIsPaused(!isPaused)}
-                                    className="btn-secondary py-2.5 px-4 text-xs font-bold"
+                                    className="btn-secondary py-2.5 sm:py-3 px-4 text-xs font-bold shrink-0"
                                 >
                                     {isPaused ? 'Resume' : 'Pause'}
                                 </button>
                                 <button
                                     type="button"
                                     onClick={handleSkipRest}
-                                    className="btn-primary py-2.5 px-5 text-xs font-bold"
+                                    className="btn-primary flex-1 py-2.5 sm:py-3 px-5 text-xs font-bold flex items-center justify-center gap-2 shadow-md shadow-emerald-500/15"
                                 >
-                                    Skip Rest →
+                                    <span>Start Next Movement Now →</span>
                                 </button>
                             </div>
                         </div>
                     )}
 
-                    {/* WORKOUT COMPLETE SCREEN */}
+                    {/* 4. WORKOUT COMPLETE SCREEN */}
                     {phase === 'finished' && (
-                        <div className="py-6 text-center space-y-4">
-                            <div className="w-16 h-16 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-green-400 flex items-center justify-center mx-auto shadow-md">
+                        <div className="py-4 text-center space-y-4">
+                            <div className="w-16 h-16 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-green-400 flex items-center justify-center mx-auto shadow-md animate-bounce">
                                 <Trophy className="w-8 h-8 text-amber-400" />
                             </div>
 
@@ -677,11 +770,11 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
                                     Workout Completed! 🎉
                                 </h3>
                                 <p className="text-xs text-slate-400 max-w-xs mx-auto">
-                                    Outstanding work! You completed the <strong>{routine.title}</strong> routine.
+                                    Outstanding consistency! You crushed the <strong>{routine.title}</strong> routine.
                                 </p>
                             </div>
 
-                            <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-around text-center">
+                            <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-around text-center">
                                 <div>
                                     <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 uppercase block">Movements</span>
                                     <span className="text-sm font-bold text-slate-900 dark:text-white">{exercises.length}</span>
@@ -702,7 +795,7 @@ function WorkoutPlayerModal({ routine, onClose, onComplete, isLogging }) {
                                 type="button"
                                 onClick={onClose}
                                 disabled={isLogging}
-                                className="btn-primary w-full text-xs py-3.5 shadow-md shadow-emerald-500/10"
+                                className="btn-primary w-full text-xs py-3.5 shadow-md shadow-emerald-500/10 font-bold"
                             >
                                 {isLogging ? 'Saving Reward...' : 'Done & Return to Workouts'}
                             </button>
@@ -832,14 +925,14 @@ function CustomRoutineModal({ isOpen, onClose, onSave, editRoutine = null }) {
     };
 
     return (
-        <div 
-            className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200 overscroll-contain"
+        <div
+            className="fixed inset-0 z-50 flex sm:items-center sm:justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-sm animate-in fade-in duration-150 overflow-hidden"
             onClick={(e) => {
                 if (e.target === e.currentTarget) onClose();
             }}
         >
-            <div className="card max-w-xl w-full p-0 overflow-hidden flex flex-col max-h-[92vh] border border-slate-200/50 dark:border-white/10 shadow-2xl rounded-2xl sm:rounded-3xl dark:bg-[#0d2118]">
-                
+            <div className="card max-w-xl w-full h-[100dvh] sm:h-auto p-0 overflow-hidden flex flex-col sm:max-h-[92vh] border-0 sm:border sm:border-slate-200/50 dark:sm:border-white/10 shadow-2xl rounded-none sm:rounded-3xl dark:bg-[#0d2118] my-0 sm:my-auto">
+
                 {/* Header */}
                 <div className="px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between border-b border-slate-100 dark:border-white/10 bg-slate-50/70 dark:bg-emerald-950/40">
                     <div className="flex items-center gap-2 min-w-0 pr-2">
@@ -866,7 +959,7 @@ function CustomRoutineModal({ isOpen, onClose, onSave, editRoutine = null }) {
 
                 {/* Form Body */}
                 <form onSubmit={handleSubmit} className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4 sm:space-y-5 overscroll-contain">
-                    
+
                     {/* Basic details */}
                     <div className="space-y-3">
                         <div>
@@ -893,12 +986,11 @@ function CustomRoutineModal({ isOpen, onClose, onSave, editRoutine = null }) {
                                     onChange={(e) => setCategory(e.target.value)}
                                     className="input-field w-full text-xs"
                                 >
-                                    <option value="Fat Loss">🔥 Fat Loss</option>
-                                    <option value="Strength">💪 Strength Split</option>
-                                    <option value="Core">⚡ Core & Abs</option>
-                                    <option value="Yoga">🧘 Yoga & Mobility</option>
-                                    <option value="Recovery">🌿 Low Impact / Recovery</option>
-                                    <option value="Cardio">🏃 Cardio Blast</option>
+                                    <option value="Fat Loss">1. 🔥 Fat Loss</option>
+                                    <option value="Strength">2. 💪 Muscle Strength</option>
+                                    <option value="Core">3. ⚡ Core & Abs</option>
+                                    <option value="Yoga">4. 🧘 Yoga & Mobility</option>
+                                    <option value="Recovery">5. 🌿 Joint Care</option>
                                 </select>
                             </div>
 
@@ -1039,22 +1131,20 @@ function CustomRoutineModal({ isOpen, onClose, onSave, editRoutine = null }) {
                                 <button
                                     type="button"
                                     onClick={() => setAddMode('library')}
-                                    className={`px-2.5 py-1 rounded-lg transition-all ${
-                                        addMode === 'library'
+                                    className={`px-2.5 py-1 rounded-lg transition-all ${addMode === 'library'
                                             ? 'bg-white dark:bg-emerald-600 text-slate-900 dark:text-white shadow-xs'
                                             : 'text-slate-500 dark:text-slate-400'
-                                    }`}
+                                        }`}
                                 >
                                     From Library
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setAddMode('manual')}
-                                    className={`px-2.5 py-1 rounded-lg transition-all ${
-                                        addMode === 'manual'
+                                    className={`px-2.5 py-1 rounded-lg transition-all ${addMode === 'manual'
                                             ? 'bg-white dark:bg-emerald-600 text-slate-900 dark:text-white shadow-xs'
                                             : 'text-slate-500 dark:text-slate-400'
-                                    }`}
+                                        }`}
                                 >
                                     Custom Exercise
                                 </button>
@@ -1155,67 +1245,95 @@ function CustomRoutineModal({ isOpen, onClose, onSave, editRoutine = null }) {
 }
 
 // ─── Exercise Detail Modal ──────────────────────────────────────────────────
-function ExerciseDetailModal({ exercise, onClose }) {
+function ExerciseDetailModal({ exercise, onClose, onStartQuickWorkout }) {
     useBodyScrollLock(Boolean(exercise));
+    const [imgError, setImgError] = useState(false);
 
     if (!exercise) return null;
 
     return (
-        <div 
-            className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150 overscroll-contain"
+        <div
+            className="fixed inset-0 z-50 flex sm:items-center sm:justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-sm animate-in fade-in duration-150 overflow-hidden"
             onClick={(e) => {
                 if (e.target === e.currentTarget) onClose();
             }}
         >
-            <div className="card max-w-lg w-full p-0 overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/50 dark:border-white/10 shadow-2xl dark:bg-[#0d2118]">
-                <div className="relative h-48 sm:h-64 w-full overflow-hidden border-b border-slate-100 dark:border-white/10">
-                    {exercise.image ? (
+            <div className="w-full h-[100dvh] sm:h-auto sm:max-h-[94dvh] sm:max-w-xl bg-white dark:bg-[#0c241a] border-0 sm:border sm:border-slate-200/80 dark:sm:border-white/10 shadow-2xl rounded-none sm:rounded-3xl overflow-hidden my-0 sm:my-auto flex flex-col">
+                <div className="relative h-64 sm:h-80 md:h-[340px] w-full overflow-hidden border-b border-slate-100 dark:border-white/10 bg-slate-950 shrink-0">
+                    {exercise.image && !imgError ? (
                         <img
                             src={exercise.image}
                             alt={exercise.name}
                             className="w-full h-full object-cover object-center select-none"
+                            onError={() => setImgError(true)}
                         />
                     ) : (
-                        <div className="w-full h-full bg-slate-900 flex items-center justify-center">
-                            <Dumbbell className="w-16 h-16 text-emerald-500/40" />
+                        <div className="w-full h-full bg-gradient-to-br from-slate-900 to-emerald-950 flex flex-col items-center justify-center gap-2 text-slate-400 p-4">
+                            <Dumbbell className="w-12 h-12 text-emerald-400/80 animate-pulse" />
+                            <span className="text-xs font-bold text-white uppercase">{exercise.muscle || 'Exercise'}</span>
                         </div>
                     )}
                     <button
                         type="button"
                         onClick={onClose}
                         className="absolute top-3 right-3 p-2 rounded-full bg-black/70 text-white hover:bg-black transition-colors"
+                        title="Close"
                     >
                         <X className="w-4 h-4 sm:w-5 sm:h-5" />
                     </button>
-                </div>
-                <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
-                    <div className="flex items-center justify-between gap-2">
-                        <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white truncate">
-                            {exercise.name}
-                        </h3>
-                        <span className="badge badge-green text-[10px] sm:text-xs px-2.5 sm:px-3 py-0.5 sm:py-1 shrink-0">
-                            {exercise.category}
+                    <div className="absolute bottom-2.5 left-3">
+                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-black/75 text-emerald-300 border border-white/20 backdrop-blur-xs">
+                            🎯 {exercise.category}
                         </span>
                     </div>
-                    <div className="flex items-center gap-3 sm:gap-4 text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium">
-                        <span>🎯 {exercise.muscle}</span>
-                        <span>🔥 {exercise.burnRate}</span>
+                </div>
+
+                <div className="p-4 sm:p-5 space-y-3 overflow-y-auto flex-1 min-h-0 overscroll-contain">
+                    <div className="flex items-start justify-between gap-2">
+                        <div>
+                            <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                                {exercise.name}
+                            </h3>
+                            <div className="flex items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                                <span>Focus: <strong className="text-emerald-600 dark:text-emerald-400">{exercise.muscle}</strong></span>
+                                <span>·</span>
+                                <span>🔥 {exercise.burnRate}</span>
+                            </div>
+                        </div>
                     </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed pt-0.5">
-                        {exercise.instructions}
-                    </p>
+
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Execution Guide</p>
+                        <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                            {exercise.instructions}
+                        </p>
+                    </div>
+
                     {exercise.tip && (
-                        <p className="text-[11px] sm:text-xs text-emerald-700 dark:text-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/30 p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl border border-emerald-200/50 dark:border-emerald-800/40">
+                        <p className="text-[11px] sm:text-xs text-slate-700 dark:text-slate-300 bg-emerald-50/60 dark:bg-emerald-950/40 p-2.5 sm:p-3 rounded-xl border border-emerald-200/60 dark:border-emerald-800/40 leading-relaxed font-medium">
                             💡 <strong>Form Cue:</strong> {exercise.tip}
                         </p>
                     )}
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="btn-secondary w-full py-2.5 sm:py-3 text-xs font-bold mt-1"
-                    >
-                        Close Guide
-                    </button>
+
+                    <div className="pt-2 flex flex-col sm:flex-row items-center gap-2">
+                        {onStartQuickWorkout && (
+                            <button
+                                type="button"
+                                onClick={() => onStartQuickWorkout(exercise)}
+                                className="btn-primary w-full sm:flex-1 py-2.5 sm:py-3 text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
+                            >
+                                <Play className="w-3.5 h-3.5 fill-current" />
+                                <span>Start Quick Session ⚡</span>
+                            </button>
+                        )}
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="btn-secondary w-full sm:w-auto py-2.5 sm:py-3 px-4 text-xs font-bold"
+                        >
+                            Close
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1320,23 +1438,50 @@ export default function Workouts() {
         }
     });
 
-    // Category list for filter pills
-    const categories = [
-        { id: 'all', label: 'All Workouts' },
-        { id: 'fat loss', label: '🔥 Fat Loss' },
-        { id: 'strength', label: '💪 Muscle Strength' },
-        { id: 'core', label: '⚡ Core & Abs' },
-        { id: 'yoga', label: '🧘 Yoga & Mobility' },
-        { id: 'recovery', label: '🌿 Joint Care' },
+    // Workout Category Dropdown Options as requested
+    const WORKOUT_CATEGORIES = [
+        { value: 'all', label: 'All Categories', icon: '✨', description: 'Show all workout routines & exercises' },
+        { value: 'fat_loss', label: '1. Fat Loss', icon: '🔥', description: 'High metabolic burn & cardio circuits' },
+        { value: 'muscle_strength', label: '2. Muscle Strength', icon: '💪', description: 'Compound resistance & muscle split' },
+        { value: 'core_abs', label: '3. Core & Abs', icon: '⚡', description: 'Midsection, oblique & core conditioning' },
+        { value: 'yoga_mobility', label: '4. Yoga & Mobility', icon: '🧘', description: 'Mindful flow & joint mobility' },
+        { value: 'joint_care', label: '5. Joint Care', icon: '🌿', description: 'Low-impact knee & joint protection' },
     ];
+
+    const isCategoryMatch = (itemCategory, filterId) => {
+        if (!filterId || filterId === 'all') return true;
+        if (!itemCategory) return false;
+        const cat = String(itemCategory).toLowerCase();
+
+        switch (filterId) {
+            case 'fat_loss':
+            case 'fat loss':
+                return cat.includes('fat') || cat.includes('loss') || cat.includes('cardio') || cat.includes('hiit');
+            case 'muscle_strength':
+            case 'strength':
+                return cat.includes('strength') || cat.includes('muscle') || cat.includes('chest') || cat.includes('legs') || cat.includes('back');
+            case 'core_abs':
+            case 'core':
+                return cat.includes('core') || cat.includes('abs') || cat.includes('waist');
+            case 'yoga_mobility':
+            case 'yoga':
+                return cat.includes('yoga') || cat.includes('mobility') || cat.includes('flow') || cat.includes('stretch');
+            case 'joint_care':
+            case 'recovery':
+                return cat.includes('joint') || cat.includes('recovery') || cat.includes('rehab') || cat.includes('gentle') || cat.includes('care');
+            default:
+                return cat === String(filterId).toLowerCase();
+        }
+    };
 
     // Filter routines based on search & category
     const filteredRoutines = useMemo(() => {
         return ROUTINES.filter((routine) => {
-            const matchesSearch = routine.title.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+            const matchesSearch = !debouncedSearch ||
+                routine.title.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
                 routine.description.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
                 routine.exercises.some(e => e.name.toLowerCase().includes(debouncedSearch.toLowerCase()));
-            const matchesCategory = selectedCategory === 'all' || routine.category.toLowerCase() === selectedCategory.toLowerCase();
+            const matchesCategory = isCategoryMatch(routine.category, selectedCategory);
             return matchesSearch && matchesCategory;
         });
     }, [debouncedSearch, selectedCategory]);
@@ -1344,10 +1489,11 @@ export default function Workouts() {
     // Filter custom routines
     const filteredCustomRoutines = useMemo(() => {
         return customRoutines.filter((routine) => {
-            const matchesSearch = routine.title.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+            const matchesSearch = !debouncedSearch ||
+                routine.title.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
                 routine.description.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
                 routine.exercises.some(e => e.name.toLowerCase().includes(debouncedSearch.toLowerCase()));
-            const matchesCategory = selectedCategory === 'all' || routine.category.toLowerCase() === selectedCategory.toLowerCase();
+            const matchesCategory = isCategoryMatch(routine.category, selectedCategory);
             return matchesSearch && matchesCategory;
         });
     }, [customRoutines, debouncedSearch, selectedCategory]);
@@ -1355,13 +1501,11 @@ export default function Workouts() {
     // Filter exercise library
     const filteredExercises = useMemo(() => {
         return EXERCISE_LIBRARY.filter((ex) => {
-            const matchesSearch = ex.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+            const matchesSearch = !debouncedSearch ||
+                ex.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
                 ex.muscle.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
                 ex.category.toLowerCase().includes(debouncedSearch.toLowerCase());
-            const matchesCategory = selectedCategory === 'all' || ex.category.toLowerCase() === selectedCategory.toLowerCase() ||
-                (selectedCategory === 'fat loss' && ex.category.toLowerCase() === 'cardio') ||
-                (selectedCategory === 'strength' && (ex.category.toLowerCase() === 'chest' || ex.category.toLowerCase() === 'legs' || ex.category.toLowerCase() === 'back')) ||
-                (selectedCategory === 'recovery' && ex.category.toLowerCase() === 'yoga');
+            const matchesCategory = isCategoryMatch(ex.category, selectedCategory);
             return matchesSearch && matchesCategory;
         });
     }, [debouncedSearch, selectedCategory]);
@@ -1373,7 +1517,7 @@ export default function Workouts() {
 
     return (
         <div className="space-y-5 sm:space-y-6 pb-20 animate-fade-in w-full min-w-0 font-outfit">
-            
+
             {/* Active Workout Player Modal */}
             {activeWorkout && (
                 <WorkoutPlayerModal
@@ -1399,6 +1543,33 @@ export default function Workouts() {
             <ExerciseDetailModal
                 exercise={selectedExercise}
                 onClose={() => setSelectedExercise(null)}
+                onStartQuickWorkout={(ex) => {
+                    const singleRoutine = {
+                        id: `quick-${Date.now()}`,
+                        title: ex.name,
+                        category: ex.category || 'Fitness',
+                        level: 'Single Movement',
+                        duration: '1–2 mins',
+                        calories: 25,
+                        coverImage: ex.image,
+                        badge: '⚡ Quick Exercise',
+                        icon: '⚡',
+                        description: `Focused exercise session: ${ex.instructions || ex.name}`,
+                        isQuick: true,
+                        exercises: [
+                            {
+                                name: ex.name,
+                                sets: '1 set',
+                                target: ex.category === 'Yoga' ? '45 secs' : (ex.category === 'Core' ? '30 secs' : '15 reps'),
+                                muscle: ex.muscle,
+                                image: ex.image,
+                                tip: ex.tip
+                            }
+                        ]
+                    };
+                    setSelectedExercise(null);
+                    setActiveWorkout(singleRoutine);
+                }}
             />
 
             {/* Top Page Header */}
@@ -1418,11 +1589,10 @@ export default function Workouts() {
                     <button
                         type="button"
                         onClick={() => setActiveTab('routines')}
-                        className={`flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all ${
-                            activeTab === 'routines'
+                        className={`flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all ${activeTab === 'routines'
                                 ? 'bg-white dark:bg-emerald-600 text-slate-900 dark:text-white shadow-xs'
                                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
-                        }`}
+                            }`}
                     >
                         <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 shrink-0" />
                         <span className="truncate">Routines</span>
@@ -1430,11 +1600,10 @@ export default function Workouts() {
                     <button
                         type="button"
                         onClick={() => setActiveTab('library')}
-                        className={`flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all ${
-                            activeTab === 'library'
+                        className={`flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all ${activeTab === 'library'
                                 ? 'bg-white dark:bg-emerald-600 text-slate-900 dark:text-white shadow-xs'
                                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
-                        }`}
+                            }`}
                     >
                         <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 shrink-0" />
                         <span className="truncate">Exercises</span>
@@ -1442,11 +1611,10 @@ export default function Workouts() {
                     <button
                         type="button"
                         onClick={() => setActiveTab('custom')}
-                        className={`flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all ${
-                            activeTab === 'custom'
+                        className={`flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all ${activeTab === 'custom'
                                 ? 'bg-white dark:bg-emerald-600 text-slate-900 dark:text-white shadow-xs'
                                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
-                        }`}
+                            }`}
                     >
                         <SlidersHorizontal className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-teal-500 shrink-0" />
                         <span className="truncate">Custom Builder</span>
@@ -1454,11 +1622,10 @@ export default function Workouts() {
                     <button
                         type="button"
                         onClick={() => setActiveTab('activity')}
-                        className={`flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all ${
-                            activeTab === 'activity'
+                        className={`flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all ${activeTab === 'activity'
                                 ? 'bg-white dark:bg-emerald-600 text-slate-900 dark:text-white shadow-xs'
                                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
-                        }`}
+                            }`}
                     >
                         <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-500 shrink-0" />
                         <span className="truncate">My Logs</span>
@@ -1470,26 +1637,19 @@ export default function Workouts() {
             {/* TAB 1: GUIDED ROUTINES */}
             {activeTab === 'routines' && (
                 <div className="space-y-5 sm:space-y-6">
-                    {/* Category Filter Pills & Search */}
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full sm:flex-wrap">
-                            {categories.map((cat) => (
-                                <button
-                                    key={cat.id}
-                                    type="button"
-                                    onClick={() => setSelectedCategory(cat.id)}
-                                    className={`px-3 sm:px-3.5 py-1.5 rounded-full text-[11px] sm:text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
-                                        selectedCategory === cat.id
-                                            ? 'bg-slate-900 text-white dark:bg-emerald-600 dark:text-white shadow-xs'
-                                            : 'bg-slate-100 dark:bg-[#0c241a] text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-emerald-950/60 border border-transparent dark:border-white/10'
-                                    }`}
-                                >
-                                    {cat.label}
-                                </button>
-                            ))}
+                    {/* Category Filter Dropdown & Search */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="w-full sm:w-72">
+                            <CustomSelect
+                                value={selectedCategory}
+                                onChange={(val) => setSelectedCategory(val)}
+                                options={WORKOUT_CATEGORIES}
+                                size="sm"
+                                placeholder="Filter by category..."
+                            />
                         </div>
 
-                        <div className="relative w-full md:w-64">
+                        <div className="relative w-full sm:w-64">
                             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/30 w-3.5 h-3.5" />
                             <input
                                 type="text"
@@ -1515,7 +1675,7 @@ export default function Workouts() {
                                 <p className="text-xs sm:text-sm text-slate-300 leading-relaxed line-clamp-2">
                                     {recommendedRoutine.description}
                                 </p>
-                                
+
                                 <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-[11px] sm:text-xs font-bold text-slate-300 pt-1">
                                     <span className="flex items-center gap-1.5 text-orange-400">
                                         <Flame className="w-3.5 h-3.5" /> ~{recommendedRoutine.calories} kcal
@@ -1581,7 +1741,7 @@ export default function Workouts() {
                                             className="w-full h-full object-cover object-center select-none"
                                         />
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none" />
-                                        
+
                                         <div className="absolute top-2.5 right-2.5 bg-black/70 backdrop-blur-sm text-white px-2 py-0.5 rounded-full text-[10px] font-bold border border-white/20">
                                             {routine.level}
                                         </div>
@@ -1643,25 +1803,18 @@ export default function Workouts() {
             {activeTab === 'library' && (
                 <div className="space-y-5">
                     {/* Search and Category filters */}
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full sm:flex-wrap">
-                            {categories.map((cat) => (
-                                <button
-                                    key={cat.id}
-                                    type="button"
-                                    onClick={() => setSelectedCategory(cat.id)}
-                                    className={`px-3 sm:px-3.5 py-1.5 rounded-full text-[11px] sm:text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
-                                        selectedCategory === cat.id
-                                            ? 'bg-slate-900 text-white dark:bg-emerald-600 dark:text-white shadow-xs'
-                                            : 'bg-slate-100 dark:bg-[#0c241a] text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-emerald-950/60 border border-transparent dark:border-white/10'
-                                    }`}
-                                >
-                                    {cat.label}
-                                </button>
-                            ))}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="w-full sm:w-72">
+                            <CustomSelect
+                                value={selectedCategory}
+                                onChange={(val) => setSelectedCategory(val)}
+                                options={WORKOUT_CATEGORIES}
+                                size="sm"
+                                placeholder="Filter by category..."
+                            />
                         </div>
 
-                        <div className="relative w-full md:w-64">
+                        <div className="relative w-full sm:w-64">
                             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/30 w-3.5 h-3.5" />
                             <input
                                 type="text"
@@ -1785,7 +1938,7 @@ export default function Workouts() {
                                                 className="w-full h-full object-cover object-center select-none"
                                             />
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none" />
-                                            
+
                                             <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
                                                 <button
                                                     type="button"

@@ -22,19 +22,36 @@ export default function Dashboard() {
     const d = new Date();
     const localToday = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
 
-    // Read cached profile data so offline mode never opens empty onboarding
+    // Read cached profile data so initial render is instant with 0 flicker
     const cachedProfileData = useMemo(() => {
         try {
             const raw = localStorage.getItem('user_profile_cache')
-            if (raw) return JSON.parse(raw)
+            if (raw) {
+                const parsed = JSON.parse(raw)
+                if (parsed?.profile || parsed?.metrics) return parsed
+            }
             if (user?.profile) {
-                return { profile: user.profile, metrics: {} }
+                return {
+                    profile: user.profile,
+                    metrics: {
+                        streak: user.current_streak ?? user.streak ?? 0,
+                        current_streak: user.current_streak ?? user.streak ?? 0,
+                        longest_streak: user.longest_streak ?? 0,
+                    }
+                }
             }
             const rawUser = localStorage.getItem('user')
             if (rawUser) {
                 const parsed = JSON.parse(rawUser)
                 if (parsed?.profile) {
-                    return { profile: parsed.profile, metrics: {} }
+                    return {
+                        profile: parsed.profile,
+                        metrics: {
+                            streak: parsed.current_streak ?? parsed.streak ?? 0,
+                            current_streak: parsed.current_streak ?? parsed.streak ?? 0,
+                            longest_streak: parsed.longest_streak ?? 0,
+                        }
+                    }
                 }
             }
             return null
@@ -58,6 +75,7 @@ export default function Dashboard() {
             return res.data
         },
         initialData: cachedProfileData,
+        staleTime: 60 * 1000,
     })
 
     const activeProfileData = profileData || cachedProfileData;
@@ -173,6 +191,10 @@ export default function Dashboard() {
 
     const bmiInfo = getBMIClass(profile?.bmi)
 
+    // Instant multi-tiered streak fallback (Live Metrics -> Profile Cache -> Summary Query -> Auth User)
+    const currentStreakValue = metrics?.current_streak ?? metrics?.streak ?? summary?.stats?.current_streak ?? summary?.stats?.streak ?? user?.current_streak ?? user?.streak ?? cachedProfileData?.metrics?.current_streak ?? cachedProfileData?.metrics?.streak ?? 0;
+    const longestStreakValue = metrics?.longest_streak ?? summary?.stats?.longest_streak ?? user?.longest_streak ?? cachedProfileData?.metrics?.longest_streak ?? currentStreakValue;
+
     return (
         <div className="space-y-6 w-full min-w-0">
             {/* Page Header */}
@@ -183,31 +205,55 @@ export default function Dashboard() {
 
             {/* Metrics Row */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 w-full">
-                <div className="metric-card w-full">
-                    <div className="metric-val text-amber-500 font-bold">🔥 {metrics?.streak ?? 0}</div>
+                {/* 1. Day Streak */}
+                <div className="metric-card w-full flex flex-col items-center justify-center text-center p-4 sm:p-5 min-h-[124px]">
+                    <div className="metric-val text-amber-500 font-bold flex items-center justify-center gap-1.5">
+                        <span>🔥</span>
+                        <span>{currentStreakValue}</span>
+                    </div>
                     <div className="metric-lbl">Day Streak</div>
-                </div>
-                <div className="metric-card w-full">
-                    <div className="metric-val">{profile?.bmi ?? '—'}</div>
-                    <div className="metric-lbl">BMI</div>
-                    {profile?.bmi && <span className={`badge ${bmiInfo.class} mt-1`}>{bmiInfo.label}</span>}
-                </div>
-                <div className="metric-card w-full">
-                    <div className="metric-val">{profile?.calories_target ? Math.round(profile.calories_target) : '—'}</div>
-                    <div className="metric-lbl">Daily Target</div>
-                    <span className="text-xs text-slate-400 font-medium">kcal/day</span>
-                </div>
-                <div className="metric-card w-full">
-                    <div className="metric-val text-emerald-600 dark:text-green-400">{metrics?.calories_consumed ? Math.round(metrics.calories_consumed) : '0'}</div>
-                    <div className="metric-lbl">Consumed</div>
-                    <span className="text-xs text-slate-400 font-medium">kcal today</span>
-                </div>
-                <div className="metric-card col-span-2 sm:col-span-2 lg:col-span-1 w-full">
-                    <div className="metric-val text-amber-500">{profile?.calories_target ? Math.round(profile.calories_target - (metrics?.calories_consumed || 0)) : '—'}</div>
-                    <div className="metric-lbl">Remaining</div>
-                    <span className="text-xs text-slate-400 font-medium">kcal left</span>
+                    <span className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800/40 mt-1 inline-flex items-center gap-1">
+                        👑 Best: {longestStreakValue}d
+                    </span>
                 </div>
 
+                {/* 2. BMI */}
+                <div className="metric-card w-full flex flex-col items-center justify-center text-center p-4 sm:p-5 min-h-[124px]">
+                    <div className="metric-val">{profile?.bmi ?? '—'}</div>
+                    <div className="metric-lbl">BMI</div>
+                    {profile?.bmi ? (
+                        <span className={`badge ${bmiInfo.class} mt-1 text-[11px] font-semibold py-0.5 px-2`}>
+                            {bmiInfo.label}
+                        </span>
+                    ) : (
+                        <span className="text-xs text-slate-400 font-medium mt-1">Pending</span>
+                    )}
+                </div>
+
+                {/* 3. Daily Target */}
+                <div className="metric-card w-full flex flex-col items-center justify-center text-center p-4 sm:p-5 min-h-[124px]">
+                    <div className="metric-val">{profile?.calories_target ? Math.round(profile.calories_target) : '—'}</div>
+                    <div className="metric-lbl">Daily Target</div>
+                    <span className="text-xs text-slate-400 dark:text-slate-400 font-medium mt-1">kcal/day</span>
+                </div>
+
+                {/* 4. Consumed */}
+                <div className="metric-card w-full flex flex-col items-center justify-center text-center p-4 sm:p-5 min-h-[124px]">
+                    <div className="metric-val text-emerald-600 dark:text-green-400">
+                        {metrics?.calories_consumed ? Math.round(metrics.calories_consumed) : '0'}
+                    </div>
+                    <div className="metric-lbl">Consumed</div>
+                    <span className="text-xs text-slate-400 dark:text-slate-400 font-medium mt-1">kcal today</span>
+                </div>
+
+                {/* 5. Remaining */}
+                <div className="metric-card col-span-2 sm:col-span-2 lg:col-span-1 w-full flex flex-col items-center justify-center text-center p-4 sm:p-5 min-h-[124px]">
+                    <div className="metric-val text-amber-500">
+                        {profile?.calories_target ? Math.round(profile.calories_target - (metrics?.calories_consumed || 0)) : '—'}
+                    </div>
+                    <div className="metric-lbl">Remaining</div>
+                    <span className="text-xs text-slate-400 dark:text-slate-400 font-medium mt-1">kcal left</span>
+                </div>
             </div>
 
             {!hasExistingMetrics && !isProfileError && !loadingProfile && (

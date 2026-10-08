@@ -1,13 +1,29 @@
-    import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import api from '../services/api'
 
-const AuthContext = createContext(null)
+const defaultAuthContext = {
+    user: null,
+    setUser: () => {},
+    loading: true,
+    login: async () => ({}),
+    register: async () => ({}),
+    logout: async () => {},
+    isAdmin: false,
+    isPremium: false,
+    daysUntilExpiry: null
+}
+
+const AuthContext = createContext(defaultAuthContext)
 
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(() => {
-        const stored = localStorage.getItem('user')
-        return stored ? JSON.parse(stored) : null
+        try {
+            const stored = localStorage.getItem('user')
+            return stored ? JSON.parse(stored) : null
+        } catch (_) {
+            return null
+        }
     })
     const [loading, setLoading] = useState(true)
     const queryClient = useQueryClient()
@@ -22,7 +38,20 @@ export function AuthProvider({ children }) {
                         localStorage.setItem('user', JSON.stringify(data))
                         if (data.profile && (data.profile.bmi || data.profile.height_cm || data.profile.age)) {
                             localStorage.setItem('metrics_onboarding_completed', 'true')
-                            localStorage.setItem('user_profile_cache', JSON.stringify({ profile: data.profile, metrics: {} }))
+                            let existingMetrics = {}
+                            try {
+                                const raw = localStorage.getItem('user_profile_cache')
+                                if (raw) existingMetrics = JSON.parse(raw)?.metrics || {}
+                            } catch (_) {}
+                            localStorage.setItem('user_profile_cache', JSON.stringify({
+                                profile: data.profile,
+                                metrics: {
+                                    ...existingMetrics,
+                                    streak: data.current_streak ?? data.streak ?? existingMetrics.streak ?? 0,
+                                    current_streak: data.current_streak ?? data.streak ?? existingMetrics.current_streak ?? 0,
+                                    longest_streak: data.longest_streak ?? existingMetrics.longest_streak ?? 0,
+                                }
+                            }))
                         }
                     })
                     .catch((err) => {
@@ -145,5 +174,6 @@ export function AuthProvider({ children }) {
 }
 
 export function useAuth() {
-    return useContext(AuthContext)
+    const context = useContext(AuthContext)
+    return context || defaultAuthContext
 }

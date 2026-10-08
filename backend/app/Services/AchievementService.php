@@ -102,88 +102,221 @@ class AchievementService
     }
 
     /**
-     * Calculate consecutive logging streak (in days) using local IST calendar dates.
-     * Considers Progress Logs, Consumed Meals, and Token Actions (Logins, Tracking, Workouts).
+     * Get both current streak and longest streak ever for a user.
      */
-    public function calculateStreak($user): int
+    public function getStreakStats($user, ?string $clientDate = null): array
     {
-        $userId = is_numeric($user) ? $user : $user->id;
-
-        // 1. Dates from Progress Logs
-        $progressDates = ProgressLog::where('user_id', $userId)
-            ->pluck('date')
-            ->map(function ($d) {
-                return $d instanceof Carbon ? $d->toDateString() : substr((string) $d, 0, 10);
-            })
-            ->toArray();
-
-        // 2. Dates from Consumed Meals in Meal Plans
-        $mealDates = MealPlan::where('user_id', $userId)
-            ->whereHas('mealItems', function ($q) {
-                $q->where('is_consumed', true);
-            })
-            ->pluck('date')
-            ->map(function ($d) {
-                return $d instanceof Carbon ? $d->toDateString() : substr((string) $d, 0, 10);
-            })
-            ->toArray();
-
-        // 3. Dates from Token Transactions (Daily Login, Workouts, Meals, Tracking)
-        $tokenDates = \App\Models\TokenTransaction::where('user_id', $userId)
-            ->pluck('created_at')
-            ->map(function ($dt) {
-                return Carbon::parse($dt)->setTimezone('Asia/Kolkata')->toDateString();
-            })
-            ->toArray();
-
-        // 4. Dates from Meal Plans Created
-        $planCreatedDates = MealPlan::where('user_id', $userId)
-            ->pluck('created_at')
-            ->map(function ($dt) {
-                return Carbon::parse($dt)->setTimezone('Asia/Kolkata')->toDateString();
-            })
-            ->toArray();
-
-        // 5. Date of User Registration (first active day)
-        $userCreatedAt = \App\Models\User::where('id', $userId)
-            ->pluck('created_at')
-            ->map(function ($dt) {
-                return Carbon::parse($dt)->setTimezone('Asia/Kolkata')->toDateString();
-            })
-            ->toArray();
-
-        // Merge, clean, and deduplicate all active dates
-        $allActiveDates = array_values(array_unique(array_filter(
-            array_merge($progressDates, $mealDates, $tokenDates, $planCreatedDates, $userCreatedAt)
-        )));
+        $userId = is_numeric($user) ? (int) $user : (int) $user->id;
+        $allActiveDates = $this->getAllActiveDates($userId);
 
         if (empty($allActiveDates)) {
-            return 0;
+            return [
+                'current_streak' => 0,
+                'longest_streak' => 0,
+                'streak'         => 0,
+            ];
         }
-
-        $nowIST       = Carbon::now('Asia/Kolkata');
-        $todayStr     = $nowIST->toDateString();
-        $yesterdayStr = $nowIST->copy()->subDay()->toDateString();
 
         $activeDateSet = array_flip($allActiveDates);
 
-        // If neither today nor yesterday has any activity, the streak has lapsed
-        $hasToday     = isset($activeDateSet[$todayStr]);
-        $hasYesterday = isset($activeDateSet[$yesterdayStr]);
+        // Determine today and yesterday candidates across client local time, IST, and UTC
+        $nowIST   = Carbon::now('Asia/Kolkata');
+        $nowUTC   = Carbon::now('UTC');
+        
+        $todayCandidates = [];
+        if ($clientDate && preg_match('/^\d{4}-\d{2}-\d{2}$/', $clientDate)) {
+            $todayCandidates[] = $clientDate;
+        }
+        $todayCandidates[] = $nowIST->toDateString();
+        $todayCandidates[] = $nowUTC->toDateString();
+        $todayCandidates = array_values(array_unique($todayCandidates));
 
-        if (!$hasToday && !$hasYesterday) {
-            return 0;
+        $yesterdayCandidates = [];
+        foreach ($todayCandidates as $tDate) {
+            $yesterdayCandidates[] = Carbon::parse($tDate)->subDay()->toDateString();
+        }
+        $yesterdayCandidates = array_values(array_unique($yesterdayCandidates));
+
+        // Find active start point for current streak
+        $activeAnchorDate = null;
+        foreach ($todayCandidates as $t) {
+            if (isset($activeDateSet[$t])) {
+                $activeAnchorDate = $t;
+                break;
+            }
         }
 
-        $streak = 0;
-        $cursor = $hasToday ? $nowIST->copy() : $nowIST->copy()->subDay();
-
-        while (isset($activeDateSet[$cursor->toDateString()])) {
-            $streak++;
-            $cursor->subDay();
+        if (!$activeAnchorDate) {
+            foreach ($yesterdayCandidates as $y) {
+                if (isset($activeDateSet[$y])) {
+                    $activeAnchorDate = $y;
+                    break;
+                }
+            }
         }
 
-        return $streak;
+        $currentStreak = 0;
+        if ($activeAnchorDate) {
+            $cursor = Carbon::parse($activeAnchorDate);
+            while (isset($activeDateSet[$cursor->toDateString()])) {
+                $currentStreak++;
+                $cursor->subDay();
+            }
+        }
+
+        // Calculate Longest Streak Ever across historical sorted dates
+        sort($allActiveDates);
+        $longestStreak = 0;
+        if (!empty($allActiveDates)) {
+            $currentRun = 1;
+            $longestStreak = 1;
+            $count = count($allActiveDates);
+            for ($i = 1; $i < $count; $i++) {
+                try {
+                    $prev = Carbon::createFromFormat('Y-m-d', $allActiveDates[$i - 1])->startOfDay();
+                    $curr = Carbon::createFromFormat('Y-m-d', $allActiveDates[$i])->startOfDay();
+                    $diff = $prev->diffInDays($curr);
+                    if ($diff === 1) {
+                        $currentRun++;
+                        if ($currentRun > $longestStreak) {
+                            $longestStreak = $currentRun;
+                        }
+                    } elseif ($diff > 1) {
+                        $currentRun = 1;
+                    }
+                } catch (\Throwable $e) {
+                    continue;
+                }
+            }
+        }
+
+        // Guarantee longest streak is never lower than current streak or earned badges
+        $longestStreak = max($longestStreak, $currentStreak);
+
+        $badgeBoosts = [
+            'streak_30' => 30,
+            'streak_14' => 14,
+            'streak_7'  => 7,
+        ];
+        foreach ($badgeBoosts as $bType => $minVal) {
+            if (UserBadge::where('user_id', $userId)->where('badge_type', $bType)->exists()) {
+                $longestStreak = max($longestStreak, $minVal);
+            }
+        }
+
+        return [
+            'current_streak' => $currentStreak,
+            'longest_streak' => $longestStreak,
+            'streak'         => $currentStreak,
+        ];
+    }
+
+    /**
+     * Calculate consecutive logging streak (in days).
+     */
+    public function calculateStreak($user, ?string $clientDate = null): int
+    {
+        return $this->getStreakStats($user, $clientDate)['current_streak'];
+    }
+
+    /**
+     * Calculate all-time longest streak (in days).
+     */
+    public function calculateLongestStreak($user, ?string $clientDate = null): int
+    {
+        return $this->getStreakStats($user, $clientDate)['longest_streak'];
+    }
+
+    /**
+     * Collect and sanitize all unique active activity dates for a user.
+     */
+    private function getAllActiveDates(int $userId): array
+    {
+        $dates = [];
+
+        // 1. Progress Logs date and created_at
+        $progressDates = ProgressLog::where('user_id', $userId)
+            ->pluck('date')
+            ->map(fn($d) => $d instanceof Carbon ? $d->toDateString() : substr(trim((string) $d), 0, 10))
+            ->toArray();
+        $dates = array_merge($dates, $progressDates);
+
+        $progressCreated = ProgressLog::where('user_id', $userId)
+            ->pluck('created_at')
+            ->flatMap(function ($dt) {
+                if (!$dt) return [];
+                return [
+                    Carbon::parse($dt)->setTimezone('Asia/Kolkata')->toDateString(),
+                    Carbon::parse($dt)->toDateString(),
+                ];
+            })
+            ->toArray();
+        $dates = array_merge($dates, $progressCreated);
+
+        // 2. Consumed Meals in Meal Plans
+        $mealDates = MealPlan::where('user_id', $userId)
+            ->whereHas('mealItems', fn($q) => $q->where('is_consumed', true))
+            ->pluck('date')
+            ->map(fn($d) => $d instanceof Carbon ? $d->toDateString() : substr(trim((string) $d), 0, 10))
+            ->toArray();
+        $dates = array_merge($dates, $mealDates);
+
+        // 3. Token Transactions (Daily Login, Workouts, Tracking)
+        $tokenDates = \App\Models\TokenTransaction::where('user_id', $userId)
+            ->pluck('created_at')
+            ->flatMap(function ($dt) {
+                if (!$dt) return [];
+                return [
+                    Carbon::parse($dt)->setTimezone('Asia/Kolkata')->toDateString(),
+                    Carbon::parse($dt)->toDateString(),
+                ];
+            })
+            ->toArray();
+        $dates = array_merge($dates, $tokenDates);
+
+        // 4. Meal Plans Created
+        $planCreated = MealPlan::where('user_id', $userId)
+            ->pluck('created_at')
+            ->flatMap(function ($dt) {
+                if (!$dt) return [];
+                return [
+                    Carbon::parse($dt)->setTimezone('Asia/Kolkata')->toDateString(),
+                    Carbon::parse($dt)->toDateString(),
+                ];
+            })
+            ->toArray();
+        $dates = array_merge($dates, $planCreated);
+
+        // 5. Badges Earned
+        $badgeDates = UserBadge::where('user_id', $userId)
+            ->pluck('earned_at')
+            ->flatMap(function ($dt) {
+                if (!$dt) return [];
+                return [
+                    Carbon::parse($dt)->setTimezone('Asia/Kolkata')->toDateString(),
+                    Carbon::parse($dt)->toDateString(),
+                ];
+            })
+            ->toArray();
+        $dates = array_merge($dates, $badgeDates);
+
+        // 6. User Account Registration
+        $userCreatedAt = \App\Models\User::where('id', $userId)
+            ->pluck('created_at')
+            ->flatMap(function ($dt) {
+                if (!$dt) return [];
+                return [
+                    Carbon::parse($dt)->setTimezone('Asia/Kolkata')->toDateString(),
+                    Carbon::parse($dt)->toDateString(),
+                ];
+            })
+            ->toArray();
+        $dates = array_merge($dates, $userCreatedAt);
+
+        // Filter valid YYYY-MM-DD strings only and deduplicate
+        return array_values(array_unique(array_filter($dates, function ($d) {
+            return is_string($d) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $d);
+        })));
     }
 
     private function hasBadge($user, string $type): bool

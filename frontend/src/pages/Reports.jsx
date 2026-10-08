@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import toast from 'react-hot-toast'
-import { FileText, Download, User, Activity, Flame, Scale, Dumbbell, CalendarCheck, TrendingUp, Trophy, RefreshCw } from 'lucide-react'
+import { FileText, Download, User, Activity, Flame, Scale, Dumbbell, CalendarCheck, TrendingUp, Trophy, RefreshCw, Sparkles } from 'lucide-react'
 import { getErrorMessage } from '../utils/errors'
 import UserAvatar from '../components/UserAvatar'
 
@@ -151,12 +151,16 @@ export default function Reports() {
                                 <h2 className="text-xl font-bold truncate">{summary.user?.name}</h2>
                                 <p className="text-white/80 text-sm truncate">{summary.user?.email}</p>
                             </div>
-                            {stats?.streak > 0 && (
-                                <div className="shrink-0 text-right">
-                                    <p className="text-2xl font-black text-amber-300">🔥 {stats.streak}</p>
-                                    <p className="text-white/70 text-xs font-semibold">Day Streak</p>
+                            <div className="shrink-0 flex items-center gap-3 text-right">
+                                <div className="bg-white/10 px-3 py-1.5 rounded-xl border border-white/15">
+                                    <p className="text-lg sm:text-xl font-black text-amber-300">🔥 {stats?.current_streak ?? stats?.streak ?? 0}</p>
+                                    <p className="text-white/80 text-[10px] sm:text-xs font-semibold">Current</p>
                                 </div>
-                            )}
+                                <div className="bg-white/10 px-3 py-1.5 rounded-xl border border-white/15">
+                                    <p className="text-lg sm:text-xl font-black text-amber-200">👑 {stats?.longest_streak ?? stats?.current_streak ?? stats?.streak ?? 0}</p>
+                                    <p className="text-white/80 text-[10px] sm:text-xs font-semibold">Best Ever</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -175,7 +179,7 @@ export default function Reports() {
                     )}
 
                     {/* ── Stats Grid ── */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3">
 
                         {/* BMI */}
                         <StatCard
@@ -232,22 +236,22 @@ export default function Reports() {
                             sub={Number(stats?.workout_days) > 0 ? 'all-time ✅' : 'None logged yet'}
                         />
 
-                        {/* Progress Logs */}
-                        <StatCard
-                            icon={FileText}
-                            iconBg="bg-indigo-500"
-                            val={Number(stats?.total_logs) || 0}
-                            lbl="Progress Logs"
-                            sub="entries"
-                        />
-
-                        {/* Streak */}
+                        {/* Current Streak */}
                         <StatCard
                             icon={Trophy}
-                            iconBg={Number(stats?.streak) > 0 ? 'bg-amber-500' : 'bg-gray-300'}
-                            val={Number(stats?.streak) > 0 ? `🔥 ${stats.streak}` : '0'}
+                            iconBg={Number(stats?.current_streak ?? stats?.streak) > 0 ? 'bg-amber-500' : 'bg-gray-300'}
+                            val={Number(stats?.current_streak ?? stats?.streak) > 0 ? `🔥 ${stats?.current_streak ?? stats?.streak}` : '0'}
                             lbl="Current Streak"
-                            sub={Number(stats?.streak) > 0 ? 'days in a row' : 'Start logging daily!'}
+                            sub={Number(stats?.current_streak ?? stats?.streak) > 0 ? 'consecutive days' : 'Start logging daily!'}
+                        />
+
+                        {/* Longest Streak Ever */}
+                        <StatCard
+                            icon={Sparkles}
+                            iconBg="bg-gradient-to-br from-amber-500 to-yellow-600"
+                            val={`👑 ${stats?.longest_streak ?? stats?.current_streak ?? stats?.streak ?? 0}`}
+                            lbl="Longest Streak"
+                            sub="all-time record"
                         />
                     </div>
 

@@ -97,6 +97,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return app(\App\Services\AchievementService::class)->calculateStreak($this);
     }
 
+    public function getLongestStreak(): int
+    {
+        return app(\App\Services\AchievementService::class)->calculateLongestStreak($this);
+    }
+
     public function getProfilePhotoUrlAttribute(): string
     {
         if ($this->profile_photo_path) {

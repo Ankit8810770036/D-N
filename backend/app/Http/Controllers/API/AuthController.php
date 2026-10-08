@@ -112,9 +112,14 @@ class AuthController extends Controller
             $daysUntilExpiry = (int) now()->diffInDays($user->subscription_expires_at, false);
         }
 
+        $streakStats = app(\App\Services\AchievementService::class)->getStreakStats($user);
+
         $userPayload = array_merge($user->toArray(), [
             'token_balance'     => $tokens->getBalance($user),
             'days_until_expiry' => $daysUntilExpiry,
+            'streak'            => $streakStats['current_streak'],
+            'current_streak'    => $streakStats['current_streak'],
+            'longest_streak'    => $streakStats['longest_streak'],
         ]);
 
         return response()->json([
@@ -157,9 +162,14 @@ class AuthController extends Controller
             $daysUntilExpiry = (int) now()->diffInDays($user->subscription_expires_at, false);
         }
 
+        $streakStats = app(\App\Services\AchievementService::class)->getStreakStats($user, $request->input('date'));
+
         return response()->json(array_merge($user->toArray(), [
             'token_balance'      => $tokens->getBalance($user),
             'days_until_expiry'  => $daysUntilExpiry, // null if basic, negative if expired
+            'streak'             => $streakStats['current_streak'],
+            'current_streak'     => $streakStats['current_streak'],
+            'longest_streak'     => $streakStats['longest_streak'],
         ]));
     }
 

@@ -1,12 +1,17 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 
-const ThemeContext = createContext();
+const defaultTheme = { isDarkMode: true, toggleTheme: () => {} };
+const ThemeContext = createContext(defaultTheme);
 
 export function ThemeProvider({ children }) {
     // Default to dark mode to match the beautiful new aesthetic, unless they specifically chose light mode.
     const [isDarkMode, setIsDarkMode] = useState(() => {
-        const stored = localStorage.getItem('theme');
-        return stored ? stored === 'dark' : true;
+        try {
+            const stored = localStorage.getItem('theme');
+            return stored ? stored === 'dark' : true;
+        } catch (_) {
+            return true;
+        }
     });
 
     useEffect(() => {
@@ -29,4 +34,8 @@ export function ThemeProvider({ children }) {
     );
 }
 
-export const useTheme = () => useContext(ThemeContext);
+export const useTheme = () => {
+    const context = useContext(ThemeContext);
+    return context || defaultTheme;
+};
+

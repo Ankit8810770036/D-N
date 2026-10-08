@@ -42,11 +42,10 @@ class HealthProfileController extends Controller
             
         $extra['calories_consumed'] = $todayLog ? $todayLog->calories_consumed : 0;
         
-        try {
-            app(\App\Services\AchievementService::class)->checkAchievements($user);
-        } catch (\Throwable $e) {}
-
-        $extra['streak'] = $user->getCurrentStreak();
+        $streakStats = app(\App\Services\AchievementService::class)->getStreakStats($user, $date);
+        $extra['streak']         = $streakStats['current_streak'];
+        $extra['current_streak'] = $streakStats['current_streak'];
+        $extra['longest_streak'] = $streakStats['longest_streak'];
 
         return response()->json([
             'user'    => $user,
@@ -124,7 +123,9 @@ class HealthProfileController extends Controller
                 'calories_consumed'  => \App\Models\ProgressLog::where('user_id', $user->id)
                                           ->where('date', now()->toDateString())
                                           ->value('calories_consumed') ?? 0,
-                'streak'             => $user->getCurrentStreak(),
+                'streak'             => app(\App\Services\AchievementService::class)->calculateStreak($user),
+                'current_streak'     => app(\App\Services\AchievementService::class)->calculateStreak($user),
+                'longest_streak'     => app(\App\Services\AchievementService::class)->calculateLongestStreak($user),
             ],
         ]);
     }

@@ -163,12 +163,12 @@ class ReportController extends Controller
                 ->latest('date')
                 ->first(['date', 'weight']);
 
-            $streak = 0;
+            $streakStats = ['current_streak' => 0, 'longest_streak' => 0, 'streak' => 0];
             $formattedBadges = [];
 
             try {
                 $achievementService->checkAchievements($user);
-                $streak = $achievementService->calculateStreak($user);
+                $streakStats = $achievementService->getStreakStats($user, $request->input('date'));
                 $badges = UserBadge::where('user_id', $user->id)
                     ->orderBy('earned_at', 'desc')
                     ->get();
@@ -204,7 +204,9 @@ class ReportController extends Controller
                     'workout_days'          => (int) $workoutDays,
                     'latest_weight'         => $latestLog?->weight,
                     'latest_log_date'       => $latestLog?->date,
-                    'streak'                => (int) $streak,
+                    'streak'                => (int) $streakStats['current_streak'],
+                    'current_streak'        => (int) $streakStats['current_streak'],
+                    'longest_streak'        => (int) $streakStats['longest_streak'],
                     'avg_calories'          => $avgCalories ? round((float)$avgCalories, 0) : null,
                     'avg_weight'            => $avgWeight   ? round((float)$avgWeight,   1) : null,
                 ],
@@ -225,6 +227,8 @@ class ReportController extends Controller
                     'latest_weight'         => null,
                     'latest_log_date'       => null,
                     'streak'                => 0,
+                    'current_streak'        => 0,
+                    'longest_streak'        => 0,
                     'avg_calories'          => null,
                     'avg_weight'            => null,
                 ],
